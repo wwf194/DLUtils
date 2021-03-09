@@ -1,0 +1,41 @@
+{
+	"Files": {
+		"data_batch_4": {
+			"MD5": "634d18415352ddfa80567beed471001a",
+			"Volume": "29.60 MB"
+		},
+		"readme(DOT)html": {
+			"MD5": "82949b010606e8171045e61c60921d12",
+			"Volume": "88.00 B"
+		},
+		"test_batch": {
+			"MD5": "40351d587109b95175f43aff81a1287e",
+			"Volume": "29.60 MB"
+		},
+		"data_batch_3": {
+			"MD5": "54ebc095f3ab1f0389bbae665268c751",
+			"Volume": "29.60 MB"
+		},
+		"batches(DOT)meta": {
+			"MD5": "5ff9c542aee3614f3951f8cda6e48888",
+			"Volume": "158.00 B"
+		},
+		"data_batch_2": {
+			"MD5": "d4bba439e000b95fd0a9bffe97cbabec",
+			"Volume": "29.60 MB"
+		},
+		"data_batch_5": {
+			"MD5": "482c414d41f54cd18b22e5b47cb7c3cb",
+			"Volume": "29.60 MB"
+		},
+		"data_batch_1": {
+			"MD5": "c99cafc152244af753f735de768cd75f",
+			"Volume": "29.60 MB"
+		},
+		"cifar-10-python(DOT)tar(DOT)gz": {
+			"MD5": "c58f30108f718f92721af3b95e74349a",
+			"Volume": "162.60 MB"
+		}
+	},
+	"Folders.example": {}
+}

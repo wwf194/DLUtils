@@ -1,0 +1,29 @@
+{
+    // 使用 IntelliSense 了解相关属性。 
+    // 悬停以查看现有属性的描述。
+    // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "__main__.py",
+            // "args": ["-t", "example", "mnist_mlp"],
+            // "args": ["-t", "cifar10", "generate_config", "-p", "~/Data/cifar10"],
+            // "args": ["-t", "example", "mnist_vae", "conv", "--anal"],
+            // "args": ["-t", "example", "cifar10", "conv"],
+            // python __main__.py -t example vit imagenet
+            // "args": ["-t", "example", "vit", "imagenet"],
+            // "args": ["-t", "example", "parallel", "--NodeNum", "2", "--NodeIndex", "0"],
+            // "args": ["-t", "ftp", "test"],
+            "args": ["-t", "image", "compress", "test"],
+            "console": "integratedTerminal",
+            // "python": "${config.python.pythonPath}",
+            "justMyCode": true,
+            "env":{
+                "PYTHONPATH": "${workspaceRoot}"
+            },
+        }
+    ]
+}
