@@ -3,8 +3,8 @@ import os
 import re
 import pandas as pd
 import shutil # sh_utils
-import utils_torch
-from utils_torch.attr import *
+import DLUtils
+from DLUtils.attr import *
 import warnings
 
 def RemoveFiles(FilesPath):
@@ -13,7 +13,7 @@ def RemoveFiles(FilesPath):
 
 def RemoveFile(FilePath):
     if not ExistsFile(FilePath):
-        utils_torch.AddWarning("No such file: %s"%FilePath)
+        DLUtils.AddWarning("No such file: %s"%FilePath)
     else:
         os.remove(FilePath)
 
@@ -23,7 +23,7 @@ def RemoveAllFilesUnderDir(DirPath, verbose=True):
         #FilePath = os.path.join(DirPath, FileName)
         FilePath = DirPath + FileName
         os.remove(FilePath)
-        utils_torch.AddLog("utils_pytorch: removed file: %s"%FilePath)
+        DLUtils.AddLog("utils_pytorch: removed file: %s"%FilePath)
 
 def RemoveAllFilesAndDirsUnderDir(DirPath, verbose=True):
     assert ExistsDir(DirPath)
@@ -31,13 +31,13 @@ def RemoveAllFilesAndDirsUnderDir(DirPath, verbose=True):
     for FileName in Files:
         FilePath = os.path.join(DirPath, FileName)
         os.remove(FilePath)
-        utils_torch.AddLog("utils_torch: removed file: %s"%FilePath)
+        DLUtils.AddLog("DLUtils: removed file: %s"%FilePath)
     for DirName in Dirs:
         DirPath = os.path.join(DirPath, DirName)
         #os.removedirs(DirPath) # Cannot delete subfolders
         import shutil
         shutil.rmtree(DirPath)
-        utils_torch.AddLog("utils_torch: removed directory: %s"%DirPath)
+        DLUtils.AddLog("DLUtils: removed directory: %s"%DirPath)
 
 def IsDir(DirPath):
     return os.path.isdir(DirPath)
@@ -59,7 +59,7 @@ def RemoveMatchedFiles(DirPath, Patterns):
             if MatchResult is not None:
                 FilePath = os.path.join(DirPath, FileName)
                 os.remove(FilePath)
-                utils_torch.AddLog("utils_torch: removed file: %s"%FilePath)
+                DLUtils.AddLog("DLUtils: removed file: %s"%FilePath)
 
 def ListAllFilesAndDirs(DirPath):
     if not os.path.exists(DirPath):
@@ -110,7 +110,7 @@ def ExistsDir(DirPath):
     return os.path.isdir(DirPath)
 
 def CheckFileExists(FilePath):
-    if not utils_torch.ExistsFile(FilePath):
+    if not DLUtils.ExistsFile(FilePath):
         raise Exception("%s does not exist."%FilePath)
 
 def Path2AbsolutePath(Path):
@@ -138,9 +138,9 @@ def EnsureFileDirectory(FilePath):
 EnsureFileDir = EnsureFileDirectory
 
 def GetFileDir(FilePath):
-    assert utils_torch.file.IsFile(FilePath)
+    assert DLUtils.file.IsFile(FilePath)
     
-    if utils_torch.SystemType == "windows":
+    if DLUtils.SystemType == "windows":
         return os.path.dirname(FilePath) + "\\"
     else:
         return os.path.dirname(FilePath) + "/"
@@ -148,7 +148,7 @@ def GetFileDir(FilePath):
 def EnsurePath(path, isFolder=False): # check if given path exists. if not, create it.
     if isFolder: # caller of this function makes sure that path is a directory/folder.
         if not path.endswith('/'): # folder
-            utils_torch.AddWarning('%s is a folder, and should ends with /.'%path)
+            DLUtils.AddWarning('%s is a folder, and should ends with /.'%path)
             path += '/'
         if not os.path.exists(path):
             os.makedirs(path)
@@ -214,7 +214,7 @@ def CopyFolder(SourceDir, DestDir, exceptions=[], verbose=True):
         print('Copying folder from %s to %s. Exceptions: %s'%(SourceDir, DestDir, exceptions))
 
     if SourceDir + '/' in exceptions:
-        utils_torch.AddWarning('CopyFolder: neglected the entire root path. nothing will be copied')
+        DLUtils.AddWarning('CopyFolder: neglected the entire root path. nothing will be copied')
         if verbose:
             print('neglected')
     else:
@@ -251,7 +251,7 @@ def _CopyFolder(SourceDir, DestDir, subpath='', exceptions=[], verbose=True):
             else:
                 _CopyFolder(SourceDir, DestDir, subpath + item + '/', verbose=verbose)
         else:
-            utils_torch.AddWarning('%s is neither a file nor a path.')
+            DLUtils.AddWarning('%s is neither a file nor a path.')
 
 def ExistsPath(Path):
     return os.path.exists(Path)
@@ -303,7 +303,7 @@ RenameIfFileExists = RenameFileIfExists
 
 def RenameDir(DirOld, DirNew):
     if not ExistsDir(DirOld):
-        utils_torch.AddWarning("RenameDir: Dir %s does not exist."%DirOld)
+        DLUtils.AddWarning("RenameDir: Dir %s does not exist."%DirOld)
         return
     assert not ExistsFile(DirNew.rstrip("/"))
     os.rename(DirOld, DirNew)
@@ -337,12 +337,12 @@ def RenameDirIfExists(DirPath):
     return DirPath
 
 def Str2File(Str, FilePath):
-    utils_torch.EnsureFileDir(FilePath)
+    DLUtils.EnsureFileDir(FilePath)
     with open(FilePath, "w") as file:
         file.write(Str)
 
 def Table2TextFileDict(Dict, SavePath):
-    utils_torch.Str2File(pd.DataFrame(Dict).to_string(), SavePath)   
+    DLUtils.Str2File(pd.DataFrame(Dict).to_string(), SavePath)   
 Table2TextFile = Table2TextFileDict
 
 def Table2TextFileColumns(*Columns, **kw):
@@ -354,7 +354,7 @@ def Table2TextFileColumns(*Columns, **kw):
     #         Str += str(Columns[ColIndex][RowIndex])
     #         Str += " "
     #     Str += "\n"
-    # utils_torch.Str2File(Str, kw["SavePath"])
+    # DLUtils.Str2File(Str, kw["SavePath"])
     Names = kw["Names"]
     Dict = {}
     for Index, Column in enumerate(Columns):
@@ -363,25 +363,25 @@ def Table2TextFileColumns(*Columns, **kw):
 
 def LoadParamFromFile(Args, **kw):
     if isinstance(Args, dict):
-        _LoadParamFromFile(utils_torch.json.JsonObj2PyObj(Args), **kw)
-    elif isinstance(Args, list) or utils_torch.IsListLikePyObj(Args):
+        _LoadParamFromFile(DLUtils.json.JsonObj2PyObj(Args), **kw)
+    elif isinstance(Args, list) or DLUtils.IsListLikePyObj(Args):
         for Arg in Args:
             _LoadParamFromFile(Arg, **kw)
-    elif utils_torch.IsDictLikePyObj(Args):
+    elif DLUtils.IsDictLikePyObj(Args):
         _LoadParamFromFile(Args, **kw)
     else:
         raise Exception()
 
 def _LoadParamFromFile(Args, **kw):
-    FilePathList = utils_torch.ToList(Args.FilePath)
-    MountPathList = utils_torch.ToList(Args.MountPath)
+    FilePathList = DLUtils.ToList(Args.FilePath)
+    MountPathList = DLUtils.ToList(Args.MountPath)
     for MountPath, FilePath in zip(MountPathList, FilePathList):
-        Obj = utils_torch.json.JsonFile2PyObj(FilePath)
+        Obj = DLUtils.json.JsonFile2PyObj(FilePath)
         if not isinstance(Obj, list):
             EnsureAttrs(Args, "SetResolveBase", default=True)
             if Args.SetResolveBase:
                 setattr(Obj, "__IsResolveBase__", True)
-        utils_torch.MountObj(MountPath, Obj, **kw)
+        DLUtils.MountObj(MountPath, Obj, **kw)
     return
 
 def cal_path_from_main(path_rel=None, path_start=None, path_main=None):
@@ -434,7 +434,7 @@ def LoadBinaryFilePickle(FilePath):
 def File2Md5(FilePath):
     import hashlib
     Md5Calculator = hashlib.md5()
-    assert utils_torch.ExistsFile(FilePath), FilePath
+    assert DLUtils.ExistsFile(FilePath), FilePath
     with open(FilePath, 'rb') as f:
         bytes = f.read()
     Md5Calculator.update(bytes)
@@ -449,15 +449,15 @@ def FileList2Md5(FilePathList):
     return Md5List
 
 def ListFilesAndCalculateMd5(DirPath, Md5InKeys=False):
-    Files = utils_torch.ListAllFiles(DirPath)
+    Files = DLUtils.ListAllFiles(DirPath)
     Dict = {}
     if Md5InKeys:
         for FileName in Files:
-            Md5 = utils_torch.file.File2Md5(DirPath + FileName)
+            Md5 = DLUtils.file.File2Md5(DirPath + FileName)
             Dict[Md5] = FileName      
     else:
         for FileName in Files:
-            Md5 = utils_torch.file.File2Md5(DirPath + FileName)
+            Md5 = DLUtils.file.File2Md5(DirPath + FileName)
             Dict[FileName] = Md5
     return Dict
 
@@ -549,13 +549,13 @@ def VisitDirAndApplyMethodOnFiles(DirPath=None, Method=None, Recur=False, **kw):
     
     if Method is None:
         Method = lambda Context:0
-        utils_torch.AddWarning('Method is None.')
+        DLUtils.AddWarning('Method is None.')
 
     
     FileList, DirList = ListAllFilesAndDirs(DirPath)
 
     for FileName in FileList:
-        Method(utils_torch.PyObj({
+        Method(DLUtils.PyObj({
             "DirPath": DirPath,
             "FileName": FileName
         }))
@@ -569,12 +569,12 @@ def VisitDirAndApplyMethodOnDirs(DirPath=None, Method=None, Recur=False, **kw):
     
     if Method is None:
         Method = lambda Context:0
-        utils_torch.AddWarning('Method is None.')
+        DLUtils.AddWarning('Method is None.')
 
     DirList = ListAllDirs(DirPath)
 
     for DirName in DirList:
-        Method(utils_torch.PyObj({
+        Method(DLUtils.PyObj({
             "ParentDirPath": DirPath,
             "DirName": DirName
         }))
@@ -611,12 +611,12 @@ def CopyFilesAndDirs2DestDir(Names, SourceDir, DestDir):
     DestDir = EnsureDirFormat(DestDir)
     for Name in Names:
         ItemPath = SourceDir + Name
-        if utils_torch.IsDir(ItemPath):
+        if DLUtils.IsDir(ItemPath):
             _SourceDir = EnsureDirFormat(ItemPath)
             _DestDir = EnsureDirFormat(DestDir + Name)
             EnsureDir(_DestDir)
             CopyDir2DestDir(_SourceDir, _DestDir)
-        elif utils_torch.IsFile(ItemPath):
+        elif DLUtils.IsFile(ItemPath):
             CopyFile2DestDir(Name, SourceDir, DestDir)
         else:
             raise Exception()
@@ -652,8 +652,8 @@ def _CopyTree(SourceDir, DestDir, **kw):
 
 def Data2TextFile(data, Name=None, FilePath=None):
     if FilePath is None:
-        FilePath = utils_torch.GetSavePathFromName(Name, Suffix=".txt")
-    utils_torch.Str2File(str(data), FilePath)
+        FilePath = DLUtils.GetSavePathFromName(Name, Suffix=".txt")
+    DLUtils.Str2File(str(data), FilePath)
 
-from utils_torch.json import PyObj2DataFile, DataFile2PyObj, PyObj2JsonFile, \
+from DLUtils.json import PyObj2DataFile, DataFile2PyObj, PyObj2JsonFile, \
     JsonFile2PyObj, JsonFile2JsonObj, JsonObj2JsonFile, DataFile2JsonObj, JsonObj2DataFile

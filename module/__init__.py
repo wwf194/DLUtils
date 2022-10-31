@@ -1,23 +1,23 @@
 
 
-import utils_torch
-import utils_torch.module.AbstractModules as AbstractModules
-from utils_torch.module.AbstractModules import AbstractModule, AbstractModuleWithParam, AbstractModuleWithoutParam
+import DLUtils
+import DLUtils.module.AbstractModules as AbstractModules
+from DLUtils.module.AbstractModules import AbstractModule, AbstractModuleWithParam, AbstractModuleWithoutParam
 
 def BuildModuleFromType(Type):
-    module = utils_torch.transform.BuildModuleIfIsLegalType(Type)
+    module = DLUtils.transform.BuildModuleIfIsLegalType(Type)
     if module is not None:
         return module
     
-    module = utils_torch.loss.BuildModuleIfIsLegalType(Type)
+    module = DLUtils.loss.BuildModuleIfIsLegalType(Type)
     if module is not None:
         return module
     
-    module = utils_torch.dataset.BuildModuleIfIsLegalType(Type)
+    module = DLUtils.dataset.BuildModuleIfIsLegalType(Type)
     if module is not None:
         return module
 
-    module = utils_torch.optimize.BuildModuleIfIsLegalType(Type)
+    module = DLUtils.optimize.BuildModuleIfIsLegalType(Type)
     if module is not None:
         return module
 
@@ -26,25 +26,25 @@ def BuildModuleFromType(Type):
 def BuildModule(param, **kw):
     if hasattr(param, "ClassPath"):
         try:
-            Class = utils_torch.parse.ParseClass(param.ClassPath)
+            Class = DLUtils.parse.ParseClass(param.ClassPath)
             return Class(**kw)
         except Exception:
-            utils_torch.AddWarning("Cannot parse ClassPath: %s"%param.ClassPath)
+            DLUtils.AddWarning("Cannot parse ClassPath: %s"%param.ClassPath)
     # if param.Type in ['transform.RNNLIF']:
     #     print("aaa")
-    module = utils_torch.transform.BuildModuleIfIsLegalType(param, **kw)
+    module = DLUtils.transform.BuildModuleIfIsLegalType(param, **kw)
     if module is not None:
         return module
     
-    module = utils_torch.loss.BuildModuleIfIsLegalType(param, **kw)
+    module = DLUtils.loss.BuildModuleIfIsLegalType(param, **kw)
     if module is not None:
         return module
     
-    module = utils_torch.dataset.BuildModuleIfIsLegalType(param, **kw)
+    module = DLUtils.dataset.BuildModuleIfIsLegalType(param, **kw)
     if module is not None:
         return module
 
-    module = utils_torch.optimize.BuildModuleIfIsLegalType(param, **kw)
+    module = DLUtils.optimize.BuildModuleIfIsLegalType(param, **kw)
     if module is not None:
         return module
 

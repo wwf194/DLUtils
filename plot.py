@@ -10,10 +10,10 @@ sns.set_style("white")
 
 default_res=60
 
-import utils_torch
-from utils_torch.attr import *
+import DLUtils
+from DLUtils.attr import *
 
-ColorPlt = utils_torch.EmptyPyObj().FromDict({
+ColorPlt = DLUtils.EmptyPyObj().FromDict({
     "White": (1.0, 1.0, 1.0),
     "Black": (0.0, 0.0, 0.0),
     "Red":   (1.0, 0.0, 0.0),
@@ -140,7 +140,7 @@ def PlotPointsPltNp(
         ax, Points, Color="Blue", Type="Circle", Size=None,
         XLabel=None, YLabel=None, Title=None, XRange=None, YRange=None
     ):
-    Points = utils_torch.ToNpArray(Points)
+    Points = DLUtils.ToNpArray(Points)
     Xs = Points[:, 0]
     Ys = Points[:, 1]
     Color=ParseColorPlt(Color)
@@ -194,7 +194,7 @@ def PlotPointsPltNp(
         ax, Points, Color="Blue", Type="Circle", Size=None,
         XLabel=None, YLabel=None, Title=None, XRange=None, YRange=None
     ):
-    Points = utils_torch.ToNpArray(Points)
+    Points = DLUtils.ToNpArray(Points)
     Xs = Points[:, 0]
     Ys = Points[:, 1]
     Color=ParseColorPlt(Color)
@@ -206,12 +206,12 @@ def PlotPointsPltNp(
     return
 
 def PlotDirectionsOnEdges(ax, Edges, Directions, **kw):
-    Edges = utils_torch.ToNpArray(Edges)
-    Directions = utils_torch.ToNpArray(Directions)
-    EdgesLength = utils_torch.geometry2D.Vectors2Lengths(utils_torch.geometry2D.VertexPairs2Vectors(Edges))
+    Edges = DLUtils.ToNpArray(Edges)
+    Directions = DLUtils.ToNpArray(Directions)
+    EdgesLength = DLUtils.geometry2D.Vectors2Lengths(DLUtils.geometry2D.VertexPairs2Vectors(Edges))
     ArrowsLength = 0.2 * np.median(EdgesLength, keepdims=True)
-    Directions = utils_torch.geometry2D.Vectors2GivenLengths(Directions, ArrowsLength)
-    MidPoints = utils_torch.geometry2D.Edges2MidPointsNp(Edges)
+    Directions = DLUtils.geometry2D.Vectors2GivenLengths(Directions, ArrowsLength)
+    MidPoints = DLUtils.geometry2D.Edges2MidPointsNp(Edges)
     PlotArrows(ax, MidPoints - 0.5 * Directions, Directions, **kw)
 
 def PlotDirectionOnEdge(ax, Edge, Direction, **kw):
@@ -221,7 +221,7 @@ def Map2Color(
         data, ColorMap="jet", Method="MinMax", Alpha=False,
         dataForMap=None, **kw
     ):
-    data = utils_torch.ToNpArray(data)
+    data = DLUtils.ToNpArray(data)
 
     if Method in ["MinMax", "GivenRange", "GivenMinMax"]:
         if Method in ["MinMax"]:
@@ -247,7 +247,7 @@ def Map2Color(
     if not Alpha:
         dataColored = eval("dataColored[%s 0:3]"%("".join(":," for _ in range(len(data.shape)))))
         #dataColored = dataColored.take([0, 1, 2], axis=-1)
-    return utils_torch.PyObj({
+    return DLUtils.PyObj({
         "dataColored": dataColored,
         "Min": dataMin,
         "Max": dataMax
@@ -315,14 +315,14 @@ def PlotArrows(
     SetTicksAndRangeForAx(ax, XYsStart[:, 0], XYsStart[:, 1], XRange, YRange)
 
 def PlotArrowFromVertexPairsPlt(ax, XYStart, XYEnd, Width=0.001, Color=ColorPlt.Red, SizeScale=1.0):
-    XYStart = utils_torch.ToNpArray(XYStart)
-    XYEnd = utils_torch.ToNpArray(XYEnd)
+    XYStart = DLUtils.ToNpArray(XYStart)
+    XYEnd = DLUtils.ToNpArray(XYEnd)
     PlotArrowPlt(ax, XYStart, XYEnd - XYStart, Width=Width, Color=Color, SizeScale=SizeScale)
 
 def PlotArrowPlt(ax, XYStart, dXY, Width=0.001, HeadWidth=0.05, HeadLength=0.1, Color=ColorPlt.Red, SizeScale=None):
     Color = ParseColorPlt(Color)
-    XYStart = utils_torch.ToList(XYStart)
-    dXY = utils_torch.ToList(dXY)
+    XYStart = DLUtils.ToList(XYStart)
+    dXY = DLUtils.ToList(dXY)
     if SizeScale is not None:
         Width = Width * SizeScale
         HeadWidth = HeadWidth * SizeScale
@@ -339,7 +339,7 @@ def PlotArrowPlt(ax, XYStart, dXY, Width=0.001, HeadWidth=0.05, HeadLength=0.1, 
 
 def PlotPolyLineFromVerticesPlt(ax, Points, Color=ColorPlt.Black, Width=2.0, Closed=False):
     # Points: np.ndarray with shape [PointNum, (x,y)]
-    Points = utils_torch.ToList(Points)
+    Points = DLUtils.ToList(Points)
     PointNum = len(Points)
     if Closed:
         LineNum = PointNum + 1
@@ -351,7 +351,7 @@ def PlotPolyLineFromVerticesPlt(ax, Points, Color=ColorPlt.Black, Width=2.0, Clo
         pass
     else:
         for Index in range(LineNum):
-            # utils_torch.AddLog("(%.3f %.3f) (%.3f %.3f)"%(Points[Index][0], Points[Index][1], Points[(Index + 1)%PointNum][0], Points[(Index + 1)%PointNum][1]))
+            # DLUtils.AddLog("(%.3f %.3f) (%.3f %.3f)"%(Points[Index][0], Points[Index][1], Points[(Index + 1)%PointNum][0], Points[(Index + 1)%PointNum][1]))
             PlotLinePlt(ax, Points[Index], Points[(Index + 1)%PointNum], Color=Color, Width=Width)
 
 PlotPolyLine = PlotPolyLineFromVerticesPlt
@@ -402,8 +402,8 @@ def PlotPolyLineFromVerticesCV(img, points, closed=False, Color=(0,0,0), Width=2
     ResolutionX, ResolutionY = img.shape[0], img.shape[1]
 
     for i in range(line_num):
-        point_0 = utils_torch.geometry2D.XY2PixelIndex(points[i%PointNum][0], points[i%PointNum][1], BoundaryBox, ResolutionX, ResolutionY)
-        point_1 = utils_torch.geometry2D.XY2PixelIndex(points[(i+1)%PointNum][0], points[(i+1)%PointNum][1], BoundaryBox, ResolutionX, ResolutionY)
+        point_0 = DLUtils.geometry2D.XY2PixelIndex(points[i%PointNum][0], points[i%PointNum][1], BoundaryBox, ResolutionX, ResolutionY)
+        point_1 = DLUtils.geometry2D.XY2PixelIndex(points[(i+1)%PointNum][0], points[(i+1)%PointNum][1], BoundaryBox, ResolutionX, ResolutionY)
         cv.line(img, point_0, point_1, Color, Width, type)
 
 def SetAxRangeFromBoundaryBox(ax, BoundaryBox, SetTicks=True):
@@ -414,7 +414,7 @@ def SetAxRangeFromBoundaryBox(ax, BoundaryBox, SetTicks=True):
         SetYTicksFloat(ax, BoundaryBox.YMin, BoundaryBox.YMax)
 
 def GetDefaultBoundaryBox():
-    return utils_torch.PyObj({
+    return DLUtils.PyObj({
         "XMin": 0.0,
         "XMax": 1.0,
         "YMin": 0.0,
@@ -428,7 +428,7 @@ def XYs2BoundaryBox(XYs):
     Xs = XYs[:, 0]
     Ys = XYs[:, 1]
     BoundaryBox = [np.min(Xs), np.min(Ys), np.max(Xs), np.max(Ys),]
-    return utils_torch.PyObj({
+    return DLUtils.PyObj({
         "XMin": BoundaryBox[0],
         "XMax": BoundaryBox[2],
         "YMin": BoundaryBox[1],
@@ -472,7 +472,7 @@ def SetAxRangeAndTicksFromBoundaryBox(ax, BoundaryBox):
     SetYTicksFloat(ax, BoundaryBox.YMin, BoundaryBox.YMax)
 
 def ParseIsMatrixDataColored(data):
-    DimensionNum = utils_torch.GetDimensionNum(data)
+    DimensionNum = DLUtils.GetDimensionNum(data)
     if DimensionNum==2: # [XNum, YNum]
         IsDataColored = False
     elif DimensionNum==3: # [XNum, YNum, (r, g, b) or (r, g, b, a)], already mapped to colors.
@@ -563,7 +563,7 @@ def PlotMatrix(
         Save=False, SavePath=None, Format="svg", **kw
     ):
     if IsDataColored is None:
-        DimensionNum = utils_torch.GetDimensionNum(data)
+        DimensionNum = DLUtils.GetDimensionNum(data)
         if DimensionNum==2: # [XNum, YNum]
             IsDataColored = False
         elif DimensionNum==3: # [XNum, YNum, (r, g, b) or (r, g, b, a)], already mapped to colors.
@@ -643,8 +643,8 @@ def PlotActivityAndDistributionAlongTime(
     TimeNum = activity.shape[1]
     ActivityNum = activity.shape[2]
 
-    activity = utils_torch.ToNpArray(activity)
-    activityPlot = utils_torch.ToNpArray(activityPlot).transpose(1, 0)
+    activity = DLUtils.ToNpArray(activity)
+    activityPlot = DLUtils.ToNpArray(activityPlot).transpose(1, 0)
     if axes is None:
         #fig, axes = plt.subplots(nrows=1, ncols=2)
         fig, axes = CreateFigurePlt(2)
@@ -663,8 +663,8 @@ def PlotActivityAndDistributionAlongTime(
     )
     PlotMeanAndStdCurve(
         ax2, Xs=range(TimeNum), 
-        #Mean=utils_torch.math.ReplaceNaNOrInfWithZero(np.nanmean(activity, axis=(0, 2))),
-        #Std=utils_torch.math.ReplaceNaNOrInfWithZero(np.nanstd(activity, axis=(0, 2))),
+        #Mean=DLUtils.math.ReplaceNaNOrInfWithZero(np.nanmean(activity, axis=(0, 2))),
+        #Std=DLUtils.math.ReplaceNaNOrInfWithZero(np.nanstd(activity, axis=(0, 2))),
         Mean = np.nanmean(activity, axis=(0, 2)),
         Std = np.nanstd(activity, axis=(0,2)),
         XLabel="Time Index", YLabel="Mean And Std", Title="Mean and Std Along Time",
@@ -692,14 +692,14 @@ def PlotWeightAndDistribution(axes=None, weight=None, Name=None, SavePath=None):
         ax2 = GetAx(axes, 1)
 
     plt.suptitle(Name)
-    weight = utils_torch.ToNpArray(weight)
+    weight = DLUtils.ToNpArray(weight)
     _weight = weight
     weightForColorMap, _maskInfOrNaN = MaskOutInfOrNaN(_weight)
 
     # turn 1D weight to 2D shape
-    DimentionNum = utils_torch.GetDimensionNum(weight)
+    DimentionNum = DLUtils.GetDimensionNum(weight)
     if DimentionNum == 1:
-        weight, maskReshape = utils_torch.Line2Square(weight)
+        weight, maskReshape = DLUtils.Line2Square(weight)
         XLabel, YLabel = "Dimension 0", "Dimension 0"
     else:
         maskReshape = None
@@ -709,15 +709,15 @@ def PlotWeightAndDistribution(axes=None, weight=None, Name=None, SavePath=None):
     
     dataMask = Merge2Mask(maskReshape, maskInfOrNaN)
 
-    utils_torch.plot.PlotMatrixWithColorBar(
+    DLUtils.plot.PlotMatrixWithColorBar(
         ax1, weight, dataForColorMap=weightForColorMap, dataMask=dataMask,
         XAxisLocation="top", PixelHeightWidthRatio="Auto",
         Coordinate="Fig", Ticks="Int",
         Title="Visualization", XLabel=XLabel, YLabel=YLabel
     )
     
-    #utils_torch.plot.PlotGaussianDensityCurve(axRight, weight) # takes too much time
-    utils_torch.plot.PlotHistogram(
+    #DLUtils.plot.PlotGaussianDensityCurve(axRight, weight) # takes too much time
+    DLUtils.plot.PlotHistogram(
         ax2, weightForColorMap, Color="Black",
         XLabel="Connection Strength", YLabel="Ratio", Title="Distribution"
     )
@@ -725,8 +725,8 @@ def PlotWeightAndDistribution(axes=None, weight=None, Name=None, SavePath=None):
     plt.suptitle("%s Shape:%s"%(Name, weight.shape))
     plt.tight_layout()
     if SavePath is None:
-        SavePath = utils_torch.GetMainSaveDir + "weights/" + "%s.svg"%Name
-    utils_torch.plot.SaveFigForPlt(SavePath=SavePath)
+        SavePath = DLUtils.GetMainSaveDir + "weights/" + "%s.svg"%Name
+    DLUtils.plot.SaveFigForPlt(SavePath=SavePath)
     return
 
 def Merge2Mask(mask1, mask2):
@@ -1031,7 +1031,7 @@ def PlotBoxPlot(
         Save=False, SavePath=None,
         **kw
     ):
-    data = utils_torch.EnsureFlat(data)
+    data = DLUtils.EnsureFlat(data)
     ax.boxplot(data)
     if Title is not None:
         ax.set_title(Title)
@@ -1053,8 +1053,8 @@ def PlotHistogram(
             ha='center', va='center',
         )
     else:
-        data = utils_torch.EnsureFlat(data)
-        data = utils_torch.math.RemoveNaNOrInf(data)
+        data = DLUtils.EnsureFlat(data)
+        data = DLUtils.math.RemoveNaNOrInf(data)
         ax.hist(data, density=Norm2Sum1)
         if Title is not None:
             ax.set_title(Title)
@@ -1108,7 +1108,7 @@ def ParseColorBarLocation(Location, Orientation):
     return Location
 
 def PlotColorBarInAx(ax, ColorMap="jet", Method="MinMax", Orientation="Vertical", **kw):
-    Orientation = utils_torch.ToLowerStr(Orientation)
+    Orientation = DLUtils.ToLowerStr(Orientation)
     if Orientation not in ["horizontal", "vertical"]:
         raise Exception(Orientation)
 
@@ -1118,7 +1118,7 @@ def PlotColorBarInAx(ax, ColorMap="jet", Method="MinMax", Orientation="Vertical"
             ax.set_xlim([0.0, 1.0])
             ax.set_ylim([0.0, 1.0])
             ax.text(
-                0.5, 0.5,"All values are %s"%utils_torch.Float2StrDisplay(Min), 
+                0.5, 0.5,"All values are %s"%DLUtils.Float2StrDisplay(Min), 
                 rotation=-90.0 if Orientation=="vertical" else 0.0,
                 ha='center', va='center',
             )
@@ -1452,7 +1452,7 @@ def create_gif_2():
 '''
 
 def PlotDistribution1D(data, ):
-    data, shape = utils_torch.FlattenData(data)
+    data, shape = DLUtils.FlattenData(data)
 
 from scipy.stats import gaussian_kde
 def PlotGaussianDensityCurve(
@@ -1462,8 +1462,8 @@ def PlotGaussianDensityCurve(
     ): # For 1D data
     if ax is None:
         fig, ax = plt.subplots()
-    data = utils_torch.EnsureFlat(data)
-    statistics = utils_torch.math.NpArrayStatistics(data)
+    data = DLUtils.EnsureFlat(data)
+    statistics = DLUtils.math.NpArrayStatistics(data)
 
     if isinstance(KernelStd, float):
         pass
@@ -1552,28 +1552,28 @@ def SetTitleAndLabelForAx(ax, XLabel=None, YLabel=None, Title=None):
 
 def SaveFigForPlt(Save=True, SavePath=None):
     if Save:
-        utils_torch.EnsureFileDir(SavePath)
+        DLUtils.EnsureFileDir(SavePath)
         plt.savefig(SavePath)
         plt.close()
 
 def CompareDensityCurve(data1, data2, Name1, Name2, Save=True, SavePath=None):
     fig, ax = plt.subplots()
 
-    data1 = utils_torch.ToNpArray(data1)
-    data2 = utils_torch.ToNpArray(data2)
+    data1 = DLUtils.ToNpArray(data1)
+    data2 = DLUtils.ToNpArray(data2)
 
     Min = min(np.min(data1), np.min(data2))
     Max = max(np.max(data1), np.max(data2))
 
-    utils_torch.plot.PlotGaussianDensityCurve(ax, data1)
-    utils_torch.plot.PlotGaussianDensityCurve(ax, data2)
+    DLUtils.plot.PlotGaussianDensityCurve(ax, data1)
+    DLUtils.plot.PlotGaussianDensityCurve(ax, data2)
 
     SetXRangeMinMax(ax, Min, Max)
 
     if SavePath is None:
-        SavePath = utils_torch.GetMainSaveDir() + "%s-%s-GaussianKDE.png"%(Name1, Name2)
+        SavePath = DLUtils.GetMainSaveDir() + "%s-%s-GaussianKDE.png"%(Name1, Name2)
 
-    utils_torch.plot.SaveFigForPlt(Save, SavePath)
+    DLUtils.plot.SaveFigForPlt(Save, SavePath)
 
 def PlotMeanAndStdCurve(
         ax=None, Xs=None, Mean=None, Std=None,
@@ -1589,15 +1589,15 @@ def PlotMeanAndStdCurve(
     elif XTicks in ["Float"]:
         XTicks, XTicksStr = SetXTicksFloat(ax, min(Xs), max(Xs))
 
-    Mean = utils_torch.ToNpArray(Mean)
-    Std = utils_torch.ToNpArray(Std)
+    Mean = DLUtils.ToNpArray(Mean)
+    Std = DLUtils.ToNpArray(Std)
     Color = ParseColorPlt(Color)
     Y1 = Mean - Std
     Y2 = Mean + Std
 
     YTicks, YTicksStr = SetYTicksFloat(ax, np.nanmin(Y1), np.nanmax(Y2))
 
-    if utils_torch.math.IsAllNaNOrInf(Y1) and utils_torch.math.IsAllNaNOrInf(Y2) and utils_torch.math.IsAllNaNOrInf(Mean):
+    if DLUtils.math.IsAllNaNOrInf(Y1) and DLUtils.math.IsAllNaNOrInf(Y2) and DLUtils.math.IsAllNaNOrInf(Mean):
         ax.text(
             (XTicks[0] + XTicks[-1]) / 2.0,
             (YTicks[0] + YTicks[-1]) / 2.0,
@@ -1624,7 +1624,7 @@ def SetXAxisLocationForAx(ax, XAXisLocation):
 #     StepNum = XYs.shape[0] - 1
 #     Color=ParseColorPlt(Color)
 #     for StepIndex in range(StepNum):
-#         utils_torch.plot.PlotArrowFromVertexPairsPlt(
+#         DLUtils.plot.PlotArrowFromVertexPairsPlt(
 #             ax, XYs[StepIndex, :], XYs[StepIndex+1, :],
 #             Color=Color,
 #             SizeScale=0.1,
@@ -1655,11 +1655,11 @@ from PIL import Image as Im
 def NpArray2ImageFile(image, SavePath=None):
     # image : np.ndarray, with dtype np.uint8
     imagePIL = Im.fromarray(image)
-    utils_torch.EnsureFileDir(SavePath)
+    DLUtils.EnsureFileDir(SavePath)
     imagePIL.save(SavePath)
 
 def PlotExampleImage(Images, PlotNum=10, SaveDir=None, SaveName=None):
-    PlotIndices = utils_torch.RandomSelect(range(Images.shape[0]), PlotNum)
+    PlotIndices = DLUtils.RandomSelect(range(Images.shape[0]), PlotNum)
     PlotNum = len(PlotIndices)
     for Index in range(PlotNum):
         ImageIndex = PlotIndices[Index]

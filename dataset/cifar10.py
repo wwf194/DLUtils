@@ -1,25 +1,25 @@
 import sys
 import numpy as np
 import torch
-import utils_torch
-from utils_torch.attr import *
+import DLUtils
+from DLUtils.attr import *
 
-DatasetConfigFile = utils_torch.file.GetFileDir(__file__) + "cifar10.jsonc"
-DatasetConfig = utils_torch.json.JsonFile2PyObj(DatasetConfigFile)
+DatasetConfigFile = DLUtils.file.GetFileDir(__file__) + "cifar10.jsonc"
+DatasetConfig = DLUtils.json.JsonFile2PyObj(DatasetConfigFile)
 
 def LoadOriginalFiles(Dir):
-    Files = utils_torch.file.ListFiles(Dir)
+    Files = DLUtils.file.ListFiles(Dir)
     FileMD5s = DatasetConfig.Original.Files.MD5.ToDict()
     FileNames = DatasetConfig.Original.Files.Train + DatasetConfig.Original.Files.Test
     Dict = {}
     for File in Files:
         if File in FileNames:
-            assert utils_torch.File2MD5(Dir + File) == FileMD5s[File]
-            DataDict = utils_torch.file.LoadBinaryFilePickle(Dir + File)
-            keys, values = utils_torch.Unzip(DataDict.items()) # items() cause logic error if altering dict in items() for-loop.
+            assert DLUtils.File2MD5(Dir + File) == FileMD5s[File]
+            DataDict = DLUtils.file.LoadBinaryFilePickle(Dir + File)
+            keys, values = DLUtils.Unzip(DataDict.items()) # items() cause logic error if altering dict in items() for-loop.
             for key, value in zip(keys, values):
                 if isinstance(key, bytes):
-                    DataDict[utils_torch.Bytes2Str(key)] = value # Keys in original dict are bytes. Turn them to string for convenience.
+                    DataDict[DLUtils.Bytes2Str(key)] = value # Keys in original dict are bytes. Turn them to string for convenience.
                     DataDict.pop(key)
             Dict[File] = DataDict
     assert len(Dict) != DatasetConfig.Original.Files.Num
@@ -27,10 +27,10 @@ def LoadOriginalFiles(Dir):
 
 def OriginalFiles2DataFile(LoadDir, SaveDir):
     OriginalDict = LoadOriginalFiles(LoadDir)
-    DataDict = utils_torch.EmptyPyObj()
+    DataDict = DLUtils.EmptyPyObj()
     DataDict.Train = ProcessOriginalDataDict(OriginalDict, FileNameList=DatasetConfig.Original.Files.Train)
     DataDict.Test = ProcessOriginalDataDict(OriginalDict, FileNameList=DatasetConfig.Original.Files.Test)
-    utils_torch.json.PyObj2DataFile(DataDict, SaveDir)
+    DLUtils.json.PyObj2DataFile(DataDict, SaveDir)
 
 def ProcessOriginalDataDict(Dict, FileNameList):
     Labels = []
@@ -41,15 +41,15 @@ def ProcessOriginalDataDict(Dict, FileNameList):
         # Keys: batch_label, labels, data, filenames
         # Pixel values are integers with range [0, 255], so using datatype np.uint8.
         # Saving as np.float32 will take ~ x10 disk memory as original files.
-        _Images = utils_torch.ToNpArray(Data["data"], DataType=np.uint8)
+        _Images = DLUtils.ToNpArray(Data["data"], DataType=np.uint8)
         _Images = _Images.reshape(10000, 3, 32, 32).transpose(0, 2, 3, 1)
         Images.append(_Images)
-        _Labels = utils_torch.ToNpArray(Data["labels"], DataType=np.uint8)
+        _Labels = DLUtils.ToNpArray(Data["labels"], DataType=np.uint8)
         Labels.append(_Labels)
         FileNames += Data["filenames"]
     Labels = np.concatenate(Labels, axis=0)
     Images = np.concatenate(Images, axis=0)
-    DataObj = utils_torch.PyObj({
+    DataObj = DLUtils.PyObj({
         "Labels": Labels,
         "Images": Images,
         "FileNames": FileNames
@@ -58,15 +58,15 @@ def ProcessOriginalDataDict(Dict, FileNameList):
     SetAttrs(DataObj, "Images.Num", value=ImageNum)
     return DataObj
 
-class DataManagerForEpochBatchTrain(utils_torch.module.AbstractModuleWithParam):
+class DataManagerForEpochBatchTrain(DLUtils.module.AbstractModuleWithParam):
     def __init__(self):
-        #utils_torch.transform.InitForNonModel(self, param, **kw)
+        #DLUtils.transform.InitForNonModel(self, param, **kw)
         return
     def Build(self, IsLoad=False):
         self.BeforeBuild(IsLoad)
         cache = self.cache
         param = self.param
-        cache.flows = utils_torch.EmptyPyObj()
+        cache.flows = DLUtils.EmptyPyObj()
         # self.CreateFlowRandom("DefaultTest", "Test")
         # self.CreateFlowRandom("DefaultTrain", "Train")
         self.PrepareData()
@@ -76,10 +76,10 @@ class DataManagerForEpochBatchTrain(utils_torch.module.AbstractModuleWithParam):
         cache = self.cache
         UseCachedDataTransform = False
         if HasAttrs(param, "Data.Transform.Md5"):
-            Md5s = utils_torch.file.ListFilesAndCalculateMd5("./cache/", Md5InKeys=True)
+            Md5s = DLUtils.file.ListFilesAndCalculateMd5("./cache/", Md5InKeys=True)
             if param.Data.Transform.Md5 in Md5s.keys():
                 FileName = Md5s[param.Data.Transform.Md5]
-                cache.Data = utils_torch.DataFile2PyObj("./cache/" + FileName)
+                cache.Data = DLUtils.DataFile2PyObj("./cache/" + FileName)
                 UseCachedDataTransform = True
         if not UseCachedDataTransform:
             self.LoadData(Dir="Auto")
@@ -91,7 +91,7 @@ class DataManagerForEpochBatchTrain(utils_torch.module.AbstractModuleWithParam):
             InputShape = InputShape[0]
         return InputShape, 10 # InputShape, OutputShape
     def ApplyTransformOnData(self, TransformParam="Auto", Type=["Train", "Test"], Save=True):
-        utils_torch.AddLog("Applying transformation on dataset images...")
+        DLUtils.AddLog("Applying transformation on dataset images...")
         param = self.param
         cache = self.cache
         if TransformParam in ["Auto"]:
@@ -102,29 +102,29 @@ class DataManagerForEpochBatchTrain(utils_torch.module.AbstractModuleWithParam):
             Images = GetAttrs(Data.Images)
             for Transform in TransformParam.Methods:
                 if Transform.Type in ["ToGivenDataType"]:
-                    Images = utils_torch.ToGivenDataTypeNp(Images, DataType=Transform.DataType)
+                    Images = DLUtils.ToGivenDataTypeNp(Images, DataType=Transform.DataType)
                 elif Transform.Type in ["Color2Gray", "ColorImage2GrayImage"]:
-                    Images = utils_torch.plot.ColorImage2GrayImage(Images, ColorAxis=3)
+                    Images = DLUtils.plot.ColorImage2GrayImage(Images, ColorAxis=3)
                 elif Transform.Type in ["Norm2Mean0Std1"]:
                     EnsureAttrs(Transform, "axis", None)
-                    Images = utils_torch.math.Norm2Mean0Std1Np(Images, axis=tuple(GetAttrs(Transform.axis)))
+                    Images = DLUtils.math.Norm2Mean0Std1Np(Images, axis=tuple(GetAttrs(Transform.axis)))
                 elif Transform.Type in ["Flatten"]:
                     # Plot example images before Flatten, which is usually the last step.
-                    utils_torch.plot.PlotExampleImage(Images, SaveDir=utils_torch.GetMainSaveDir() + "Dataset/", SaveName="CIFAR10-%s"%_Type)
+                    DLUtils.plot.PlotExampleImage(Images, SaveDir=DLUtils.GetMainSaveDir() + "Dataset/", SaveName="CIFAR10-%s"%_Type)
                     Shape = Images.shape
                     Images = Images.reshape(Shape[0], -1)
                 else:
                     raise Exception(Transform.Type)
             SetAttrs(Data, "Images", value=Images)        
-        utils_torch.AddLog("Applied transformation on dataset images.")
+        DLUtils.AddLog("Applied transformation on dataset images.")
         if Save:
-            SavePath = utils_torch.RenameFileIfExists("./" + "cache/" + "Cifar10-Transformed-Cached.data")
-            utils_torch.PyObj2DataFile(
+            SavePath = DLUtils.RenameFileIfExists("./" + "cache/" + "Cifar10-Transformed-Cached.data")
+            DLUtils.PyObj2DataFile(
                 cache.Data,
                 SavePath
             )
-            Md5 = utils_torch.File2Md5(SavePath)
-            utils_torch.AddLog("Saved transformed data. Md5:%s"%Md5)
+            Md5 = DLUtils.File2Md5(SavePath)
+            DLUtils.AddLog("Saved transformed data. Md5:%s"%Md5)
             SetAttrs(param, "Data.Transform.Md5")
     def Labels2ClassNames(self, Labels):
         ClassNames = []
@@ -137,14 +137,14 @@ class DataManagerForEpochBatchTrain(utils_torch.module.AbstractModuleWithParam):
     def LoadData(self, Dir="Auto"):
         cache = self.cache
         if Dir in ["Auto", "auto"]:
-            Dir = utils_torch.dataset.GetDatasetPath("CIFAR10")
+            Dir = DLUtils.dataset.GetDatasetPath("CIFAR10")
         DataFile = Dir + "CIFAR10-Data"
-        cache.Data = utils_torch.json.DataFile2PyObj(DataFile)
+        cache.Data = DLUtils.json.DataFile2PyObj(DataFile)
         return
     def EstimateBatchNum(self, BatchSize, Type="Train"):
         cache = self.cache
         Data = getattr(cache.Data, Type)
-        return utils_torch.dataset.CalculateBatchNum(BatchSize, Data.Images.Num)
+        return DLUtils.dataset.CalculateBatchNum(BatchSize, Data.Images.Num)
     def HasFlow(self, Name):
         return hasattr(self.cache.flows, Name)
     def GetFlow(self, Name):
@@ -152,15 +152,15 @@ class DataManagerForEpochBatchTrain(utils_torch.module.AbstractModuleWithParam):
     def CreateFlow(self, Name, BatchParam, Type="Train", IsRandom=False):
         cache = self.cache
         # if self.HasFlow(Name):
-        #     utils_torch.AddWarning("Overwriting existing flow: %s"%Name)
+        #     DLUtils.AddWarning("Overwriting existing flow: %s"%Name)
         #self.ClearFlow(Type=Type)
-        #flow = cache.flows.SetAttr(Name, utils_torch.EmptyPyObj())
-        flow = utils_torch.EmptyPyObj()
+        #flow = cache.flows.SetAttr(Name, DLUtils.EmptyPyObj())
+        flow = DLUtils.EmptyPyObj()
         flow.Name = Name
         flow.IndexCurrent = 0
         flow.BatchSize = BatchParam.Batch.Size
         Data = getattr(cache.Data, Type)
-        flow.BatchNumMax = utils_torch.dataset.CalculateBatchNum(flow.BatchSize, Data.Images.Num)
+        flow.BatchNumMax = DLUtils.dataset.CalculateBatchNum(flow.BatchSize, Data.Images.Num)
         flow.IndexMax = Data.Images.Num
         flow.Data = Data
         flow.Images = GetAttrs(flow.Data.Images)
@@ -172,7 +172,7 @@ class DataManagerForEpochBatchTrain(utils_torch.module.AbstractModuleWithParam):
         flow.BatchIndex = -1
         if IsRandom:
             flow.IsRandom = True
-            flow.RandomBatchOrder = utils_torch.RandomOrder(range(flow.BatchNum))
+            flow.RandomBatchOrder = DLUtils.RandomOrder(range(flow.BatchNum))
             flow.RandomBatchIndex = 0
         else:
             flow.IsRandom = False
@@ -186,7 +186,7 @@ class DataManagerForEpochBatchTrain(utils_torch.module.AbstractModuleWithParam):
         if hasattr(cache.flows, Name):
             delattr(cache.flows, Name)
         else:
-            utils_torch.AddWarning("No such flow: %s"%Name)
+            DLUtils.AddWarning("No such flow: %s"%Name)
     # def GetBatch(self, Name):
     #     self.GetBatch(self, self.GetFlow(Name))
     def GetBatch(self, flow):
@@ -206,10 +206,10 @@ class DataManagerForEpochBatchTrain(utils_torch.module.AbstractModuleWithParam):
         return getattr(self.cache.Data, Type)
     def GetBatchFromIndex(self, Data, IndexStart, IndexEnd):
         DataBatch = {
-            "Input": utils_torch.NpArray2Tensor(
+            "Input": DLUtils.NpArray2Tensor(
                     Data.Images[IndexStart:IndexEnd]
                 ).to(self.GetTensorLocation()),
-            "Output": utils_torch.NpArray2Tensor(
+            "Output": DLUtils.NpArray2Tensor(
                     Data.Labels[IndexStart:IndexEnd],
                     DataType=torch.long # CrossEntropyLoss requires label to be LongTensor.
                 ).to(self.GetTensorLocation()),
@@ -221,7 +221,7 @@ class DataManagerForEpochBatchTrain(utils_torch.module.AbstractModuleWithParam):
         if Seed is not None:
             IndexStart = Seed % (Data.Images.Num - BatchSize + 1)
         else:
-            IndexStart = utils_torch.RandomIntInRange(0, Data.Images.Num - BatchSize)
+            IndexStart = DLUtils.RandomIntInRange(0, Data.Images.Num - BatchSize)
         IndexEnd = IndexStart + BatchSize
         assert IndexEnd < Data.Images.Num
         return self.GetBatchFromIndex(self, Data, IndexStart, IndexEnd)
@@ -246,7 +246,7 @@ class DataManagerForEpochBatchTrain(utils_torch.module.AbstractModuleWithParam):
         cache = self.cache
         flow = getattr(cache.flows, Name)
         return flow.BatchNum
-#utils_torch.transform.SetMethodForNonModelClass(DataManagerForEpochBatchTrain, HasTensor=True)
+#DLUtils.transform.SetMethodForNonModelClass(DataManagerForEpochBatchTrain, HasTensor=True)
 
 def ProcessCIFAR10(dataset_dir,  norm=True, augment=False, batch_size=64, download=False):
     if(augment==True):

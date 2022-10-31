@@ -1,17 +1,17 @@
 
 import torch
-import utils_torch
+import DLUtils
 def Probability2MostProbableIndex(Probability):
     # Probability: [BatchSize, ClassNum]
     #Max, MaxIndices = torch.max(Probability, dim=1)
-    #return utils_torch.TorchTensor2NpArray(MaxIndices) # [BatchSize]
+    #return DLUtils.TorchTensor2NpArray(MaxIndices) # [BatchSize]
     return torch.argmax(Probability, axis=1)
 
 def LogAccuracyForSingleClassPrediction(ClassIndexPredicted, ClassIndexTruth, log):
-    #log = utils_torch.ParseLog(log)
-    ClassIndexPredicted = utils_torch.ToNpArray(ClassIndexPredicted)
-    ClassIndexTruth = utils_torch.ToNpArray(ClassIndexTruth)
-    NumCorrect, NumTotal = utils_torch.evaluate.CalculateAccuracyForSingelClassPrediction(ClassIndexPredicted, ClassIndexTruth)
+    #log = DLUtils.ParseLog(log)
+    ClassIndexPredicted = DLUtils.ToNpArray(ClassIndexPredicted)
+    ClassIndexTruth = DLUtils.ToNpArray(ClassIndexTruth)
+    NumCorrect, NumTotal = DLUtils.evaluate.CalculateAccuracyForSingelClassPrediction(ClassIndexPredicted, ClassIndexTruth)
     log.AddLogDict(
         "Accuracy",
         {

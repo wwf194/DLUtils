@@ -3,12 +3,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from utils_torch.attr import *
-from utils_torch.transform.SingleLayer import SingleLayer
+from DLUtils.attr import *
+from DLUtils.transform.SingleLayer import SingleLayer
 class LinearLayer(SingleLayer):
     # def __init__(self, param=None, data=None, **kw):
     #     super().__init__()
-    #     self.InitModule(self, param, data, ClassPath="utils_torch.transform.LinearLayer", **kw)
+    #     self.InitModule(self, param, data, ClassPath="DLUtils.transform.LinearLayer", **kw)
     DataIsNotEmpty = True
     def __init__(self, **kw):
         super().__init__(**kw)
@@ -41,4 +41,4 @@ class LinearLayer(SingleLayer):
 
         return self
 __MainClass__ = LinearLayer
-# utils_torch.transform.SetMethodForTransformModule(__MainClass__)
+# DLUtils.transform.SetMethodForTransformModule(__MainClass__)

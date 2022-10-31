@@ -1,6 +1,6 @@
-import utils_torch
+import DLUtils
 
-class AbstractLog(utils_torch.module.AbstractModuleWithParam):
+class AbstractLog(DLUtils.module.AbstractModuleWithParam):
     def __init__(self, **kw):
         #kw.setdefault("DataOnly", True) # Log class do not need param
         super().__init__(**kw)

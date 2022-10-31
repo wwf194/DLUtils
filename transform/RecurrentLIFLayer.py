@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-import utils_torch
-from utils_torch.attr import *
+import DLUtils
+from DLUtils.attr import *
 
 DefaultRoutings = [
     "&GetBias |--> bias",
@@ -15,11 +15,11 @@ DefaultRoutings = [
     "membranePotential |--> &MembranePotentialDecay |--> membranePotential"
 ]
 
-from utils_torch.transform import AbstractTransformWithTensor
+from DLUtils.transform import AbstractTransformWithTensor
 class RecurrentLIFLayer(AbstractTransformWithTensor):
     # def __init__(self, param=None, data=None, **kw):
     #     super(RecurrentLIFLayer, self).__init__()
-    #     self.InitModule(self, param, data, ClassPath="utils_torch.transform.RecurrentLIFLayer", **kw)
+    #     self.InitModule(self, param, data, ClassPath="DLUtils.transform.RecurrentLIFLayer", **kw)
     def __init__(self, **kw):
         super().__init__(**kw)
         return
@@ -46,7 +46,7 @@ class RecurrentLIFLayer(AbstractTransformWithTensor):
                     EnsureAttrs(param, "TimeConst", default=0.1)
                     SetAttrs(param, "TimeConst.Excitatory", GetAttrs(param.TimeConst))
                     SetAttrs(param, "TimeConst.Inhibitory", GetAttrs(param.TimeConst))
-                    utils_torch.transform.ParseExciInhiNum(param.Neurons)
+                    DLUtils.transform.ParseExciInhiNum(param.Neurons)
             ExciNeuronsNum = param.Neurons.Excitatory.Num
             InhiNeuronsNum = param.Neurons.Inhibitory.Num
             #ExciNeuronsNum = 80
@@ -92,7 +92,7 @@ class RecurrentLIFLayer(AbstractTransformWithTensor):
                 MembranePotential + Modules.ProcessTotalInput(TotalInput)
     # def forward(self, MembranePotential, RecurrentInput, Input):
     #     cache = self.cache
-    #     return utils_torch.CallGraph(cache.Dynamics.Main, [MembranePotential, RecurrentInput, Input])
+    #     return DLUtils.CallGraph(cache.Dynamics.Main, [MembranePotential, RecurrentInput, Input])
     def Run(self, recurrentInput, membranePotential, input, log=None):
         Modules = self.Modules
         bias = Modules.GetBias()
@@ -122,4 +122,4 @@ class RecurrentLIFLayer(AbstractTransformWithTensor):
     def __call__(self, *Args, **Kw):
         return self.Run(*Args, **Kw)
 __MainClass__ = RecurrentLIFLayer
-# utils_torch.transform.SetMethodForTransformModule(__MainClass__)
+# DLUtils.transform.SetMethodForTransformModule(__MainClass__)

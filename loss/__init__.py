@@ -1,13 +1,13 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import utils_torch
-from utils_torch.attr import *
-import utils_torch.loss.classification as classification
+import DLUtils
+from DLUtils.attr import *
+import DLUtils.loss.classification as classification
 
-from utils_torch.loss.L2Loss import L2Loss
+from DLUtils.loss.L2Loss import L2Loss
 
-from utils_torch.loss.classification import Probability2MostProbableIndex, LogAccuracyForSingleClassPrediction
+from DLUtils.loss.classification import Probability2MostProbableIndex, LogAccuracyForSingleClassPrediction
 
 ModuleList = [
     "L2Loss",

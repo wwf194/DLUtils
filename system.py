@@ -3,7 +3,7 @@ import re
 import sys
 import torch
 import time
-import utils_torch
+import DLUtils
 
 def ReportPyTorchInfo():
     Report = ""
@@ -41,7 +41,7 @@ def GetBytesInMemory(Obj):
 
 def ReportMemoryOccupancy(Obj):
     ByteNum = GetBytesInMemory(Obj)
-    return utils_torch.ByteNum2Str(Obj)
+    return DLUtils.ByteNum2Str(Obj)
 
 def ReportTorchInfo(): # print info about training environment, global variables, etc.
     return torch.pytorch_info()
@@ -78,5 +78,5 @@ def GetTimeDifferenceFromStr(TimeStr1, TimeStr2):
 
 import traceback
 def Stack2File(FilePath):
-    utils_torch.EnsureFileDir(FilePath)
+    DLUtils.EnsureFileDir(FilePath)
     traceback.print_exc(file=open(FilePath, "w"))

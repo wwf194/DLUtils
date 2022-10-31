@@ -2,24 +2,24 @@ import torch.optim as optim
 import torch.nn as nn
 import torch.nn.functional as F
 
-import utils_torch
+import DLUtils
 
-from utils_torch.module import AbstractModule, AbstractModuleWithParam, AbstractModuleWithoutParam
-from utils_torch.transform.AbstractTransform import AbstractTransform, AbstractTransformWithTensor
+from DLUtils.module import AbstractModule, AbstractModuleWithParam, AbstractModuleWithoutParam
+from DLUtils.transform.AbstractTransform import AbstractTransform, AbstractTransformWithTensor
 
-import utils_torch.transform.operator as operator
-import utils_torch.transform.nonlinear as nonlinear
-from utils_torch.transform.nonlinear import GetNonLinearMethod
+import DLUtils.transform.operator as operator
+import DLUtils.transform.nonlinear as nonlinear
+from DLUtils.transform.nonlinear import GetNonLinearMethod
 
 def IsLegalModuleType(Type):
-    return Type in ModuleList or utils_torch.transform.operator.IsLegalModuleType(Type)
+    return Type in ModuleList or DLUtils.transform.operator.IsLegalModuleType(Type)
 
 def BuildModuleIfIsLegalType(param, **kw):
     if isinstance(param, str):
         Type = param
     else:
         Type = param.Type
-    module = utils_torch.transform.operator.BuildModuleIfIsLegalType(param, **kw)
+    module = DLUtils.transform.operator.BuildModuleIfIsLegalType(param, **kw)
     if module is not None:
         return module
     if not IsLegalModuleType(Type):
@@ -46,16 +46,16 @@ def BuildModuleIfIsLegalType(param, **kw):
     elif Type in ["Bias"]:
         return Bias(**kw)
     elif Type in ["NonLinear"]:
-        return utils_torch.transform.nonlinear.GetNonLinearMethod(param)
+        return DLUtils.transform.nonlinear.GetNonLinearMethod(param)
     elif Type in ["GradientDescend"]:
-        return utils_torch.optimize.GradientDescend(**kw)
+        return DLUtils.optimize.GradientDescend(**kw)
     elif Type in ["CheckPointForEpochBatchTrain"]:
-        return utils_torch.train.CheckPointForEpochBatchTrain(**kw)
+        return DLUtils.train.CheckPointForEpochBatchTrain(**kw)
     elif Type in ["Internal"]:
-        utils_torch.AddWarning("utils_torch.transform.BuildModule does not build Module of type Internal.")
+        DLUtils.AddWarning("DLUtils.transform.BuildModule does not build Module of type Internal.")
         raise Exception()
     elif Type in ["External"]:
-        utils_torch.AddWarning("utils_torch.transform.BuildModule does not build Module of type External.")
+        DLUtils.AddWarning("DLUtils.transform.BuildModule does not build Module of type External.")
         raise Exception()
     else:
         raise Exception("BuildModule: No such module: %s"%Type)
@@ -70,14 +70,14 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-import utils_torch
-from utils_torch.json import *
-from utils_torch.attr import *
-from utils_torch.LRSchedulers import LinearLR
+import DLUtils
+from DLUtils.json import *
+from DLUtils.attr import *
+from DLUtils.LRSchedulers import LinearLR
 
 # def BuildModule(param, **kw):
 #     if hasattr(param, "ClassPath"):
-#         Class = utils_torch.parse.ParseClass(param.ClassPath)
+#         Class = DLUtils.parse.ParseClass(param.ClassPath)
 #         Module = Class(param, **kw)
 #         return Module
 #     elif hasattr(param, "Type"):
@@ -86,8 +86,8 @@ from utils_torch.LRSchedulers import LinearLR
 #         raise Exception()
 
 def CalculateWeightChangeRatio(Weight, WeightChange):
-    Weight = utils_torch.ToNpArray(Weight)
-    WeightChange = utils_torch.ToNpArray(WeightChange)
+    Weight = DLUtils.ToNpArray(Weight)
+    WeightChange = DLUtils.ToNpArray(WeightChange)
 
     WeightAbsSum = np.sum(np.abs(Weight))
     if WeightAbsSum > 0.0:
@@ -98,7 +98,7 @@ def CalculateWeightChangeRatio(Weight, WeightChange):
 
 def ListParameter(model):
     for name, param in model.named_parameters():
-        utils_torch.AddLog("%s: Shape: %s"%(name, param.size()))
+        DLUtils.AddLog("%s: Shape: %s"%(name, param.size()))
 
 def CreateSelfConnectionMask(Size):
     return np.ones((Size, Size), dtype=np.float32) - np.eye(Size, dtype=np.float32)
@@ -188,7 +188,7 @@ def CreateWeight2D(param, DataType=torch.float32):
     else:
         raise Exception()
         # to be implemented
-    return utils_torch.NpArray2Tensor(weight, DataType=DataType, RequiresGrad=True)
+    return DLUtils.NpArray2Tensor(weight, DataType=DataType, RequiresGrad=True)
 
 def GetLossFunction(LossFunctionDescription, truth_is_label=False, num_class=None):
     if LossFunctionDescription in ['MSE', 'mse']:
@@ -349,7 +349,7 @@ def Build(self, IsLoad):
     self.Dynamics = cache.Dynamics
 
     param = self.param
-    utils_torch.parse.ParsePyObjStatic(param, ObjCurrent=param)
+    DLUtils.parse.ParsePyObjStatic(param, ObjCurrent=param)
 
 def BuildForNonModel(self, IsLoad):
     cache = self.cache
@@ -360,11 +360,11 @@ def BuildForNonModel(self, IsLoad):
     self.Modules = cache.Modules
     self.Dynamics = cache.Dynamics
 
-    utils_torch.parse.ParsePyObjStatic(self.param)
+    DLUtils.parse.ParsePyObjStatic(self.param)
 
 def DoTasks(Tasks, **kw):
     kw["DoNotChangeObjCurrent"] = True
-    utils_torch.DoTasks(Tasks, **kw)
+    DLUtils.DoTasks(Tasks, **kw)
 
 def InitForNonModel(self, param=None, data=None, ClassPath=None, **kw):
     Init(self, param, data, ClassPath, HasTensor=False, **kw)
@@ -376,7 +376,7 @@ def Init(self, param=None, data=None, ClassPath=None, **kw):
     HasTensor = kw.setdefault("HasTensor", True)
 
     if param is None:
-        param = utils_torch.EmptyPyObj()
+        param = DLUtils.EmptyPyObj()
     
     EnsureAttrs(param, "FullName", default=FullName)
 
@@ -390,14 +390,14 @@ def Init(self, param=None, data=None, ClassPath=None, **kw):
     if data is None:
         if LoadDir is not None:
             DataPath = LoadDir + param.FullName + ".data"
-            if utils_torch.FileExists(DataPath):
-                data = utils_torch.json.DataFile2PyObj(DataPath)
+            if DLUtils.FileExists(DataPath):
+                data = DLUtils.json.DataFile2PyObj(DataPath)
             else:
-                data = utils_torch.EmptyPyObj()
+                data = DLUtils.EmptyPyObj()
         else:
-            data = utils_torch.EmptyPyObj()
+            data = DLUtils.EmptyPyObj()
 
-    cache = utils_torch.EmptyPyObj()
+    cache = DLUtils.EmptyPyObj()
     if LoadDir is not None:
         cache.LoadDir = LoadDir
     else:
@@ -405,8 +405,8 @@ def Init(self, param=None, data=None, ClassPath=None, **kw):
     if ClassPath is not None:
         param.ClassPath = ClassPath
     
-    cache.Modules = utils_torch.EmptyPyObj()
-    cache.Dynamics = utils_torch.EmptyPyObj()
+    cache.Modules = DLUtils.EmptyPyObj()
+    cache.Dynamics = DLUtils.EmptyPyObj()
 
     if HasTensor:
         cache.Tensors = []
@@ -422,42 +422,42 @@ def Init(self, param=None, data=None, ClassPath=None, **kw):
 
 def PlotWeight(self, SaveDir=None):
     if SaveDir is None:
-        SaveDir = utils_torch.GetMainSaveDir() + "weights/"
+        SaveDir = DLUtils.GetMainSaveDir() + "weights/"
     cache = self.cache
     if hasattr(self, "PlotSelfWeight"):
         self.PlotSelfWeight(SaveDir)
     if hasattr(cache, "Modules"):
-        for ModuleName, Module in utils_torch.ListAttrsAndValues(cache.Modules):
+        for ModuleName, Module in DLUtils.ListAttrsAndValues(cache.Modules):
             if hasattr(Module,"PlotWeight"):
                 Module.PlotWeight(SaveDir)
 
 
 
 def LoadFromFile(self, LoadDir, Name, **kw):
-    utils_torch.RemoveAttrIfExists(self, "cache")
-    utils_torch.RemoveAttrIfExists(self, "param")
-    utils_torch.RemoveAttrIfExists(self, "data")
+    DLUtils.RemoveAttrIfExists(self, "cache")
+    DLUtils.RemoveAttrIfExists(self, "param")
+    DLUtils.RemoveAttrIfExists(self, "data")
 
     ParamPath = LoadDir + Name + ".param.jsonc"
-    if utils_torch.FileExists(ParamPath):
-        param = utils_torch.json.JsonFile2PyObj(ParamPath)
+    if DLUtils.FileExists(ParamPath):
+        param = DLUtils.json.JsonFile2PyObj(ParamPath)
     else:
-        param = utils_torch.EmptyPyObj()
+        param = DLUtils.EmptyPyObj()
     
     DataPath = LoadDir + Name + ".data"
-    if utils_torch.FileExists(DataPath):
-        data = utils_torch.json.DataFile2PyObj(DataPath)
+    if DLUtils.FileExists(DataPath):
+        data = DLUtils.json.DataFile2PyObj(DataPath)
     else:
-        data = utils_torch.EmptyPyObj()
+        data = DLUtils.EmptyPyObj()
 
-    cache = utils_torch.EmptyPyObj()
+    cache = DLUtils.EmptyPyObj()
     cache.LoadDir = LoadDir
 
 
     param.cache.__object__ = self
 
-    cache.Modules = utils_torch.EmptyPyObj()
-    cache.Dynamics = utils_torch.EmptyPyObj()
+    cache.Modules = DLUtils.EmptyPyObj()
+    cache.Dynamics = DLUtils.EmptyPyObj()
 
     HasTensor = kw.setdefault("HasTensor", True)
     if HasTensor:
@@ -471,7 +471,7 @@ def LoadFromFile(self, LoadDir, Name, **kw):
 
 
 def Add2ObjRefListForParseRouters(ObjRef):
-    GlobalParam = utils_torch.GetGlobalParam()
+    GlobalParam = DLUtils.GetGlobalParam()
     if not hasattr(GlobalParam.cache, "AdditionalObjRefListForParseRouters"):
         GlobalParam.cache.AdditionalObjRefListForParseRouters = []
     GlobalParam.cache.AdditionalObjRefListForParseRouters.append(ObjRef)
@@ -490,10 +490,10 @@ def Save(self, SaveDir, Name=None, IsRoot=True):
 
     if IsRoot:
         SavePath = SaveDir + SaveName + ".param.jsonc"
-        utils_torch.EnsureFileDir(SavePath)
-        utils_torch.json.PyObj2JsonFile(param, SavePath)
+        DLUtils.EnsureFileDir(SavePath)
+        DLUtils.json.PyObj2JsonFile(param, SavePath)
     if not data.IsEmpty():
-        data = utils_torch.parse.ApplyMethodOnPyObj(data, utils_torch.ToNpArrayIfIsTensor)
+        data = DLUtils.parse.ApplyMethodOnPyObj(data, DLUtils.ToNpArrayIfIsTensor)
         PyObj2DataFile(data, SaveDir + SaveName + ".data")
     
     if hasattr(cache, "Modules"):
@@ -558,18 +558,18 @@ def SetMethodForNonModelClass(Class, **kw):
     if not hasattr(Class, "ParseRouters"):
         Class.ParseRouters = AbstractTransform.ParseRouters
 
-from utils_torch.transform.MLP import MLP
-from utils_torch.transform.SignalTrafficNodes import SerialReceiver
-from utils_torch.transform.SignalTrafficNodes import SerialSender
-from utils_torch.transform.SignalTrafficNodes import SignalHolder
-from utils_torch.transform.LambdaLayer import LambdaLayer
-from utils_torch.transform.RecurrentLIFLayer import RecurrentLIFLayer
-from utils_torch.transform.noise import NoiseFromDistribution, GaussianNoise
-from utils_torch.transform.Bias import Bias
-from utils_torch.transform.SingleLayer import SingleLayer
-from utils_torch.transform.nonlinear import NonLinearLayer
-from utils_torch.transform.LinearLayer import LinearLayer
-from utils_torch.transform.RNNLIF import RNNLIF
+from DLUtils.transform.MLP import MLP
+from DLUtils.transform.SignalTrafficNodes import SerialReceiver
+from DLUtils.transform.SignalTrafficNodes import SerialSender
+from DLUtils.transform.SignalTrafficNodes import SignalHolder
+from DLUtils.transform.LambdaLayer import LambdaLayer
+from DLUtils.transform.RecurrentLIFLayer import RecurrentLIFLayer
+from DLUtils.transform.noise import NoiseFromDistribution, GaussianNoise
+from DLUtils.transform.Bias import Bias
+from DLUtils.transform.SingleLayer import SingleLayer
+from DLUtils.transform.nonlinear import NonLinearLayer
+from DLUtils.transform.LinearLayer import LinearLayer
+from DLUtils.transform.RNNLIF import RNNLIF
 
 ModuleDict = {
     "MLP": MLP, "mlp": MLP,

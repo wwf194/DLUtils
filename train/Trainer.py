@@ -1,12 +1,12 @@
-import utils_torch
-from utils_torch.attr import *
+import DLUtils
+from DLUtils.attr import *
 
-class AbstractModuleAlongEpochBatchTrain(utils_torch.module.AbstractModule):
+class AbstractModuleAlongEpochBatchTrain(DLUtils.module.AbstractModule):
     # Child Class: trainer, log
     def __init__(self, ChildClass, **kw):
         MountLocation = kw.setdefault("MountLocation", "data")
         super().__init__(**kw)
-        utils_torch.train.SetEpochBatchMethodForModule(ChildClass, **kw)
+        DLUtils.train.SetEpochBatchMethodForModule(ChildClass, **kw)
     def SetEpochBatchIndexData(self, EpochIndex, BatchIndex):
         self.data.EpochIndex = EpochIndex
         self.data.BatchIndex = BatchIndex
@@ -17,7 +17,7 @@ class AbstractModuleAlongEpochBatchTrain(utils_torch.module.AbstractModule):
 class TrainerEpochBatch(AbstractModuleAlongEpochBatchTrain):
     def __init__(self, param, **kw):
         super().__init__(self.__class__, MountLocation="data")
-        utils_torch.transform.InitForNonModel(self, param, **kw)
+        DLUtils.transform.InitForNonModel(self, param, **kw)
     def Build(self, IsLoad=False):
         self.BeforeBuild(IsLoad)
         param = self.param
@@ -25,11 +25,11 @@ class TrainerEpochBatch(AbstractModuleAlongEpochBatchTrain):
         data = self.data
         
         Modules = self.Modules
-        Modules.LogTrain = utils_torch.log.LogForEpochBatchTrain()
-        cache.LogTrain = utils_torch.log.LogForEpochBatchTrain()
+        Modules.LogTrain = DLUtils.log.LogForEpochBatchTrain()
+        cache.LogTrain = DLUtils.log.LogForEpochBatchTrain()
 
-        Modules.LogTest = utils_torch.log.LogForEpochBatchTrain()
-        cache.LogTest = utils_torch.log.LogForEpochBatchTrain()    
+        Modules.LogTest = DLUtils.log.LogForEpochBatchTrain()
+        cache.LogTest = DLUtils.log.LogForEpochBatchTrain()    
 
         cache.SetEpochBatchList = []
         cache.CheckPointList = []
@@ -70,11 +70,11 @@ class TrainerEpochBatch(AbstractModuleAlongEpochBatchTrain):
         cache = self.cache
         #cache.SetEpochBatchList = []
         for Obj in List:
-            Obj = utils_torch.parse.ResolveStr(Obj)
+            Obj = DLUtils.parse.ResolveStr(Obj)
             cache.SetEpochBatchList.append(Obj)
     def GenerateContextInfo(self):
         cache = self.cache
-        return utils_torch.PyObj({
+        return DLUtils.PyObj({
             "Trainer": self,
             "EpochNum": cache.EpochNum,
             "BatchNum": cache.BatchNum,
@@ -82,10 +82,10 @@ class TrainerEpochBatch(AbstractModuleAlongEpochBatchTrain):
             "BatchIndex": cache.BatchIndex,
         })
     # def __call__(self):
-    #     utils_torch.CallGraph(self.Dynamics.Main)
+    #     DLUtils.CallGraph(self.Dynamics.Main)
     def ReportEpochBatch(self):
         cache = self.cache
-        utils_torch.AddLog("Epoch%d-Batch%d"%(cache.EpochIndex, cache.BatchIndex))
+        DLUtils.AddLog("Epoch%d-Batch%d"%(cache.EpochIndex, cache.BatchIndex))
 
-#utils_torch.transform.SetMethodForNonModelClass(TrainerEpochBatch)
-#utils_torch.transform.SetEpochBatchMethodForModule(TrainerEpochBatch)
+#DLUtils.transform.SetMethodForNonModelClass(TrainerEpochBatch)
+#DLUtils.transform.SetEpochBatchMethodForModule(TrainerEpochBatch)

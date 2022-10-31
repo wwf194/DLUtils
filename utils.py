@@ -20,8 +20,8 @@ import torch.nn as nn
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 # from inspect import getframeinfo, stack
-from utils_torch.attr import *
-from utils_torch.file import *
+from DLUtils.attr import *
+from DLUtils.file import *
 
 import argparse
 import traceback
@@ -46,7 +46,7 @@ def ParseCmdArgs():
     return Namespace2PyObj(CmdArgs) # CmdArgs is of type namespace
 
 def Namespace2PyObj(Namespace):
-    return utils_torch.json.JsonObj2PyObj(Namespace2Dict(Namespace))
+    return DLUtils.json.JsonObj2PyObj(Namespace2Dict(Namespace))
 
 def Namespace2Dict(Namespace):
     return vars(Namespace)
@@ -66,8 +66,8 @@ def ParseTaskName(task):
     return task
 
 def Main(**kw):
-    GlobalParam = utils_torch.GetGlobalParam()
-    SetAttrs(GlobalParam, "time.StartTime", value=utils_torch.system.GetTime())
+    GlobalParam = DLUtils.GetGlobalParam()
+    SetAttrs(GlobalParam, "time.StartTime", value=DLUtils.system.GetTime())
     
     #try:
     CmdArgs = kw.get("CmdArgs")
@@ -83,51 +83,51 @@ def Main(**kw):
     elif task in ["CleanFigure"]:
         CleanFigure()
     elif task in ["DoTasksFromFile"]:
-        TaskObj = utils_torch.LoadTaskFile(TaskFilePath)
+        TaskObj = DLUtils.LoadTaskFile(TaskFilePath)
         Tasks = getattr(TaskObj, CmdArgs.TaskName)
         if not CmdArgs.IsDebug:
             try: # catch all unhandled exceptions
-                utils_torch.DoTasks(Tasks, ObjRoot=utils_torch.GetGlobalParam())
+                DLUtils.DoTasks(Tasks, ObjRoot=DLUtils.GetGlobalParam())
             except Exception:
-                utils_torch.AddLog(traceback.format_exc())
+                DLUtils.AddLog(traceback.format_exc())
                 raise Exception()
         else:
-            utils_torch.DoTasks(Tasks, ObjRoot=utils_torch.GetGlobalParam())
+            DLUtils.DoTasks(Tasks, ObjRoot=DLUtils.GetGlobalParam())
     elif task in ["TotalLines"]:
-        utils_torch.CalculateGitProjectTotalLines()
+        DLUtils.CalculateGitProjectTotalLines()
     elif task in ["QuickScript"]:
         QuickScript = kw.get("QuickScript")
         QuickScript(CmdArgs)
     elif task in ["CopyProject2FolderAndRun"]:
-        GlobalParam = utils_torch.GetGlobalParam()
+        GlobalParam = DLUtils.GetGlobalParam()
         CopyFilesAndDirs2DestDir(
             GlobalParam.config.Project.Files, 
             "./", 
-            utils_torch.GetMainSaveDir() + "src/"
+            DLUtils.GetMainSaveDir() + "src/"
         )
         CmdArgs.task = CmdArgs.task2
         delattr(CmdArgs, "task2")
-        utils_torch.system.RunPythonScript(
-            utils_torch.GetMainSaveDir() + "src/" + CmdArgs.MainScript,
+        DLUtils.system.RunPythonScript(
+            DLUtils.GetMainSaveDir() + "src/" + CmdArgs.MainScript,
             ParsedArgs2CmdArgs(CmdArgs)
         )
     elif task in ["TotalLines"]:
-        utils_torch.CalculateGitProjectTotalLines()
+        DLUtils.CalculateGitProjectTotalLines()
     else:
         raise Exception("Inavlid Task: %s"%CmdArgs.task)
 
-    GlobalParam = utils_torch.GetGlobalParam()
+    GlobalParam = DLUtils.GetGlobalParam()
     
-    SetAttrs(GlobalParam, "time.EndTime", value=utils_torch.system.GetTime())
-    DurationTime = utils_torch.system.GetTimeDifferenceFromStr(GlobalParam.time.StartTime, GlobalParam.time.EndTime)
+    SetAttrs(GlobalParam, "time.EndTime", value=DLUtils.system.GetTime())
+    DurationTime = DLUtils.system.GetTimeDifferenceFromStr(GlobalParam.time.StartTime, GlobalParam.time.EndTime)
     SetAttrs(GlobalParam, "time.DurationTime", value=DurationTime)
     _StartEndTime2File()
 
 def _StartEndTime2File():
-    GlobalParam = utils_torch.GetGlobalParam()
-    utils_torch.file.EmptyFile(utils_torch.GetMainSaveDir() + "AAA-0-Time-Start:%s"%GlobalParam.time.EndTime)
-    utils_torch.file.EmptyFile(utils_torch.GetMainSaveDir() + "AAA-1-Time- End :%s"%GlobalParam.time.StartTime)
-    utils_torch.file.EmptyFile(utils_torch.GetMainSaveDir() + "AAA-2-Time-Duration:%s"%GlobalParam.time.DurationTime)
+    GlobalParam = DLUtils.GetGlobalParam()
+    DLUtils.file.EmptyFile(DLUtils.GetMainSaveDir() + "AAA-0-Time-Start:%s"%GlobalParam.time.EndTime)
+    DLUtils.file.EmptyFile(DLUtils.GetMainSaveDir() + "AAA-1-Time- End :%s"%GlobalParam.time.StartTime)
+    DLUtils.file.EmptyFile(DLUtils.GetMainSaveDir() + "AAA-2-Time-Duration:%s"%GlobalParam.time.DurationTime)
 
 def ParsedArgs2CmdArgs(ParsedArgs, Exceptions=[]):
     CmdArgsList = []
@@ -138,23 +138,23 @@ def ParsedArgs2CmdArgs(ParsedArgs, Exceptions=[]):
 
 def CopyProjectFolder2Dir(DestDir):
     EnsureDir(DestDir)
-    utils_torch.file.CopyFolder2DestDir("./", DestDir)
+    DLUtils.file.CopyFolder2DestDir("./", DestDir)
     return
 
 def CopyProjectFolderAndRunSameCommand(Dir):
     CopyProjectFolder2Dir(Dir)
 
 def CleanLog():
-    utils_torch.file.RemoveAllFilesAndDirsUnderDir("./log/")
+    DLUtils.file.RemoveAllFilesAndDirsUnderDir("./log/")
 
 def CleanFigure():
-    utils_torch.file.RemoveMatchedFiles("./", r".*\.png")
+    DLUtils.file.RemoveMatchedFiles("./", r".*\.png")
 
 def ParseTaskList(TaskList, InPlace=True, **kw):
     TaskListParsed = []
     for Index, Task in enumerate(TaskList):
         if isinstance(Task, str):
-            TaskParsed = utils_torch.PyObj({
+            TaskParsed = DLUtils.PyObj({
                 "Type": Task,
                 "Args": {}
             })
@@ -162,7 +162,7 @@ def ParseTaskList(TaskList, InPlace=True, **kw):
                 TaskList[Index] = TaskParsed
             else:
                 TaskListParsed.append(TaskParsed)
-        elif utils_torch.IsDictLikePyObj(Task):
+        elif DLUtils.IsDictLikePyObj(Task):
             if hasattr(Task, "Type") and hasattr(Task, "Args"):
                 if InPlace:
                     pass
@@ -170,7 +170,7 @@ def ParseTaskList(TaskList, InPlace=True, **kw):
                     TaskListParsed.append(Task)
             else:
                 for key, value in ListAttrsAndValues(Task):
-                    TaskParsed = utils_torch.PyObj({
+                    TaskParsed = DLUtils.PyObj({
                         "Type": key, "Args": value
                     })
 
@@ -178,8 +178,8 @@ def ParseTaskList(TaskList, InPlace=True, **kw):
                         TaskList[Index] = TaskParsed
                     else:
                         TaskListParsed.append(TaskParsed)
-        elif utils_torch.IsListLikePyObj(Task) or isinstance(Task, list) or isinstance(Task, tuple):
-            TaskParsed = utils_torch.PyObj({
+        elif DLUtils.IsListLikePyObj(Task) or isinstance(Task, list) or isinstance(Task, tuple):
+            TaskParsed = DLUtils.PyObj({
                 "Type": Task[0],
                 "Args": Task[1]
             })
@@ -193,13 +193,13 @@ def ParseTaskList(TaskList, InPlace=True, **kw):
     if InPlace:
         return TaskList
     else:
-        return utils_torch.PyObj(TaskListParsed)
+        return DLUtils.PyObj(TaskListParsed)
 
 def ParseTaskObj(TaskObj, Save=True, **kw):
-    kw.setdefault("ObjRoot", utils_torch.GetGlobalParam())
+    kw.setdefault("ObjRoot", DLUtils.GetGlobalParam())
     if isinstance(TaskObj, str):
-        TaskObj = utils_torch.parse.ResolveStr(TaskObj, **kw)
-    if utils_torch.IsDictLikePyObj(TaskObj):
+        TaskObj = DLUtils.parse.ResolveStr(TaskObj, **kw)
+    if DLUtils.IsDictLikePyObj(TaskObj):
         if hasattr(TaskObj, "__Tasks__"):
             TaskObj.__Tasks__ = ParseTaskList(TaskObj.__Tasks__, **kw)
             TaskList = TaskObj.__Tasks__
@@ -208,7 +208,7 @@ def ParseTaskObj(TaskObj, Save=True, **kw):
             for Attr, Value in ListAttrsAndValues(TaskObj, Exceptions=["__Tasks__"]):
                 delattr(TaskObj, Attr)
             TaskList = TaskObj.__Tasks__
-    elif utils_torch.IsListLikePyObj(TaskObj):
+    elif DLUtils.IsListLikePyObj(TaskObj):
         TaskObj.__Tasks__ = ParseTaskList(TaskObj, InPlace=False, **kw)
         delattr(TaskObj, "__value__")
         TaskList = TaskObj.__Tasks__
@@ -220,10 +220,10 @@ def ParseTaskObj(TaskObj, Save=True, **kw):
         Task.SetResolveBase() # So that "&" in each Task resolves to the task object it is inside.
 
     if Save:
-        utils_torch.json.PyObj2JsonFile(TaskList, utils_torch.GetMainSaveDir() + "task_loaded.jsonc")
-    utils_torch.parse.ParsePyObjStatic(TaskObj, ObjCurrent=TaskList, ObjRoot=utils_torch.GetGlobalParam(), InPlace=True)
+        DLUtils.json.PyObj2JsonFile(TaskList, DLUtils.GetMainSaveDir() + "task_loaded.jsonc")
+    DLUtils.parse.ParsePyObjStatic(TaskObj, ObjCurrent=TaskList, ObjRoot=DLUtils.GetGlobalParam(), InPlace=True)
     if Save:
-        utils_torch.json.PyObj2JsonFile(TaskList, utils_torch.GetMainSaveDir() + "task_parsed.jsonc")
+        DLUtils.json.PyObj2JsonFile(TaskList, DLUtils.GetMainSaveDir() + "task_parsed.jsonc")
     return TaskObj
 
 
@@ -231,85 +231,85 @@ def DoTasks(Tasks, **kw):
     if not kw.get("DoNotChangeObjCurrent"):
         kw["ObjCurrent"] = Tasks
     if isinstance(Tasks, str) and "&" in Tasks:
-        Tasks = utils_torch.parse.ResolveStr(Tasks, **kw)
-    Tasks = utils_torch.ParseTaskObj(Tasks)
+        Tasks = DLUtils.parse.ResolveStr(Tasks, **kw)
+    Tasks = DLUtils.ParseTaskObj(Tasks)
 
     In = kw.get("In")
     if In is not None:
-        Tasks.cache.In = utils_torch.PyObj(In)
+        Tasks.cache.In = DLUtils.PyObj(In)
     for Index, Task in enumerate(Tasks.__Tasks__):
         if not kw.get("DoNotChangeObjCurrent"):
             kw["ObjCurrent"] = Task
-        #utils_torch.EnsureAttrs(Task, "Args", default={})
-        utils_torch.DoTask(Task, **kw)
+        #DLUtils.EnsureAttrs(Task, "Args", default={})
+        DLUtils.DoTask(Task, **kw)
 
 def DoTask(Task, **kw):
     ObjRoot = kw.setdefault("ObjRoot", None)
     ObjCurrent = kw.setdefault("ObjCurrent", None)
-    #Task = utils_torch.parse.ParsePyObjDynamic(Task, RaiseFailedParse=False, InPlace=False, **kw)
+    #Task = DLUtils.parse.ParsePyObjDynamic(Task, RaiseFailedParse=False, InPlace=False, **kw)
     TaskType = Task.Type
     TaskArgs = Task.Args
     if isinstance(TaskArgs, str) and "&" in TaskArgs:
-        TaskArgs = utils_torch.parse.ResolveStr(TaskArgs, kw)
+        TaskArgs = DLUtils.parse.ResolveStr(TaskArgs, kw)
     if TaskType in ["BuildObjFromParam", "BuildObjectFromParam"]:
         BuildObjFromParam(TaskArgs, **kw)
     elif TaskType in ["FunctionCall"]:
-        utils_torch.CallFunctions(TaskArgs, **kw)
+        DLUtils.CallFunctions(TaskArgs, **kw)
     elif TaskType in ["CallGraph"]:
         if hasattr(TaskArgs, "Router"):
             Router = TaskArgs.Router
         else:
             Router = TaskArgs
         if isinstance(Router, str):
-            Router = utils_torch.parse.ResolveStr(Router)
+            Router = DLUtils.parse.ResolveStr(Router)
         # Require that router is already parsed.
-        #RouterParsed = utils_torch.router.ParseRouterStaticAndDynamic(Router, ObjRefList=[Router], **kw)
-        InParsed = utils_torch.parse.ParsePyObjDynamic(TaskArgs.In, RaiseFailedParse=True, InPlace=False, **kw)
-        #InParsed = utils_torch.parse.ParsePyObjDynamic(Router, RaiseFailedParse=True, InPlace=False, **kw)
-        utils_torch.CallGraph(Router, InParsed)
+        #RouterParsed = DLUtils.router.ParseRouterStaticAndDynamic(Router, ObjRefList=[Router], **kw)
+        InParsed = DLUtils.parse.ParsePyObjDynamic(TaskArgs.In, RaiseFailedParse=True, InPlace=False, **kw)
+        #InParsed = DLUtils.parse.ParsePyObjDynamic(Router, RaiseFailedParse=True, InPlace=False, **kw)
+        DLUtils.CallGraph(Router, InParsed)
     elif TaskType in ["RemoveObj"]:
         RemoveObj(TaskArgs, **kw)
     elif TaskType in ["LoadObjFromFile"]:
         LoadObjFromFile(TaskArgs, **kw)
     elif TaskType in ["LoadObj"]:
-        utils_torch.LoadObj(TaskArgs, **kw)
+        DLUtils.LoadObj(TaskArgs, **kw)
     # elif TaskType in ["AddLibraryPath"]:
     #     AddLibraryPath(TaskArgs)
     elif TaskType in ["LoadJsonFile"]:
         LoadJsonFile(TaskArgs)
     elif TaskType in ["LoadParamFile"]:
-        utils_torch.LoadParamFromFile(TaskArgs, ObjRoot=utils_torch.GetGlobalParam())
+        DLUtils.LoadParamFromFile(TaskArgs, ObjRoot=DLUtils.GetGlobalParam())
     elif TaskType in ["ParseParam", "ParseParamStatic"]:
-        utils_torch.parse.ParseParamStatic(TaskArgs)
+        DLUtils.parse.ParseParamStatic(TaskArgs)
     elif TaskType in ["ParseParamDynamic"]:
-        utils_torch.parse.ParseParamDynamic(TaskArgs)
+        DLUtils.parse.ParseParamDynamic(TaskArgs)
     elif TaskType in ["BuildObj"]:
-        utils_torch.BuildObj(TaskArgs, **kw)
+        DLUtils.BuildObj(TaskArgs, **kw)
     elif TaskType in ["BuildObjFromFile", "BuildObjectFromFile"]:
-        utils_torch.BuildObjFromFile(TaskArgs, ObjRoot=utils_torch.GetGlobalParam())
+        DLUtils.BuildObjFromFile(TaskArgs, ObjRoot=DLUtils.GetGlobalParam())
     elif TaskType in ["BuildObjFromParam", "BuildObjectFromParam"]:
-        utils_torch.BuildObjFromParam(TaskArgs, ObjRoot=utils_torch.GetGlobalParam())
+        DLUtils.BuildObjFromParam(TaskArgs, ObjRoot=DLUtils.GetGlobalParam())
     elif TaskType in ["SetTensorLocation"]:
         SetTensorLocation(TaskArgs)
     elif TaskType in ["Train"]:
-        utils_torch.train.Train(
+        DLUtils.train.Train(
             TaskArgs,
-            ObjRoot=utils_torch.GetGlobalParam(),
-            Logger=utils_torch.GetDataLogger()
+            ObjRoot=DLUtils.GetGlobalParam(),
+            Logger=DLUtils.GetDataLogger()
         )
     elif TaskType in ["DoTasks"]:
-        _TaskList = utils_torch.ParseTaskObj(TaskArgs, ObjRoot=utils_torch.GetGlobalParam())
+        _TaskList = DLUtils.ParseTaskObj(TaskArgs, ObjRoot=DLUtils.GetGlobalParam())
         DoTasks(_TaskList, **kw)
     elif TaskType in ["SaveObj"]:
-        utils_torch.SaveObj(TaskArgs, ObjRoot=utils_torch.GetGlobalParam())
+        DLUtils.SaveObj(TaskArgs, ObjRoot=DLUtils.GetGlobalParam())
 
     else:
-        utils_torch.AddWarning("Unknown Task.Type: %s"%TaskType)
+        DLUtils.AddWarning("Unknown Task.Type: %s"%TaskType)
         raise Exception(TaskType)
 
 def GetTensorLocation(Method="auto"):
     if Method in ["Auto", "auto"]:
-        Location = utils_torch.GetGPUWithLargestUseableMemory()
+        Location = DLUtils.GetGPUWithLargestUseableMemory()
     else:
         raise Exception()
     return Location
@@ -317,44 +317,44 @@ def GetTensorLocation(Method="auto"):
 
 def SetTensorLocation(Location):
     # EnsureAttrs(Args, "Method", default="Auto")
-    # GlobalParam = utils_torch.GetGlobalParam()
+    # GlobalParam = DLUtils.GetGlobalParam()
     # if HasAttrs(GlobalParam, "system.TensorLocation"):
     #     Location = GlobalParam.system.TensorLocation
     # else:
     #     if Args.Method in ["Auto", "auto"]:
-    #         Location = utils_torch.GetGPUWithLargestUseableMemory()
+    #         Location = DLUtils.GetGPUWithLargestUseableMemory()
     #     else:
     #         raise Exception()
 
-    # for Obj in utils_torch.ListValues(utils_torch.GetGlobalParam().object):
+    # for Obj in DLUtils.ListValues(DLUtils.GetGlobalParam().object):
     #     if hasattr(Obj, "SetTensorLocation"):
     #         Obj.SetTensorLocation(Location)
-    SetAttrs(utils_torch.GetGlobalParam(), "system.TensorLocation", Location)                 
+    SetAttrs(DLUtils.GetGlobalParam(), "system.TensorLocation", Location)                 
 
 def BuildObjFromParam(Args, **kw):
-    if isinstance(Args, utils_torch.PyObj):
+    if isinstance(Args, DLUtils.PyObj):
         Args = GetAttrs(Args)
 
     if isinstance(Args, list):
         for Arg in Args:
             _BuildObjFromParam(Arg, **kw)
-    elif isinstance(Args, utils_torch.PyObj):
+    elif isinstance(Args, DLUtils.PyObj):
         _BuildObjFromParam(Args, **kw)
     else:
         raise Exception()
 
 def _BuildObjFromParam(Args, **kw):
-    ParamPathList = utils_torch.ToList(Args.ParamPath)
-    ModulePathList = utils_torch.ToList(Args.ModulePath)
-    MountPathList = utils_torch.ToList(Args.MountPath)
+    ParamPathList = DLUtils.ToList(Args.ParamPath)
+    ModulePathList = DLUtils.ToList(Args.ModulePath)
+    MountPathList = DLUtils.ToList(Args.MountPath)
 
     for ModulePath, ParamPath, MountPath, in zip(ModulePathList, ParamPathList, MountPathList):        
-        param = utils_torch.parse.ResolveStr(ParamPath, kw)
+        param = DLUtils.parse.ResolveStr(ParamPath, kw)
         #Class = eval(ModulePath)
         #Obj = Class(param)
-        Class = utils_torch.parse.ParseClass(ModulePath)
+        Class = DLUtils.parse.ParseClass(ModulePath)
         Obj = Class(param)
-        # Module = utils_torch.ImportModule(ModulePath)
+        # Module = DLUtils.ImportModule(ModulePath)
         # Obj = Module.__MainClass__(param)
 
         ObjRoot = kw.get("ObjRoot")
@@ -369,24 +369,24 @@ def _BuildObjFromParam(Args, **kw):
         SetAttrs(eval(MountPathList[0]), MountPathList[1:], Obj)
 
 def BuildObjFromFile(Args, **kw):
-    if isinstance(Args, utils_torch.PyObj):
+    if isinstance(Args, DLUtils.PyObj):
         Args = GetAttrs(Args)
     if isinstance(Args, list):
         for Arg in Args:
             _BuildObjFromFile(Arg, **kw)
-    elif isinstance(Args, utils_torch.PyObj):
+    elif isinstance(Args, DLUtils.PyObj):
         _BuildObjFromFile(Args, **kw)
     else:
         raise Exception()
 
 def _BuildObjFromFile(Args, **kw):
-    ParamFilePathList = utils_torch.ToList(Args.ParamFilePath)
-    ModulePathList = utils_torch.ToList(Args.ModulePath)
-    MountPathList = utils_torch.ToList(Args.MountPath)
+    ParamFilePathList = DLUtils.ToList(Args.ParamFilePath)
+    ModulePathList = DLUtils.ToList(Args.ModulePath)
+    MountPathList = DLUtils.ToList(Args.MountPath)
 
     for ModulePath, ParamFilePath, MountPath, in zip(ModulePathList, ParamFilePathList, MountPathList):        
-        param = utils_torch.json.JsonFile2PyObj(ParamFilePath)
-        Class = utils_torch.parse.ParseClass(ModulePath)
+        param = DLUtils.json.JsonFile2PyObj(ParamFilePath)
+        Class = DLUtils.parse.ParseClass(ModulePath)
         Obj = Class(param)
 
         ObjRoot = kw.get("ObjRoot")
@@ -401,23 +401,23 @@ def _BuildObjFromFile(Args, **kw):
         SetAttrs(eval(MountPathList[0]), MountPathList[1:], Obj)
 
 def BuildObj(Args, **kw):
-    if isinstance(Args, utils_torch.PyObj):
+    if isinstance(Args, DLUtils.PyObj):
         Args = GetAttrs(Args)
 
-    if isinstance(Args, list) or utils_torch.IsListLikePyObj(Args):
+    if isinstance(Args, list) or DLUtils.IsListLikePyObj(Args):
         for Arg in Args:
             _BuildObj(Arg, **kw)
-    elif isinstance(Args, utils_torch.PyObj):
+    elif isinstance(Args, DLUtils.PyObj):
         _BuildObj(Args, **kw)
     else:
         raise Exception()
 
 def _BuildObj(Args, **kw):
-    ModulePathList = utils_torch.ToList(Args.ModulePath)
-    MountPathList = utils_torch.ToList(Args.MountPath)
+    ModulePathList = DLUtils.ToList(Args.ModulePath)
+    MountPathList = DLUtils.ToList(Args.MountPath)
 
     for ModulePath, MountPath in zip(ModulePathList, MountPathList):
-        Class = utils_torch.parse.ParseClass(ModulePath)
+        Class = DLUtils.parse.ParseClass(ModulePath)
         Obj = Class()
 
         ObjRoot = kw.get("ObjRoot")
@@ -431,19 +431,19 @@ def _BuildObj(Args, **kw):
         SetAttrs(eval(MountPathList[0]), MountPathList[1:], Obj)
 
 def RemoveObj(Args, **kw):
-    if isinstance(Args, utils_torch.PyObj):
+    if isinstance(Args, DLUtils.PyObj):
         Args = GetAttrs(Args)
 
     if isinstance(Args, list):
         for Arg in Args:
             _RemoveObj(Arg, **kw)
-    elif isinstance(Args, utils_torch.PyObj):
+    elif isinstance(Args, DLUtils.PyObj):
         _RemoveObj(Args, **kw)
     else:
         raise Exception()
 
 def _RemoveObj(Args, **kw):
-    MountPathList = utils_torch.ToList(Args.MountPath)
+    MountPathList = DLUtils.ToList(Args.MountPath)
 
     for MountPath in MountPathList:
         ObjRoot = kw.get("ObjRoot")
@@ -457,68 +457,68 @@ def _RemoveObj(Args, **kw):
         RemoveAttrs(eval(MountPathList[0]), MountPathList[1:])
 
 def SaveObj(Args, **kw):
-    SaveObjList = utils_torch.ToList(Args.SaveObj)
-    SaveDirList = utils_torch.ToList(Args.SaveDir)
+    SaveObjList = DLUtils.ToList(Args.SaveObj)
+    SaveDirList = DLUtils.ToList(Args.SaveDir)
 
     for SaveObj, SaveDir in zip(SaveObjList, SaveDirList):
         if SaveDir in ["auto", "Auto"]:
-            SaveDir = utils_torch.GetMainSaveDirForModule()
-        Obj = utils_torch.parse.ResolveStr(SaveObj, **kw)
+            SaveDir = DLUtils.GetMainSaveDirForModule()
+        Obj = DLUtils.parse.ResolveStr(SaveObj, **kw)
         Obj.Save(SaveDir)
 
 def LoadObj(Args, **kw):
-    SourcePathList = utils_torch.ToList(Args.SourcePath)
-    MountPathList = utils_torch.ToList(Args.MountPath)
+    SourcePathList = DLUtils.ToList(Args.SourcePath)
+    MountPathList = DLUtils.ToList(Args.MountPath)
 
     for SourcePath, MountPath in zip(SourcePathList, MountPathList):
-        Obj = utils_torch.parse.ResolveStr(SourcePath, **kw)
+        Obj = DLUtils.parse.ResolveStr(SourcePath, **kw)
         MountObj(MountPath, Obj, **kw)
 
 def LoadObjFromFile(Args, **kw):
-    SaveNameList = utils_torch.ToList(Args.SaveName)
-    MountPathList = utils_torch.ToList(Args.MountPath)
-    SaveDirList = utils_torch.ToList(Args.SaveDir)
+    SaveNameList = DLUtils.ToList(Args.SaveName)
+    MountPathList = DLUtils.ToList(Args.MountPath)
+    SaveDirList = DLUtils.ToList(Args.SaveDir)
 
     SaveDirParsedList = []
     for SaveDir in SaveDirList:
-        SaveDirParsedList.append(utils_torch.parse.ResolveStr(SaveDir, **kw))
+        SaveDirParsedList.append(DLUtils.parse.ResolveStr(SaveDir, **kw))
 
     for SaveName, SaveDir, MountPath in zip(SaveNameList, SaveDirParsedList, MountPathList):
         ParamPath = SaveDir + SaveName + ".param.jsonc"
-        assert utils_torch.FileExists(ParamPath)
-        param = utils_torch.json.JsonFile2PyObj(ParamPath)
+        assert DLUtils.FileExists(ParamPath)
+        param = DLUtils.json.JsonFile2PyObj(ParamPath)
         DataPath = SaveDir + SaveName + ".data"
-        if utils_torch.FileExists(DataPath):
-            data = utils_torch.json.DataFile2PyObj(DataPath)
+        if DLUtils.FileExists(DataPath):
+            data = DLUtils.json.DataFile2PyObj(DataPath)
         else:
-            data = utils_torch.EmptyPyObj()
-        Class = utils_torch.parse.ParseClass(param.ClassPath)
+            data = DLUtils.EmptyPyObj()
+        Class = DLUtils.parse.ParseClass(param.ClassPath)
         Obj = Class(param, data, LoadDir=SaveDir)
         MountObj(MountPath, Obj, **kw)
 
 def LoadTaskFile(FilePath="./task.jsonc"):
-    TaskObj = utils_torch.json.JsonFile2PyObj(FilePath)
+    TaskObj = DLUtils.json.JsonFile2PyObj(FilePath)
     return TaskObj
 
 def LoadJsonFile(Args):
-    if isinstance(Args, utils_torch.PyObj):
+    if isinstance(Args, DLUtils.PyObj):
         Args = GetAttrs(Args)
     if isinstance(Args, dict):
-        _LoadJsonFile(utils_torch.json.JsonObj2PyObj(Args))
+        _LoadJsonFile(DLUtils.json.JsonObj2PyObj(Args))
     elif isinstance(Args, list):
         for Arg in Args:
             _LoadJsonFile(Arg)
-    elif isinstance(Args, utils_torch.PyObj):
+    elif isinstance(Args, DLUtils.PyObj):
         _LoadJsonFile(Args)
     else:
         raise Exception()
 
 def _LoadJsonFile(Args, **kw):
-    Obj = utils_torch.json.JsonFile2PyObj(Args.FilePath)
+    Obj = DLUtils.json.JsonFile2PyObj(Args.FilePath)
     MountObj(Args.MountPath, Obj, **kw)
 
 def SaveObj(Args):
-    Obj = utils_torch.parse.ResolveStr(Args.MountPath, ObjRoot=utils_torch.GetGlobalParam()),
+    Obj = DLUtils.parse.ResolveStr(Args.MountPath, ObjRoot=DLUtils.GetGlobalParam()),
     Obj.Save(SaveDir=Args.SaveDir)
 
 def IsClassInstance(Obj):
@@ -539,7 +539,7 @@ def IsIterable(Obj):
 def IsListLike(List):
     if isinstance(List, list):
         return True
-    elif isinstance(List, utils_torch.PyObj) and List.IsListLike():
+    elif isinstance(List, DLUtils.PyObj) and List.IsListLike():
         return True
     else:
         return False
@@ -568,7 +568,7 @@ def List2NpArray(data):
 
 def Dict2GivenType(Dict, Type):
     if Type in ["PyObj"]:
-        return utils_torch.PyObj(Dict)
+        return DLUtils.PyObj(Dict)
     elif Type in ["Dict"]:
         return Dict
     else:
@@ -585,10 +585,10 @@ def ToNpArray(data, DataType=np.float32):
         raise Exception(type(data))
 
 def ToPyObj(Obj):
-    if isinstance(Obj, utils_torch.json.PyObj):
+    if isinstance(Obj, DLUtils.json.PyObj):
         return Obj
     else:
-        return utils_torch.PyObj(Obj)
+        return DLUtils.PyObj(Obj)
 
 def ToTorchTensor(data):
     if isinstance(data, np.ndarray):
@@ -601,12 +601,12 @@ def ToTorchTensor(data):
         raise Exception(type(data))
 
 def Line2Square(data):
-    DimensionNum = utils_torch.GetDimensionNum(data)
+    DimensionNum = DLUtils.GetDimensionNum(data)
     if not DimensionNum == 1:
         raise Exception(DimensionNum)
 
     dataNum = data.shape[0]
-    RowNum, ColNum = utils_torch.plot.ParseRowColNum(dataNum)
+    RowNum, ColNum = DLUtils.plot.ParseRowColNum(dataNum)
     mask = np.ones((RowNum, ColNum), dtype=np.bool8)
 
     maskNum = RowNum * ColNum - dataNum
@@ -674,7 +674,7 @@ def ParseDataTypeNp(DataType):
         return DataType
 
 def ToGivenDataTypeNp(data, DataType):
-    DataType = utils_torch.ParseDataTypeNp(DataType)
+    DataType = DLUtils.ParseDataTypeNp(DataType)
     return data.astype(DataType)
 
 def TorchTensor2NpArray(data):
@@ -687,7 +687,7 @@ def Tensor2Str(data):
 
 def Tensor2File(data, SavePath):
     EnsureFileDir(SavePath)
-    np.savetxt(SavePath, utils_torch.Tensor2NpArray(data))
+    np.savetxt(SavePath, DLUtils.Tensor2NpArray(data))
 
 def Tensor2NumpyOrFloat(data):
     try:
@@ -711,9 +711,9 @@ def ToList(Obj):
         return Obj.tolist()
     elif isinstance(Obj, torch.Tensor):
         return NpArray2List(Tensor2NpArray(Obj))
-    elif utils_torch.IsListLikePyObj(Obj):
+    elif DLUtils.IsListLikePyObj(Obj):
         return Obj.ToList()
-    elif isinstance(Obj, dict) or utils_torch.IsDictLikePyObj(Obj):
+    elif isinstance(Obj, dict) or DLUtils.IsDictLikePyObj(Obj):
         raise Exception()
     else:
         return [Obj]
@@ -721,7 +721,7 @@ def ToList(Obj):
 def ToDict(Obj):
     if isinstance(Obj, dict):
         return dict(Obj)
-    elif isinstance(Obj, utils_torch.PyObj):
+    elif isinstance(Obj, DLUtils.PyObj):
         return Obj.ToDict()
     else:
         raise Exception(type(Obj))
@@ -779,10 +779,10 @@ def NotifyWhenFunctionReturn(event, Function, *Args, **ArgsKw):
 def ReturnInGivenTime(TimeLimit, Verbose=True):
     # TimeLimit: float or int. In Seconds.
     if Verbose:
-        utils_torch.AddLog("Start counding down. TimeLimit=%d."%TimeLimit)
+        DLUtils.AddLog("Start counding down. TimeLimit=%d."%TimeLimit)
     time.sleep(TimeLimit)
     if Verbose:
-        utils_torch.AddLog("TimeLimit reached. TimeLimit=%d."%TimeLimit)
+        DLUtils.AddLog("TimeLimit reached. TimeLimit=%d."%TimeLimit)
     return
 
 def GetGPUWithLargestUseableMemory(TimeLimit=10, Default='cuda:0'):
@@ -794,7 +794,7 @@ def GetGPUWithLargestUseableMemory(TimeLimit=10, Default='cuda:0'):
 def __GetGPUWithLargestUseableMemory(List):
     GPU= _GetGPUWithLargestUseableMemory()
     List[0] = GPU
-    utils_torch.AddLog("Selected GPU: %s"%List[0])
+    DLUtils.AddLog("Selected GPU: %s"%List[0])
 
 def _GetGPUWithLargestUseableMemory(Verbose=True): # return torch.device with largest available gpu memory.
     try:
@@ -809,11 +809,11 @@ def _GetGPUWithLargestUseableMemory(Verbose=True): # return torch.device with la
         GPUUseableMemory = np.array(GPUUseableMemory, dtype=np.int64)
         GPUWithLargestUseableMemoryIndex = np.argmax(GPUUseableMemory)    
         if Verbose:
-            utils_torch.AddLog("Useable GPU Num: %d"%GPUNum)
+            DLUtils.AddLog("Useable GPU Num: %d"%GPUNum)
             report = "Useable GPU Memory: "
             for GPUIndex in range(GPUNum):
                 report += "GPU%d: %.2fGB "%(GPUIndex, GPUUseableMemory[GPUIndex] * 1.0 / 1024 ** 3)
-            utils_torch.AddLog(report)
+            DLUtils.AddLog(report)
         return 'cuda:%d'%(GPUWithLargestUseableMemoryIndex)
     except Exception:
         return "cuda:0"
@@ -1141,7 +1141,7 @@ def GetAllMethodsOfModule(ModulePath):
 
 ListAllMethodsOfModule = GetAllMethodsOfModule
 
-# GlobalParam = utils_torch.json.JsonObj2PyObj({
+# GlobalParam = DLUtils.json.JsonObj2PyObj({
 #     "Logger": None
 # })
 
@@ -1150,7 +1150,7 @@ def RandomSelect(List, SelectNum):
         Num = List
         List = range(Num)
     else:
-        Num = utils_torch.GetLength(List)
+        Num = DLUtils.GetLength(List)
 
     if Num > SelectNum:
         return random.sample(List, SelectNum)
@@ -1169,7 +1169,7 @@ def RandomOrder(List):
     random.shuffle(List) # InPlace operation
     return List
 def GetLength(Obj):
-    if utils_torch.IsIterable(Obj):
+    if DLUtils.IsIterable(Obj):
         return len(Obj)
     else:
         raise Exception()
@@ -1189,7 +1189,7 @@ def CalculateGitProjectTotalLines(Verbose=False):
     # GitCommand = 'git log  --pretty=tformat: --numstat | awk "{ add += $1; subs += $2; loc += $1 - $2 } END { printf "added lines: %s, removed lines: %s, total lines: %s\n", add, subs, loc }"'
     # report = os.system(GitCommand)
     # if Verbose:
-    #     utils_torch.AddLog(report)
+    #     DLUtils.AddLog(report)
     # return report
     import os
     GitCommand = 'git log  --pretty=tformat: --numstat | awk \'{ add += $1; subs += $2; loc += $1 - $2 } END { printf "added lines: %s, removed lines: %s, total lines: %s\\n", add, subs, loc }\''
@@ -1206,13 +1206,13 @@ def GetDimensionNum(data):
 def ToLowerStr(Str):
     return Str.lower()
 
-from utils_torch.file import Str2File
+from DLUtils.file import Str2File
 
 def GetSavePathFromName(Name, Suffix=""):
     if not Suffix.startswith("."):
         Suffix = "." + Suffix
-    FilePath = utils_torch.GetMainSaveDir() + Name + Suffix
-    FilePath = utils_torch.file.RenameIfFileExists(FilePath)
+    FilePath = DLUtils.GetMainSaveDir() + Name + Suffix
+    FilePath = DLUtils.file.RenameIfFileExists(FilePath)
     return FilePath
 
 
@@ -1234,7 +1234,7 @@ def Float2StrDisplay(Float):
     else:
         Sign = 1.0
 
-    Base, Exp = utils_torch.math.Float2BaseAndExponent(Float)
+    Base, Exp = DLUtils.math.Float2BaseAndExponent(Float)
     TicksStr = []
     if 1 <= Exp <= 2:
         FloatStr = str(int(Float))
@@ -1250,11 +1250,11 @@ def Float2StrDisplay(Float):
 
 def Floats2StrDisplay(Floats):
     Floats = ToNpArray(Floats)
-    Base, Exp = utils_torch.math.FloatsBaseAndExponent(Floats)
+    Base, Exp = DLUtils.math.FloatsBaseAndExponent(Floats)
 
 def Floats2StrWithEqualLength(Floats):
-    Floats = utils_torch.ToNpArray(Floats)
-    Base, Exp = utils_torch.math.Floats2BaseAndExponent(Floats)
+    Floats = DLUtils.ToNpArray(Floats)
+    Base, Exp = DLUtils.math.Floats2BaseAndExponent(Floats)
     # to be implemented
 
 def MountObj(MountPath, Obj, **kw):
@@ -1270,11 +1270,11 @@ def MountObj(MountPath, Obj, **kw):
 def MountDictOnObj(Obj, Dict):
     Obj.__dict__.update(Dict)
 
-ExternalMethods = utils_torch.EmptyPyObj()
+ExternalMethods = DLUtils.EmptyPyObj()
 def RegisterExternalMethods(Name, Method):
     setattr(ExternalMethods, Name, Method)
 
-ExternalClasses = utils_torch.EmptyPyObj()
+ExternalClasses = DLUtils.EmptyPyObj()
 def RegisterExternalClasses(Name, Class):
     setattr(ExternalClasses, Name, Class)
 
@@ -1294,7 +1294,7 @@ def EnsurePyObj(Obj):
     if isinstance(Obj, argparse.Namespace):
         return Namespace2PyObj(Obj)
     elif isinstance(Obj, dict) or isinstance(Obj, list):
-        return utils_torch.PyObj(Obj)
+        return DLUtils.PyObj(Obj)
     else:
         raise Exception(type(Obj))
 
@@ -1303,8 +1303,8 @@ def CreateDefaultDict(GetDefaultMethod):
     return defaultdict(GetDefaultMethod)
 GetDefaultDict = CreateDefaultDict
 
-from utils_torch.format import *
+from DLUtils.format import *
 
-# SystemType = utils_torch.system.GetSystemType()
+# SystemType = DLUtils.system.GetSystemType()
 # def GetSystemType():
 #     return SystemType

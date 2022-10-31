@@ -10,7 +10,7 @@ def AddSysPath():
     sys.path.append(os.path.abs(".."))
 AddSysPath()
 
-import utils_torch
+import DLUtils
 
 def main():
     if Args.task in ["CleanLog", "CleanLog", "cleanlog"]:
@@ -18,17 +18,17 @@ def main():
     elif Args.task in ["CleanFigure"]:
         CleanFigures()
     elif Args.task in ["TotalLines"]:
-        utils_torch.CalculateGitProjectTotalLines()
+        DLUtils.CalculateGitProjectTotalLines()
     else:
         raise Exception("Inavlid Task: %s"%Args.task)
 
 def CleanLog():
-    import utils_torch
-    utils_torch.file.RemoveAllFilesAndDirs("./log/")
+    import DLUtils
+    DLUtils.file.RemoveAllFilesAndDirs("./log/")
 
 def CleanFigures():
-    import utils_torch
-    utils_torch.file.RemoveMatchedFiles("./", r".*\.png")
+    import DLUtils
+    DLUtils.file.RemoveMatchedFiles("./", r".*\.png")
 
 if __name__=="__main__":
     main()

@@ -1,5 +1,5 @@
 
-import utils_torch
+import DLUtils
 
 
 def IsLegalPyName(name):

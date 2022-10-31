@@ -6,8 +6,8 @@ import time
 import os
 import re
 
-import utils_torch
-from utils_torch.attr import *
+import DLUtils
+from DLUtils.attr import *
 
 import torch
 import torch.nn as nn
@@ -34,21 +34,21 @@ def NotifyBatchNum(ObjList, BatchNum):
         Obj.NotifyBatchNum(BatchNum)
 
 def ParseRoutersFromOptimizeParam(param, **kw):
-    Routers = utils_torch.PyObj()
+    Routers = DLUtils.PyObj()
     for Name, RouterParam in ListAttrsAndValues(param.Batch.Routers):
-        Router = utils_torch.router.ParseRouterStaticAndDynamic(RouterParam, ObjRefList=[RouterParam, param], **kw)
+        Router = DLUtils.router.ParseRouterStaticAndDynamic(RouterParam, ObjRefList=[RouterParam, param], **kw)
         setattr(Routers, Name, Router)
     return Routers
 
 def SetSaveDirForSavedModel(EpochIndex, BatchIndex):
-    SaveDirForSavedModel = utils_torch.GetMainSaveDir() + "SavedModel/" + "Epoch%d-Batch%d/"%(EpochIndex, BatchIndex)
-    utils_torch.SetSubSaveDir(SaveDirForSavedModel, Type="Obj")
+    SaveDirForSavedModel = DLUtils.GetMainSaveDir() + "SavedModel/" + "Epoch%d-Batch%d/"%(EpochIndex, BatchIndex)
+    DLUtils.SetSubSaveDir(SaveDirForSavedModel, Type="Obj")
 
 # def CallGraphEpochBatch(router, InList, logger, EpochIndex, BatchIndex):
 #     logger.SetLocal("EpochIndex", EpochIndex)
 #     logger.SetLocal("BatchIndex", BatchIndex)
-#     utils_torch.AddLog("Epoch%d-Batch%d"%(EpochIndex, BatchIndex))
-#     utils_torch.CallGraph(router, InList=InList) 
+#     DLUtils.AddLog("Epoch%d-Batch%d"%(EpochIndex, BatchIndex))
+#     DLUtils.CallGraph(router, InList=InList) 
 
 def ParseEpochBatchFromStr(Str):
     MatchResult = re.match(r"^.*Epoch(-?\d*)-Batch(\d*).*$", Str)
@@ -70,15 +70,15 @@ def GetEpochFloat(EpochIndex, BatchIndex, BatchNum):
 
 def EpochBatchIndices2EpochsFloat(EpochIndices, BatchIndices, **kw):
     BatchNum = kw["BatchNum"]
-    EpochIndices = utils_torch.ToNpArray(EpochIndices)
-    BatchIndices = utils_torch.ToNpArray(BatchIndices)
+    EpochIndices = DLUtils.ToNpArray(EpochIndices)
+    BatchIndices = DLUtils.ToNpArray(BatchIndices)
     EpochsFloat = EpochIndices + BatchIndices / BatchNum
-    return utils_torch.NpArray2List(EpochsFloat)
+    return DLUtils.NpArray2List(EpochsFloat)
 
 def Labels2OneHotVectors(Labels, VectorSize=None):
     # Labels: [SampleNum]
     SampleNum = Labels.shape[0]
-    Labels = utils_torch.ToNpArray(Labels, dtype=np.int32)
+    Labels = DLUtils.ToNpArray(Labels, dtype=np.int32)
     if VectorSize is None:
         LabelMin, LabelMax = np.min(Labels), np.max(Labels)
         VectorSize = LabelMax
@@ -141,8 +141,8 @@ def GetEpochBatchIndexFromPyObj(Obj):
         raise Exception()
     return EpochIndex, BatchIndex
 
-from utils_torch.train.CheckPoint import CheckPointForEpochBatchTrain
-from utils_torch.train.Trainer import TrainerEpochBatch
+from DLUtils.train.CheckPoint import CheckPointForEpochBatchTrain
+from DLUtils.train.Trainer import TrainerEpochBatch
 
 
 def ClearBatch(self, Obj):

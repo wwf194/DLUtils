@@ -1,9 +1,9 @@
 
 import torch
-import utils_torch
+import DLUtils
 def ToNpArrayIfIsTensor(data):
     if isinstance(data, torch.Tensor):
-        return utils_torch.ToNpArray(data), False
+        return DLUtils.ToNpArray(data), False
     else:
         return data, True
 

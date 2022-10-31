@@ -3,14 +3,14 @@ import torch.optim as optim
 import torch.nn as nn
 import torch.nn.functional as F
 
-import utils_torch
-from utils_torch.attr import *
+import DLUtils
+from DLUtils.attr import *
 
-from utils_torch.module.AbstractModules import AbstractModule
-class SignalHolder(utils_torch.module.AbstractModuleWithoutParam):
+from DLUtils.module.AbstractModules import AbstractModule
+class SignalHolder(DLUtils.module.AbstractModuleWithoutParam):
     # def __init__(self, param=None, data=None, **kw):
     #     kw.setdefault("HasTensor", False)
-    #     self.InitModule(self, param, data, ClassPath="utils_torch.transform.SignalHolder", **kw)
+    #     self.InitModule(self, param, data, ClassPath="DLUtils.transform.SignalHolder", **kw)
     HasTensor = False
     def __init__(self, **kw):
         super().__init__(**kw)
@@ -23,14 +23,14 @@ class SignalHolder(utils_torch.module.AbstractModuleWithoutParam):
     def Send(self):
         return self.cache.Content
     def Clear(self):
-        utils_torch.attr.RemoveAttrIfExists(self.cache, "Content")
-#utils_torch.transform.SetMethodForTransformModule(SignalHolder, HasTensor=False)
+        DLUtils.attr.RemoveAttrIfExists(self.cache, "Content")
+#DLUtils.transform.SetMethodForTransformModule(SignalHolder, HasTensor=False)
 
-from utils_torch.transform import AbstractTransform
+from DLUtils.transform import AbstractTransform
 class SerialSender(AbstractTransform):
     # def __init__(self, param=None, data=None, **kw):
     #     #super(SerialSender, self).__init__()
-    #     self.InitModule(self, param, data,  ClassPath="utils_torch.transform.SerialSender", **kw)
+    #     self.InitModule(self, param, data,  ClassPath="DLUtils.transform.SerialSender", **kw)
     def __init__(self, **kw):
         super().__init__(**kw)
     def Build(self, IsLoad=False):
@@ -76,14 +76,14 @@ class SerialSender(AbstractTransform):
         Content = self._Send(cache.ContentList, Index=cache.NextSendIndex)
         cache.NextSendIndex += 1
         return Content
-#utils_torch.transform.SetMethodForTransformModule(SerialSender, HasTensor=False)
+#DLUtils.transform.SetMethodForTransformModule(SerialSender, HasTensor=False)
 
 class SerialReceiver(AbstractTransform):
     # def __init__(self, param=None, data=None, **kw):
-    #     self.InitModule(self, param, data, ClassPath="utils_torch.transform.SerialReceiver", **kw)
+    #     self.InitModule(self, param, data, ClassPath="DLUtils.transform.SerialReceiver", **kw)
     def GenerateParam(self, Type):
         if Type in ["ActivityAlongTime"]:
-            return utils_torch.PyObj({
+            return DLUtils.PyObj({
                 "Type": "SerialReceiver",
                 "Send": {
                     "Method": "Lambda", "Args": "lambda List:torch.stack(List, axis=1)"
@@ -143,4 +143,4 @@ class SerialReceiver(AbstractTransform):
         return result
     def SendWithoutFlush(self):
         return self.ContentList
-#utils_torch.transform.SetMethodForTransformModule(SerialReceiver, HasTensor=False)
+#DLUtils.transform.SetMethodForTransformModule(SerialReceiver, HasTensor=False)

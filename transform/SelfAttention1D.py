@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-import utils_torch
-from utils_torch.attr import *
+import DLUtils
+from DLUtils.attr import *
 
 class SelfAttention1D(nn.Module):
     def __init__(self, **kw):
@@ -11,7 +11,7 @@ class SelfAttention1D(nn.Module):
         return
     # def __init__(self, param=None, data=None, **kw):
     #     super(SelfAttention1D, self).__init__()
-    #     self.InitModule(self, param, data, ClassPath="utils_torch.transform.Bias", **kw)
+    #     self.InitModule(self, param, data, ClassPath="DLUtils.transform.Bias", **kw)
 
     def Build(self, IsLoad=False):
         self.BeforeBuild(IsLoad)
@@ -32,13 +32,13 @@ class SelfAttention1D(nn.Module):
             raise Exception()
 
         if cache.IsInit:
-            data.Input2Query = utils_torch.transform.CreateWeight2D(param.Weight.Input2Query)
-            data.Input2Key = utils_torch.transform.CreateWeight2D(param.Weight.Input2Key)
-            data.Input2Value = utils_torch.transform.CreateWeight2D(param.Weight.Input2Value)
+            data.Input2Query = DLUtils.transform.CreateWeight2D(param.Weight.Input2Query)
+            data.Input2Key = DLUtils.transform.CreateWeight2D(param.Weight.Input2Key)
+            data.Input2Value = DLUtils.transform.CreateWeight2D(param.Weight.Input2Value)
         else:
-            data.Input2Query = utils_torch.ToTorchTensor(data.Input2Query)
-            data.Input2Key   = utils_torch.ToTorchTensor(data.Input2Key)
-            data.Input2Value = utils_torch.ToTorchTensor(data.Input2Value)
+            data.Input2Query = DLUtils.ToTorchTensor(data.Input2Query)
+            data.Input2Key   = DLUtils.ToTorchTensor(data.Input2Key)
+            data.Input2Value = DLUtils.ToTorchTensor(data.Input2Value)
 
         cache.Tensors.append([data, "Input2Query", data.Input2Query])
         cache.Tensors.append([data, "Input2Key",   data.Input2Key])
@@ -96,4 +96,4 @@ class SelfAttention1D(nn.Module):
             self.LogCache("Output", Output, "Activity", log=log)
             return Output
 __MainClass__ = SelfAttention1D
-utils_torch.transform.SetMethodForTransformModule(__MainClass__)
+DLUtils.transform.SetMethodForTransformModule(__MainClass__)

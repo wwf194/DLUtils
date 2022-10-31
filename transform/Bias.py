@@ -2,14 +2,14 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-import utils_torch
-from utils_torch.attr import *
+import DLUtils
+from DLUtils.attr import *
 
-from utils_torch.transform import AbstractTransformWithTensor
+from DLUtils.transform import AbstractTransformWithTensor
 class Bias(AbstractTransformWithTensor):
     # def __init__(self, param=None, data=None, **kw):
     #     super(Bias, self).__init__()
-    #     self.InitModule(self, param, data, ClassPath="utils_torch.transform.Bias", **kw)
+    #     self.InitModule(self, param, data, ClassPath="DLUtils.transform.Bias", **kw)
     def __init__(self, **kw):
         super().__init__(**kw)
     def Build(self, IsLoad=False):
@@ -20,7 +20,7 @@ class Bias(AbstractTransformWithTensor):
         if cache.IsInit:
             data.Bias = torch.nn.Parameter(torch.zeros(param.Size))
         else:
-            data.Bias = utils_torch.ToTorchTensor(data.Bias)
+            data.Bias = DLUtils.ToTorchTensor(data.Bias)
         cache.Tensors.append([data, "Bias", data.Bias])
 
         return self
@@ -30,4 +30,4 @@ class Bias(AbstractTransformWithTensor):
         return self.forward(*Args, **Kw)
 
 __MainClass__ = Bias
-# utils_torch.transform.SetMethodForTransformModule(__MainClass__)
+# DLUtils.transform.SetMethodForTransformModule(__MainClass__)

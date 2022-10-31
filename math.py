@@ -3,9 +3,9 @@ import math
 import pandas as pd
 import numpy as np
 import scipy
-import utils_torch
+import DLUtils
 
-from utils_torch.attr import GetAttrs
+from DLUtils.attr import GetAttrs
 
 def NpArrayStatistics(data, verbose=False, ReturnType="PyObj"):
     DataStats = {
@@ -15,7 +15,7 @@ def NpArrayStatistics(data, verbose=False, ReturnType="PyObj"):
         "Std": np.nanstd(data),
         "Var": np.nanvar(data)
     }
-    return utils_torch.Dict2GivenType(DataStats, ReturnType)
+    return DLUtils.Dict2GivenType(DataStats, ReturnType)
 
 NpStatistics = NpArrayStatistics
 
@@ -42,7 +42,7 @@ def TorchTensorStat(tensor, verbose=False, ReturnType="PyObj"):
     if ReturnType in ["Dict"]:
         return statistics
     elif ReturnType in ["PyObj"]:
-        return utils_torch.PyObj(statistics)
+        return DLUtils.PyObj(statistics)
     else:
         raise Exception()
 
@@ -67,18 +67,18 @@ def SampleFromDistribution(param, Shape=None):
         raise Exception()
 
 def SampleFromGaussianDistribution(Mean=0.0, Std=1.0, Shape=100):
-    return np.random.normal(loc=Mean, scale=Std, size=utils_torch.parse.ParseShape(Shape))
+    return np.random.normal(loc=Mean, scale=Std, size=DLUtils.parse.ParseShape(Shape))
 
 def SampleFromGaussianDistributionTorch(Mean=0.0, Std=1.0, Shape=100):
     data = SampleFromGaussianDistribution(Mean, Std, Shape)
-    data = utils_torch.NpArray2Tensor(data)
+    data = DLUtils.NpArray2Tensor(data)
     return data
 
 def SamplesFromReyleighDistribution(Mean=1.0, Shape=100):
     # p(x) ~ x^2 / sigma^2 * exp( - x^2 / (2 * sigma^2))
     # E[X] = 1.253 * sigma
     # D[X] = 0.429 * sigma^2
-    Shape = utils_torch.parse.ParseShape(Shape)
+    Shape = DLUtils.parse.ParseShape(Shape)
     return np.random.rayleigh(Mean / 1.253, Shape)
 
 def CosineSimilarityNp(vecA, vecB):
@@ -92,7 +92,7 @@ def CosineSimilarityNp(vecA, vecB):
 def Vectors2Directions(Vectors):
     Directions = []
     for Vector in Vectors:
-        R, Direction = utils_torch.geometry2D.XY2Polar(*Vector)
+        R, Direction = DLUtils.geometry2D.XY2Polar(*Vector)
         Directions.append(Direction)    
     return Directions
 
@@ -112,7 +112,7 @@ def ToMean0Std1Np(data, StdThreshold=1.0e-9):
     std = np.std(data, keepdims=True)
     mean = np.mean(data, keepdims=True)
     if std < StdThreshold:
-        utils_torch.AddWarning("ToMean0Std1Np: StandardDeviation==0.0")
+        DLUtils.AddWarning("ToMean0Std1Np: StandardDeviation==0.0")
         return data - mean
     else:
        return (data - mean) / std
@@ -129,7 +129,7 @@ def Norm2Mean0Std1Torch(data, axis=None, StdThreshold=1.0e-9):
     std = torch.std(data, dim=axis, keepdim=True)
     mean = torch.mean(data, dim=axis, keepdim=True)
     # if std < StdThreshold:
-    #     utils_torch.AddWarning("ToMean0Std1Np: StandardDeviation==0.0")
+    #     DLUtils.AddWarning("ToMean0Std1Np: StandardDeviation==0.0")
     #     return data - mean
     # else:
     # To Be Implemented: Deal with std==0.0
@@ -186,7 +186,7 @@ def Float2BaseAndExponent(Float, Base=10.0):
 Float2BaseExp = Float2BaseAndExponent
 
 def Floats2BaseAndExponent(Floats, Base=10.0):
-    Floats = utils_torch.ToNpArray(Floats)
+    Floats = DLUtils.ToNpArray(Floats)
     Exponent = np.ceil(np.log10(Floats, Base))
     Coefficient = Floats / 10.0 ** Exponent
     return Coefficient, Exponent
@@ -195,8 +195,8 @@ def Floats2BaseAndExponent(Floats, Base=10.0):
 def CalculatePearsonCoefficient(dataA, dataB):
     # dataA: 1d array
     # dataB: 1d array
-    dataA = utils_torch.EnsureFlat(dataA)
-    dataB = utils_torch.EnsureFlat(dataB)
+    dataA = DLUtils.EnsureFlat(dataA)
+    dataB = DLUtils.EnsureFlat(dataB)
     # data = pd.DataFrame({
     #     "dataA": dataA, "dataB": dataB
     # })
@@ -212,16 +212,16 @@ def CalculatePearsonCoefficientMatrix(dataA, dataB):
     FeatureNumB = dataB.shape[1]
     SampleNum = dataA.shape[0]
 
-    Location = utils_torch.GetGlobalParam().system.TensorLocation
+    Location = DLUtils.GetGlobalParam().system.TensorLocation
 
-    dataAGPU = utils_torch.ToTorchTensor(dataA).to(Location)
-    dataBGPU = utils_torch.ToTorchTensor(dataB).to(Location)
+    dataAGPU = DLUtils.ToTorchTensor(dataA).to(Location)
+    dataBGPU = DLUtils.ToTorchTensor(dataB).to(Location)
 
     dataANormed = Norm2Mean0Std1Torch(dataAGPU, axis=0)
     dataBNormed = Norm2Mean0Std1Torch(dataBGPU, axis=0)
 
     CorrelationMatrixGPU = torch.mm(dataANormed.permute(1, 0), dataBNormed) / SampleNum
-    CorrelationMatrix = utils_torch.TorchTensor2NpArray(CorrelationMatrixGPU)
+    CorrelationMatrix = DLUtils.TorchTensor2NpArray(CorrelationMatrixGPU)
     return CorrelationMatrix
 
 def CalculateBinnedMeanAndStd(
@@ -271,12 +271,12 @@ def CalculateBinnedMeanAndStd(
         BinCount.append(BinCount1[BinNum - 1])
 
         BinStats = {
-            "Mean": utils_torch.List2NpArray(BinMeans),
-            "Std": utils_torch.List2NpArray(BinStds),
-            "Num": utils_torch.List2NpArray(BinCount),
+            "Mean": DLUtils.List2NpArray(BinMeans),
+            "Std": DLUtils.List2NpArray(BinStds),
+            "Num": DLUtils.List2NpArray(BinCount),
             "BinCenters": BinCenters,
         }
-        return utils_torch.Dict2GivenType(BinStats, ReturnType)
+        return DLUtils.Dict2GivenType(BinStats, ReturnType)
     else:
         raise Exception(BinMethod)
 
@@ -293,11 +293,11 @@ def PCA(data, ReturnType="PyObj"):
     # elif ReturnType in ["TransformAndData"]:
     #     return 
     elif ReturnType in ["PyObj"]:
-        return utils_torch.PyObj({
-            "dataPCA": utils_torch.ToNpArray(dataPCA),
-            "Axis": utils_torch.ToNpArray(PCATransform.components_),
-            "VarianceExplained": utils_torch.ToNpArray(PCATransform.explained_variance_),
-            "VarianceExplainedRatio": utils_torch.ToNpArray(PCATransform.explained_variance_ratio_)
+        return DLUtils.PyObj({
+            "dataPCA": DLUtils.ToNpArray(dataPCA),
+            "Axis": DLUtils.ToNpArray(PCATransform.components_),
+            "VarianceExplained": DLUtils.ToNpArray(PCATransform.explained_variance_),
+            "VarianceExplainedRatio": DLUtils.ToNpArray(PCATransform.explained_variance_ratio_)
         })
     else:
         raise Exception(ReturnType)

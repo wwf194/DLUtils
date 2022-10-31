@@ -1,6 +1,6 @@
-import utils_torch
-import utils_torch.dataset.cifar10 as cifar10
-import utils_torch.dataset.mnist as mnist
+import DLUtils
+import DLUtils.dataset.cifar10 as cifar10
+import DLUtils.dataset.mnist as mnist
 
 ModuleList = [
     "CIFAR10",
@@ -29,16 +29,16 @@ def IsLegalModuleType(Type):
 
 def DataSetType2InputOutputOutput(Type):
     if Type in ["CIFAR10", "cifar10"]:
-        return utils_torch.dataset.cifar10.DatasetConfig
+        return DLUtils.dataset.cifar10.DatasetConfig
     elif Type in ["MNIST", "mnist"]:
-        return utils_torch.dataset.mnist.DatasetConfig
+        return DLUtils.dataset.mnist.DatasetConfig
     else:
         raise Exception(Type)
 
 ModuleList = set(ModuleList)
 
 import torch
-import utils_torch
+import DLUtils
 
 def CalculateBatchNum(BatchSize, SampleNum):
     BatchNum = SampleNum // BatchSize
@@ -46,8 +46,8 @@ def CalculateBatchNum(BatchSize, SampleNum):
         BatchNum += 1
     return BatchNum
 
-config = utils_torch.file.JsonFile2PyObj(
-    utils_torch.file.GetFileDir(__file__) + "config.jsonc"
+config = DLUtils.file.JsonFile2PyObj(
+    DLUtils.file.GetFileDir(__file__) + "config.jsonc"
 )
 
 def GetDatasetPath(Name):

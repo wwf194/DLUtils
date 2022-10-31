@@ -2,13 +2,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from utils_torch.attr import *
-from utils_torch.module.AbstractModules import AbstractModule
+from DLUtils.attr import *
+from DLUtils.module.AbstractModules import AbstractModule
 
-class NoiseFromDistribution(utils_torch.module.AbstractModuleWithParam):
+class NoiseFromDistribution(DLUtils.module.AbstractModuleWithParam):
     # def __init__(self, param=None, data=None, **kw):
     #     super(NoiseGenerator, self).__init__()
-    #     self.InitModule(self, param, data, ClassPath="utils_torch.transform.NoiseGenerator", **kw)
+    #     self.InitModule(self, param, data, ClassPath="DLUtils.transform.NoiseGenerator", **kw)
     HasTensor = False
     def __init__(self, **kw):
         super().__init__(**kw)
@@ -23,7 +23,7 @@ class NoiseFromDistribution(utils_torch.module.AbstractModuleWithParam):
             if param.SubMethod in ["FromInputStd"]:
                 if param.Distribution in ["Gaussian"]:
                     self.forward = lambda Input: \
-                        utils_torch.math.SampleFromGaussianDistributionTorch(
+                        DLUtils.math.SampleFromGaussianDistributionTorch(
                             Mean=0.0,
                             Std=torch.std(Input.detach()).item() * param.StdRatio,
                             Shape=tuple(Input.size()),

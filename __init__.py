@@ -1,33 +1,30 @@
-
-#from utils_torch.PyObj import *
-
-from utils_torch.system import GetSystemType
+# from DLUtils.PyObj import *
+from DLUtils.system import GetSystemType
 SystemType = GetSystemType()
 
-from utils_torch.json import IsJsonObj, PyObj, EmptyPyObj, IsPyObj, IsDictLikePyObj, IsListLikePyObj, CheckIsLegalPyName
+from DLUtils.json import IsJsonObj, PyObj, EmptyPyObj, IsPyObj, IsDictLikePyObj, IsListLikePyObj, CheckIsLegalPyName
+import DLUtils.attr as attrs
+import DLUtils.parse as parse
+import DLUtils.geometry2D as geometry2D
+import DLUtils.file as file
+import DLUtils.json as json
+import DLUtils.math as math
+import DLUtils.plot as plot
+import DLUtils.module as module
+import DLUtils.log as log # log -> transform
+import DLUtils.transform as transform
+import DLUtils.train as train # module -> train
+import DLUtils.router as router
+import DLUtils.functions as functions
 
-import utils_torch.attr as attrs
-import utils_torch.parse as parse
-import utils_torch.geometry2D as geometry2D
-import utils_torch.file as file
-import utils_torch.json as json
-import utils_torch.math as math
-import utils_torch.plot as plot
-import utils_torch.module as module
-import utils_torch.log as log # log -> transform
-import utils_torch.transform as transform
-import utils_torch.train as train # module -> train
-import utils_torch.router as router
-import utils_torch.functions as functions
+#import DLUtils.analysis as analysis
+import DLUtils.optimize as optimize # module -> optimize
+import DLUtils.dataset as dataset
+import DLUtils.loss as loss
+import DLUtils.evaluate as evaluate
+import DLUtils.system as system
+import DLUtils.analysis as analysis
 
-#import utils_torch.analysis as analysis
-import utils_torch.optimize as optimize # module -> optimize
-import utils_torch.dataset as dataset
-import utils_torch.loss as loss
-import utils_torch.evaluate as evaluate
-import utils_torch.system as system
-import utils_torch.analysis as analysis
-
-from utils_torch.utils import *
-from utils_torch.functions import *
-from utils_torch.log import *
+from DLUtils.utils import *
+from DLUtils.functions import *
+from DLUtils.log import *

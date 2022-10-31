@@ -1,6 +1,6 @@
 import numpy as np
 
-import utils_torch
+import DLUtils
 
 def CalculateAccuracyForSingelClassPrediction(ClassIndexPredicted, ClassIndexTruth):
     NumTotal = ClassIndexPredicted.shape[0]
@@ -8,7 +8,7 @@ def CalculateAccuracyForSingelClassPrediction(ClassIndexPredicted, ClassIndexTru
     return NumCorrect, NumTotal
 
 def InitAccuracy():
-    Accuracy = utils_torch.EmptyPyObj()
+    Accuracy = DLUtils.EmptyPyObj()
     Accuracy.NumTotal = 0
     Accuracy.NumCorrect = 0
     return Accuracy

@@ -1,6 +1,6 @@
 import torch
-import utils_torch
-from utils_torch.attr import *
+import DLUtils
+from DLUtils.attr import *
 
 from collections import defaultdict
 
@@ -27,9 +27,9 @@ def ParseOptimizeParamEpochBatch(param):
     EnsureAttrs(param, "Dampening", value=0.0)
     EnsureAttrs(param, "Momentum", value=0.0)
 
-class GradientDescend(utils_torch.module.AbstractModuleWithParam):
+class GradientDescend(DLUtils.module.AbstractModuleWithParam):
     # def __init__(self, param=None, data=None, **kw):
-    #     self.InitModule(self, param, data, ClassPath="utils_torch.optimize.GradientDescend")
+    #     self.InitModule(self, param, data, ClassPath="DLUtils.optimize.GradientDescend")
     def __init__(self, **kw):
         super().__init__(**kw)
     def Build(self, IsLoad=False):
@@ -52,7 +52,7 @@ class GradientDescend(utils_torch.module.AbstractModuleWithParam):
             #     print("aaa")
             if Weight.grad is None:
                 if WarnNoneGrad and Update:
-                    utils_torch.AddWarning("%s.grad is None."%Name)
+                    DLUtils.AddWarning("%s.grad is None."%Name)
                 continue
             WeightChange = Weight.grad.data
             if LogGrad:
@@ -78,8 +78,8 @@ class GradientDescend(utils_torch.module.AbstractModuleWithParam):
             #     1.0 * torch.where(Weight == 0.0)
             # else:
             # if LogWeightChangeRatio:
-            #     utils_torch.GetDataLogger().AddLog("%s.ChangeRatio"%Name,
-            #         utils_torch.transform.CalculateWeightChangeRatio(Weight, WeightChange),
+            #     DLUtils.GetDataLogger().AddLog("%s.ChangeRatio"%Name,
+            #         DLUtils.transform.CalculateWeightChangeRatio(Weight, WeightChange),
             #         Type="WeightChangeRatio"
             #     )
             if Update:
@@ -89,7 +89,7 @@ class GradientDescend(utils_torch.module.AbstractModuleWithParam):
                 Weight.grad.zero_()
         if LogGrad:
             return GradLog
-#utils_torch.transform.SetMethodForTransformModule(GradientDescend)
+#DLUtils.transform.SetMethodForTransformModule(GradientDescend)
 ModuleDict = {
     "GradientDescend": GradientDescend
 }

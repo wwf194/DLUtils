@@ -3,18 +3,18 @@ import json
 import json5
 from typing import List
 
-import utils_torch
-from utils_torch.python import CheckIsLegalPyName
-from utils_torch.attr import *
-# from utils_torch.utils import ListAttrs # leads to recurrent reference.
+import DLUtils
+from DLUtils.python import CheckIsLegalPyName
+from DLUtils.attr import *
+# from DLUtils.utils import ListAttrs # leads to recurrent reference.
 
 import numpy as np
 
 def JsonObj2PyObj(JsonObj):
     if isinstance(JsonObj, list):
-        return utils_torch.EmptyPyObj().FromList(JsonObj)
+        return DLUtils.EmptyPyObj().FromList(JsonObj)
     elif isinstance(JsonObj, dict):
-        return utils_torch.EmptyPyObj().FromDict(JsonObj)
+        return DLUtils.EmptyPyObj().FromDict(JsonObj)
     else:
         raise Exception()
 Dict2PyObj = JsonObj2PyObj
@@ -27,7 +27,7 @@ def PyObj2JsonObj(Obj):
 
 def _PyObj2JsonObj(Obj, **kw):
     AttrStr = kw["AttrStr"]
-    if isinstance(Obj, utils_torch.PyObj) and Obj.IsListLike():
+    if isinstance(Obj, DLUtils.PyObj) and Obj.IsListLike():
         if len(ListAttrsAndValues(Obj))==1:
             Obj = Obj.ToList()
     if isinstance(Obj, list) or isinstance(Obj, tuple):
@@ -36,7 +36,7 @@ def _PyObj2JsonObj(Obj, **kw):
             kw["AttrStr"] = AttrStr + ".%d"%Index
             JsonObj.append(_PyObj2JsonObj(Item, **kw))
         return JsonObj
-    elif isinstance(Obj, utils_torch.PyObj):
+    elif isinstance(Obj, DLUtils.PyObj):
         JsonObj = {}
         for attr, value in ListAttrsAndValues(Obj, Exceptions=[]):
             if attr in ["__ResolveRef__"]:
@@ -53,15 +53,15 @@ def _PyObj2JsonObj(Obj, **kw):
     elif type(Obj) in [str, int, bool, float]:
         return Obj
     elif isinstance(Obj, np.ndarray):
-        return utils_torch.NpArray2List(Obj)
+        return DLUtils.NpArray2List(Obj)
     elif isinstance(Obj, np.float32) or isinstance(Obj, np.float64):
         return float(Obj)
     else:
-        utils_torch.AddWarning("%s is of Type: %s Unserializable."%(kw["AttrStr"], type(Obj)))
+        DLUtils.AddWarning("%s is of Type: %s Unserializable."%(kw["AttrStr"], type(Obj)))
         return "UnserializableObject of type: %s"%type(Obj)
 
 def PyObj2DataObj(Obj):
-    if isinstance(Obj, utils_torch.PyObj) and Obj.IsListLike():
+    if isinstance(Obj, DLUtils.PyObj) and Obj.IsListLike():
         if len(ListAttrsAndValues(Obj))==1:
             Obj = Obj.ToList()
     if isinstance(Obj, list) or isinstance(Obj, tuple):
@@ -69,7 +69,7 @@ def PyObj2DataObj(Obj):
         for Item in Obj:
             JsonObj.append(PyObj2DataObj(Item))
         return JsonObj
-    elif isinstance(Obj, utils_torch.PyObj):
+    elif isinstance(Obj, DLUtils.PyObj):
         JsonObj = {}
         for attr, value in ListAttrsAndValues(Obj, Exceptions=[]):
             if attr in ["__ResolveRef__"]:
@@ -93,7 +93,7 @@ def JsonStr2JsonFile(JsonStr, FilePath):
         pass
     else:
         FilePath += ".jsnonc"
-    utils_torch.EnsureFileDir(FilePath)
+    DLUtils.EnsureFileDir(FilePath)
     with open(FilePath, "w") as f:
         f.write(JsonStr)
 
@@ -192,11 +192,11 @@ def JsonObj2JsonFile(JsonObj, FilePath):
     return JsonStr2JsonFile(JsonObj2JsonStr(JsonObj), FilePath)
 
 def JsonStr2JsonFile(JsonStr, FilePath):
-    return utils_torch.Str2File(JsonStr, FilePath)
+    return DLUtils.Str2File(JsonStr, FilePath)
 
 def IsJsonObj(Obj):
     return \
-    isinstance(Obj, utils_torch.PyObj) or \
+    isinstance(Obj, DLUtils.PyObj) or \
     isinstance(Obj, str) or \
     isinstance(Obj, bool) or \
     isinstance(Obj, int) or \
@@ -207,7 +207,7 @@ def IsJsonObj(Obj):
 
 import pickle
 def JsonObj2DataFile(Obj, FilePath):
-    utils_torch.EnsureFileDir(FilePath)
+    DLUtils.EnsureFileDir(FilePath)
     with open(FilePath, "wb") as f:
         pickle.dump(Obj, f)
 
@@ -383,7 +383,7 @@ class PyObj(object):
         else:
             return len(self.__dict__) - 1
     def __str__(self):
-        return utils_torch.json.PyObj2JsonStr(self)
+        return DLUtils.json.PyObj2JsonStr(self)
     def setdefault(self, attr, value):
         if attr in self.__dict__:
             return getattr(self, attr)
@@ -411,7 +411,7 @@ class PyObj(object):
         else: # To Be Implemented: suuport for DictLikePyObj
             raise Exception()
     def __call__(self, *Args, **kw):
-        return utils_torch.functions.CallGraph(
+        return DLUtils.functions.CallGraph(
             self, *Args, **kw
         )
     def Update(self, Dict):
@@ -429,7 +429,7 @@ class PyObj(object):
                 keys = key.split(".")
             else:
                 keys = [key]
-            #utils_torch.python.CheckIsLegalPyName(keys[0])
+            #DLUtils.python.CheckIsLegalPyName(keys[0])
             obj = self
             parent, parentAttr = None, None
             for index, key in enumerate(keys):
@@ -443,11 +443,11 @@ class PyObj(object):
                                 valueOld.FromDict(value)
                             else:
                                 # if hasattr(value, "__value__"):
-                                #     utils_torch.AddWarning("PyObj: Overwriting key: %s. Original Value: %s, New Value: %s"\
+                                #     DLUtils.AddWarning("PyObj: Overwriting key: %s. Original Value: %s, New Value: %s"\
                                 #         %(key, getattr(obj, key), value))                                       
                                 setattr(valueOld, "__value__", value)
                         else:
-                            # utils_torch.AddWarning("PyObj: Overwriting key: %s. Original Value: %s, New Value: %s"\
+                            # DLUtils.AddWarning("PyObj: Overwriting key: %s. Original Value: %s, New Value: %s"\
                             #     %(key, valueOld, value))
                             setattr(obj, key, self.ProcessValue(key, value))
                     else:
@@ -478,7 +478,7 @@ class PyObj(object):
         return self
     def Copy(self):
         # to be implemented: also copy cache
-        return utils_torch.PyObj(self.__dict__)
+        return DLUtils.PyObj(self.__dict__)
     def FromPyObj(self, Obj):
         # to be implemented: also copy cache
         self.FromDict(Obj.__dict__)

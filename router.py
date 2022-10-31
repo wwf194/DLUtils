@@ -1,6 +1,6 @@
 import re
-import utils_torch
-from utils_torch.attr import *
+import DLUtils
+from DLUtils.attr import *
 
 def ParseRouterStaticAndDynamic(Router, **kw):
     ParseRouterStatic(Router, InPlace=True)
@@ -14,8 +14,8 @@ def ParseRoutersDynamic(Routers, ObjRefList=[], **kw):
         for Router in Routers:
             RouterParsed.append(ParseRouterDynamic(Router, ObjRefList, **kw))
         return RouterParsed
-    elif isinstance(Routers, utils_torch.PyObj):
-        RoutersParsed = utils_torch.EmptyPyObj()
+    elif isinstance(Routers, DLUtils.PyObj):
+        RoutersParsed = DLUtils.EmptyPyObj()
         for Name, Router in ListAttrsAndValues(Routers):
             setattr(RoutersParsed, Name, ParseRouterDynamic(Router, ObjRefList, **kw))
         return RoutersParsed
@@ -28,7 +28,7 @@ def ParseRouterStatic(Router, InPlace=True, **kw):
             Router.Routings[Index] = ParseRoutingStatic(Routing)
         _Router = Router
     else:
-        RouterParsed = utils_torch.json.CopyPyObj(Router)
+        RouterParsed = DLUtils.json.CopyPyObj(Router)
         RoutingsParsed = []
         for Index, Routing in enumerate(Router.Routings):
             RoutingsParsed.append(ParseRoutingStatic(Routing))
@@ -39,12 +39,12 @@ def ParseRouterStatic(Router, InPlace=True, **kw):
     EnsureAttrs(Router, "Out", default=[])
 
     CheckRoutingsInputOutputNum(Router)
-    utils_torch.parse.ParsePyObjStatic(Router, InPlace=True, **kw)
+    DLUtils.parse.ParsePyObjStatic(Router, InPlace=True, **kw)
     return Router
 
 def CheckRoutingsInputOutputNum(Router):
     for Index, Routing in enumerate(Router.Routings):
-        if isinstance(Routing.Module, utils_torch.PyObj):
+        if isinstance(Routing.Module, DLUtils.PyObj):
             RoutingInNum = len(Routing.In)
             ModuleInNum = len(Routing.Module.In)
             if RoutingInNum != ModuleInNum:
@@ -55,8 +55,8 @@ def CheckRoutingsInputOutputNum(Router):
                 raise Exception("Routing.Module ouputs %d param, whilc Routing accepts %d param."^(ModuleOutNum, RoutingOutNum))
 
 def ParseRouterDynamic(Router, ObjRefList=[], InPlace=False, **kw):
-    assert isinstance(Router, utils_torch.PyObj), "Object %s is not a Router."%Router
-    RouterParsed = utils_torch.parse.ParsePyObjDynamic(
+    assert isinstance(Router, DLUtils.PyObj), "Object %s is not a Router."%Router
+    RouterParsed = DLUtils.parse.ParsePyObjDynamic(
         Router, ObjRefList=ObjRefList, InPlace=InPlace, RaiseFailedParse=True, **kw
     )
     for routing in RouterParsed.Routings:
@@ -71,7 +71,7 @@ def ParseRouterDynamic(Router, ObjRefList=[], InPlace=False, **kw):
         #     routing.cache.RepeatTime = routing.RepeatTime
         #     routing.cache.Condition = routing.Condition
         #     routing.cache.InheritStates = routing.InheritStates
-        routing.cache.InDict = utils_torch.ToDict(routing.InDict)
+        routing.cache.InDict = DLUtils.ToDict(routing.InDict)
     return RouterParsed
 
 def ParseRoutingStatic(Routing):
@@ -79,7 +79,7 @@ def ParseRoutingStatic(Routing):
         return Routing
 
     _Routing = Routing
-    param = utils_torch.EmptyPyObj()
+    param = DLUtils.EmptyPyObj()
     # notice that there might be . in _Routing string.
     SetAttrs(param, "Str", value=_Routing.replace("&", "(At)"))
     # if param.Str in ['DataBatch, Name=Input |--> (At)FilterFromDict |--> ModelInput']:
@@ -119,8 +119,8 @@ def ParseRoutingStatic(Routing):
     for Index, _Input in enumerate(param.In):
         _Input = _Input.split("=")
         if len(_Input)==2:
-            Key = utils_torch.RemoveHeadTailWhiteChars(_Input[0])
-            Value = utils_torch.RemoveHeadTailWhiteChars(_Input[1])
+            Key = DLUtils.RemoveHeadTailWhiteChars(_Input[0])
+            Value = DLUtils.RemoveHeadTailWhiteChars(_Input[1])
             try:
                 ValueEval = eval(Value)
                 # Bug to be fixed: Cases where value is synonymous with local variables here.
@@ -196,7 +196,7 @@ def SetOnlineParseAttrsForRouter(routing):
         delattr(routing, "InDictOnlineParseAttrs")
 
 def ParseRoutingAttrsOnline(routing, States):
-    #utils_torch.parse.RedirectPyObj(Routing, States)
+    #DLUtils.parse.RedirectPyObj(Routing, States)
     for attr, value in routing.OnlineParseAttrs.items():
         value = GetAttrs(routing, attr)    
         #value = re.sub("(%\w+)", lambda matchedStr:"getattr(States, %s)"%matchedStr[1:], value)
@@ -206,8 +206,8 @@ def ParseRoutingAttrsOnline(routing, States):
         routing.cache.InDict[attr] = eval(value.replace("%", "States."))
     return routing
 
-class RouterStatic(utils_torch.PyObj):
+class RouterStatic(DLUtils.PyObj):
     def FromPyObj(self, Obj):
-        self.FromPyObj(utils_torch.router.ParseRouterStatic(Obj, InPlace=False))
+        self.FromPyObj(DLUtils.router.ParseRouterStatic(Obj, InPlace=False))
     def ToRouterDynamic(self, **kw):
-        return utils_torch.router.ParseRouterDynamic(self, **kw)
+        return DLUtils.router.ParseRouterDynamic(self, **kw)

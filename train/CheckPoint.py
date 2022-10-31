@@ -1,10 +1,10 @@
-import utils_torch
-from utils_torch.attr import *
+import DLUtils
+from DLUtils.attr import *
 
-from utils_torch.module.AbstractModules import AbstractModule
-class CheckPointForEpochBatchTrain(utils_torch.log.AbstractLogAlongEpochBatchTrain):
+from DLUtils.module.AbstractModules import AbstractModule
+class CheckPointForEpochBatchTrain(DLUtils.log.AbstractLogAlongEpochBatchTrain):
     def __init__(self, **kw):
-        #utils_torch.transform.InitForNonModel(self, param, ClassPath="utils_torch.Train.CheckPointForEpochBatchTrain", **kw)
+        #DLUtils.transform.InitForNonModel(self, param, ClassPath="DLUtils.Train.CheckPointForEpochBatchTrain", **kw)
         super().__init__(**kw)
     def SetMethod(self, Method):
         assert callable(Method)
@@ -12,7 +12,7 @@ class CheckPointForEpochBatchTrain(utils_torch.log.AbstractLogAlongEpochBatchTra
         self.param.Method = str(Method)
         return self
     def Build(self, IsLoad=False):
-        #utils_torch.transform.BuildForNonModel(self, IsLoad)
+        #DLUtils.transform.BuildForNonModel(self, IsLoad)
         super().BeforeBuild(IsLoad=IsLoad)
         # Intervals are calculated in batches, not epochs.
         param = self.param
@@ -60,11 +60,11 @@ class CheckPointForEpochBatchTrain(utils_torch.log.AbstractLogAlongEpochBatchTra
         cache.BatchIndexTotal = -1
 
         if hasattr(param, "Method"):
-            #EnsureAttrs(param, "Method", default="&#utils_torch.functions.NullFunction")
-            cache.Method = utils_torch.parse.ResolveStr(
+            #EnsureAttrs(param, "Method", default="&#DLUtils.functions.NullFunction")
+            cache.Method = DLUtils.parse.ResolveStr(
                 param.Method,
                 ObjCurrent=self.param,
-                ObjRoot=utils_torch.GetGlobalParam()
+                ObjRoot=DLUtils.GetGlobalParam()
             )
         
         #self.SetBatchIndex = self.AddBatch
@@ -138,4 +138,4 @@ class CheckPointForEpochBatchTrain(utils_torch.log.AbstractLogAlongEpochBatchTra
         return False, None
 
 #CheckPointForEpochBatchTrain.IsCheckPoint = True
-#utils_torch.transform.SetEpochBatchMethodForModule(CheckPointForEpochBatchTrain)
+#DLUtils.transform.SetEpochBatchMethodForModule(CheckPointForEpochBatchTrain)

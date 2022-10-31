@@ -2,13 +2,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from utils_torch.attr import *
+from DLUtils.attr import *
 
-class L2Loss(utils_torch.module.AbstractModuleWithParam):
+class L2Loss(DLUtils.module.AbstractModuleWithParam):
     #def __init__(self, param=None, data=None, **kw):
     def __init__(self, **kw):
         super().__init__(**kw)
-        # self.InitModule(self, param, data, ClassPath="utils_torch.loss.L2Loss", **kw)
+        # self.InitModule(self, param, data, ClassPath="DLUtils.loss.L2Loss", **kw)
     def __call__(self, Input, *Args):
         return self.forward(Input, *Args)
     def Build(self, IsLoad=False):
@@ -27,7 +27,7 @@ class L2Loss(utils_torch.module.AbstractModuleWithParam):
                 if isinstance(GetAttrs(param.Coefficient.Ratio), list):
                     SetAttrs(param, "Coefficient.Ratio.Min", GetAttrs(param.Coefficient.Ratio)[0])
                     SetAttrs(param, "Coefficient.Ratio.Max", GetAttrs(param.Coefficient.Ratio)[1])
-                elif isinstance(param.Coefficient.Ratio, utils_torch.PyObj):
+                elif isinstance(param.Coefficient.Ratio, DLUtils.PyObj):
                     pass    
                 else:
                     raise Exception()
@@ -73,4 +73,4 @@ class L2Loss(utils_torch.module.AbstractModuleWithParam):
         return self.cache.Coefficient
 
 __MainClass__ = L2Loss
-#utils_torch.transform.SetMethodForTransformModule(__MainClass__)
+#DLUtils.transform.SetMethodForTransformModule(__MainClass__)

@@ -1,5 +1,5 @@
-from utils_torch.attr import *
-from utils_torch.json import *
+from DLUtils.attr import *
+from DLUtils.json import *
 from collections import defaultdict
 
 def ParseShape(Shape):
@@ -20,8 +20,8 @@ def ParseFunctionArgs(Args, ContextInfo):
             Arg = Arg.split("=")
             if not len(Arg) == 2:
                 raise Exception()
-            Key = utils_torch.RemoveHeadTailWhiteChars(Arg[0])
-            Value = utils_torch.RemoveHeadTailWhiteChars(Arg[1])
+            Key = DLUtils.RemoveHeadTailWhiteChars(Arg[0])
+            Value = DLUtils.RemoveHeadTailWhiteChars(Arg[1])
             KeyWordArgs[Key] = ParseFunctionArg(Value, ContextInfo)
         else:
             ArgParsed = ParseFunctionArg(Arg, ContextInfo)
@@ -35,7 +35,7 @@ def ParseFunctionArg(Arg, ContextInfo):
         elif "&" in Arg:
             # if Arg in ["&~SetEpochBatchList"]:
             #     print("AAA")
-            #ArgParsed = ResolveArg, **utils_torch.json.PyObj2JsonObj(ContextInfo))
+            #ArgParsed = ResolveArg, **DLUtils.json.PyObj2JsonObj(ContextInfo))
             return ResolveStr(Arg, ContextInfo)
         else:
             try:
@@ -46,12 +46,12 @@ def ParseFunctionArg(Arg, ContextInfo):
         return Arg
 
 # def ResolveStr(Str, **kw):
-#     kw.setdefault("ObjRoot", utils_torch.GetGlobalParam())
+#     kw.setdefault("ObjRoot", DLUtils.GetGlobalParam())
 #     return ResolveStr(Str, kw)
 
 def ResolveStr(param, ContextDict={}, **kw):
     ContextDict.update(kw)
-    ContextDict.setdefault("ObjRoot", utils_torch.GetGlobalParam())
+    ContextDict.setdefault("ObjRoot", DLUtils.GetGlobalParam())
     if not isinstance(param, str):
         return param
     if "#" in param:
@@ -90,7 +90,7 @@ def ResolveStr(param, ContextDict={}, **kw):
                     return result
                 except Exception:
                     continue
-            utils_torch.AddWarning("Failed to resolve to any in ObjRefList by running: %s"%sentence)
+            DLUtils.AddWarning("Failed to resolve to any in ObjRefList by running: %s"%sentence)
         else:
             sentence = param
             sentence = sentence.replace("&^", "ObjRoot.")
@@ -103,18 +103,18 @@ def ResolveStr(param, ContextDict={}, **kw):
         try:
             return eval(sentence)
         except Exception:
-            utils_torch.AddWarning("ResolveStr: Failed to run: %s"%sentence)
+            DLUtils.AddWarning("ResolveStr: Failed to run: %s"%sentence)
             return param
     else:
         return eval(param)
 
 def ParsePyObjDynamic(Obj, RaiseFailedParse=False, InPlace=False, **kw):
-    #utils_torch.json.CheckIsPyObj(Obj)
+    #DLUtils.json.CheckIsPyObj(Obj)
     ObjRefList = kw.get("ObjRefList")
     if ObjRefList is not None:
         # Traverse Attributes in Obj, recursively
         # If an Attribute Value is str and begins with &, redirect this Attribute to Attribute in PyObjRef it points to.
-        ObjRefList = utils_torch.ToList(ObjRefList)        
+        ObjRefList = DLUtils.ToList(ObjRefList)        
         # if not isinstance(ObjRefList, list):
         #     if hasattr(ObjRefList, "__dict__"):
         #         ObjRefList = [ObjRefList]
@@ -143,17 +143,17 @@ def _ParsePyObjDynamic(Obj, parent, attr, RaiseFailedParse, **kw):
         ObjParsed = {}
         for Key, Value in Obj.items():
             ObjParsed[Key] = _ParsePyObjDynamic(Value, Obj, Key, RaiseFailedParse, **kw)
-    elif isinstance(Obj, utils_torch.PyObj):
+    elif isinstance(Obj, DLUtils.PyObj):
         if Obj.IsResolveBase():
             kw["ObjCurrent"] = Obj
-        ObjParsed = utils_torch.EmptyPyObj()
+        ObjParsed = DLUtils.EmptyPyObj()
         Sig = True
         while Sig:
             for _Attr, Value in ListAttrsAndValues(Obj, ExcludeCache=False):
                 if _Attr in kw.get("ExceptionAttrs"):
                     continue
                 setattr(ObjParsed, _Attr, _ParsePyObjDynamic(Value, Obj, _Attr, RaiseFailedParse, **kw))
-                if _Attr in ["__value__"] and utils_torch.IsDictLikePyObj(ObjParsed):
+                if _Attr in ["__value__"] and DLUtils.IsDictLikePyObj(ObjParsed):
                     Obj.FromPyObj(ObjParsed)
                     delattr(Obj, _Attr)
                     break
@@ -173,7 +173,7 @@ def _ParsePyObjDynamic(Obj, parent, attr, RaiseFailedParse, **kw):
                 raise Exception("_ParsePyObjDynamic: Failed to run: %s"%Obj)
             else:
                 if kw.get("Verbose"):
-                    utils_torch.AddWarning("_ParsePyObjDynamic: Failed to run: %s"%Obj)
+                    DLUtils.AddWarning("_ParsePyObjDynamic: Failed to run: %s"%Obj)
         else:
             ObjParsed = _ParsePyObjDynamic(ObjParsed, Obj, "(eval)", RaiseFailedParse, **kw)
     else:
@@ -187,14 +187,14 @@ def _ParsePyObjDynamicInPlace(Obj, parent, attr, RaiseFailedParse, **kw):
     elif isinstance(Obj, dict):
         for Key, Value in Obj.items():
             _ParsePyObjDynamicInPlace(Value, Obj, Key, RaiseFailedParse, **kw)
-    elif isinstance(Obj, utils_torch.PyObj):
+    elif isinstance(Obj, DLUtils.PyObj):
         if hasattr(Obj, "__IsResolveBase__"):
             kw["ObjCurrent"] = Obj
         Sig = True
         while Sig:
             for _Attr, Value in Obj.__dict__.items():
                 _ParsePyObjDynamicInPlace(Value, Obj, _Attr, RaiseFailedParse, **kw)
-                if _Attr in ["__value__"] and utils_torch.IsDictLikePyObj(getattr(Obj, _Attr)):
+                if _Attr in ["__value__"] and DLUtils.IsDictLikePyObj(getattr(Obj, _Attr)):
                     Obj.FromPyObj(getattr(Obj, _Attr))
                     delattr(Obj, "__value__")
                     break
@@ -225,7 +225,7 @@ def _ParsePyObjDynamicInPlace(Obj, parent, attr, RaiseFailedParse, **kw):
             except Exception:
                 # if sentence in ["ObjRoot.Object.world.GetArenaByIndex(0).BoundaryBox.Size * 0.07"]:
                 #     print("aaa")
-                utils_torch.AddWarning("_ParsePyObjDynamicInPlace: Failed to run: %s"%sentence)
+                DLUtils.AddWarning("_ParsePyObjDynamicInPlace: Failed to run: %s"%sentence)
                 return
         parent[attr] = ObjParsed
     else:
@@ -244,10 +244,10 @@ def _ParsePyObjDynamicMultiRefs(Obj, parent, Attr, RaiseFailedParse, **kw):
         ObjParsed = []
         for Index, Item in enumerate(Obj):
             ObjParsed.append(_ParsePyObjDynamicMultiRefs(Item, parent, Index, RaiseFailedParse, **kw))
-    elif isinstance(Obj, utils_torch.PyObj):
+    elif isinstance(Obj, DLUtils.PyObj):
         if Obj.IsResolveBase():
             kw["ObjCurrent"] = Obj
-        ObjParsed = utils_torch.EmptyPyObj()
+        ObjParsed = DLUtils.EmptyPyObj()
         for Attr, Value in ListAttrsAndValues(Obj, ExcludeCache=False):
             setattr(ObjParsed, Attr, _ParsePyObjDynamicMultiRefs(getattr(Obj, Attr), parent, Attr, RaiseFailedParse, **kw))
     elif isinstance(Obj, str):
@@ -270,13 +270,13 @@ def _ParsePyObjDynamicMultiRefs(Obj, parent, Attr, RaiseFailedParse, **kw):
                         break
                 except Exception:
                     pass
-                    #utils_torch.AddLog("Failed to resoolve to current PyObjRef. Try redirecting to next PyObjRef.")
+                    #DLUtils.AddLog("Failed to resoolve to current PyObjRef. Try redirecting to next PyObjRef.")
             if not success:
                 report = "_ParsePyObjDynamicMultiRefs: Failed to resolve to any PyObjRef in given ObjRefList by running: %s"%Obj
                 if RaiseFailedParse:
                     raise Exception(report)
                 else:
-                    utils_torch.AddWarning(report)
+                    DLUtils.AddWarning(report)
                     ObjParsed = Obj
             else:
                 return ObjParsed
@@ -293,10 +293,10 @@ def _ParsePyObjDynamicMultiRefsInPlace(Obj, parent, Attr, RaiseFailedParse, **kw
     elif isinstance(Obj, list):
         for Index, Item in enumerate(Obj):
             _ParsePyObjDynamicMultiRefsInPlace(Item, Obj, Index, RaiseFailedParse, **kw)
-    elif isinstance(Obj, utils_torch.PyObj):
+    elif isinstance(Obj, DLUtils.PyObj):
         if Obj.IsResolveBase():
             kw["ObjCurrent"] = Obj
-        ObjParsed = utils_torch.PyObj()
+        ObjParsed = DLUtils.PyObj()
         for Attr, Value in ListAttrsAndValues(Obj):
             _ParsePyObjDynamicMultiRefsInPlace(Value, Obj, Attr, RaiseFailedParse, **kw)
     elif isinstance(Obj, str):
@@ -319,13 +319,13 @@ def _ParsePyObjDynamicMultiRefsInPlace(Obj, parent, Attr, RaiseFailedParse, **kw
                     break
                 except Exception:
                     pass
-                    #utils_torch.AddLog("Failed to resolve to current PyObjRef. Try redirecting to next PyObjRef.")
+                    #DLUtils.AddLog("Failed to resolve to current PyObjRef. Try redirecting to next PyObjRef.")
             if not success:
                 report = "_ParsePyObjDynamicMultiRefsInPlace: Failed to resolve to any PyObjRef in given ObjRefList by running: %s"%sentence
                 if RaiseFailedParse:
                     raise Exception(report)
                 else:
-                    utils_torch.AddWarning(report)
+                    DLUtils.AddWarning(report)
                     return
             else:
                 parent[Attr] = ObjParsed
@@ -342,7 +342,7 @@ def _ApplyMethodOnPyObj(Obj, Function, Attrs, **kw):
     Obj, ContinueParse = Function(Obj)
     if not ContinueParse:
         return Obj
-    if isinstance(Obj, list) or utils_torch.IsListLikePyObj(Obj):
+    if isinstance(Obj, list) or DLUtils.IsListLikePyObj(Obj):
         ObjParsed = []
         for Index, Item in enumerate(Obj):
             ObjParsed.append(_ApplyMethodOnPyObj(Item, Function, [*Attrs, Index], **kw))
@@ -350,8 +350,8 @@ def _ApplyMethodOnPyObj(Obj, Function, Attrs, **kw):
         ObjParsed = {}
         for Key, Value in Obj.items():
             ObjParsed[Key] = _ApplyMethodOnPyObj(Value, Function, [*Attrs, Key], **kw)
-    elif utils_torch.IsDictLikePyObj(Obj):
-        ObjParsed = utils_torch.EmptyPyObj()
+    elif DLUtils.IsDictLikePyObj(Obj):
+        ObjParsed = DLUtils.EmptyPyObj()
         for Attr, Value in ListAttrsAndValues(Obj):
             setattr(ObjParsed, Attr, _ApplyMethodOnPyObj(Value, Function, [*Attrs, Attr], **kw))
     else:
@@ -363,7 +363,7 @@ def ParsePyObjStatic(Obj, **kw):
     kw.setdefault("RecurDepth", 1)
     InPlace = kw.setdefault("InPlace", True)
     ObjCurrent = kw.setdefault("ObjCurrent", Obj)
-    ObjRoot = kw.setdefault("ObjRoot", utils_torch.GetGlobalParam())
+    ObjRoot = kw.setdefault("ObjRoot", DLUtils.GetGlobalParam())
     _ParseResolveBaseInPlace(Obj, None, None, ParsedObj=defaultdict(lambda:None), **kw)
     if InPlace:
         _ParsePyObjStaticInPlace(Obj, None, None, **kw
@@ -387,7 +387,7 @@ def _ParseResolveBaseInPlace(Obj, parent, Attr, WithinJson=True, **kw):
     ObjCurrent = kw.get("ObjCurrent")
     if isinstance(Obj, list):
         if parent is not None and Attr not in ["__value__"]:
-            setattr(parent, Attr, utils_torch.PyObj().SetValue(Obj))
+            setattr(parent, Attr, DLUtils.PyObj().SetValue(Obj))
             Obj = GetAttr(parent, Attr)
             setattr(Obj.cache, "__ResolveRef__", parent)
             Obj = Obj.__value__
@@ -396,7 +396,7 @@ def _ParseResolveBaseInPlace(Obj, parent, Attr, WithinJson=True, **kw):
     elif isinstance(Obj, dict):
         for Key, Value in Obj.items():
             _ParseResolveBaseInPlace(Value, Obj, Key, WithinJson=WithinJson, **kw)
-    elif utils_torch.IsPyObj(Obj):
+    elif DLUtils.IsPyObj(Obj):
         if Obj.IsResolveBase():
             setattr(Obj.cache, "__ParentRef__", ObjCurrent)
             kw["ObjCurrent"] = Obj
@@ -421,15 +421,15 @@ def _ParsePyObjStaticInPlace(Obj, parent, attr, **kw):
         for Index, Item in enumerate(Obj):
             _ParsePyObjStaticInPlace(Item, Obj, Index, **kw)
     elif isinstance(Obj, dict):
-        Obj = utils_torch.PyObj(Obj)
+        Obj = DLUtils.PyObj(Obj)
         parent[attr] = Obj
         for Key, Value in Obj.Items():
             _ParsePyObjStaticInPlace(Value, Obj, Key, **kw)
-    elif isinstance(Obj, utils_torch.PyObj):
+    elif isinstance(Obj, DLUtils.PyObj):
         if Obj.IsResolveBase():
             kw["ObjCurrent"] = Obj   
         
-        if hasattr(Obj, "__value__") and isinstance(getattr(Obj, "__value__"), utils_torch.PyObj):
+        if hasattr(Obj, "__value__") and isinstance(getattr(Obj, "__value__"), DLUtils.PyObj):
             Obj.FromPyObj(getattr(Obj, "__value__"))
             delattr(Obj, "__value__")
 
@@ -439,7 +439,7 @@ def _ParsePyObjStaticInPlace(Obj, parent, attr, **kw):
         # while Sig:
         #     for _Attr, Value in ListAttrsAndValues(Obj):
         #         _ParsePyObjStaticInPlace(Value, Obj, _Attr, **kw)
-        #         if _Attr in ["__value__"] and isinstance(getattr(Obj, _Attr), utils_torch.PyObj):
+        #         if _Attr in ["__value__"] and isinstance(getattr(Obj, _Attr), DLUtils.PyObj):
         #             Obj.FromPyObj(getattr(Obj, _Attr))
         #             delattr(Obj, "__value__")
         #             break
@@ -459,13 +459,13 @@ def _ParsePyObjStaticInPlace(Obj, parent, attr, **kw):
         elif Obj.startswith("#"):
             ObjBackup = Obj
             try:
-                Obj = utils_torch.RemoveHeadTailWhiteChars(Obj.lstrip("#"))
+                Obj = DLUtils.RemoveHeadTailWhiteChars(Obj.lstrip("#"))
                 Obj = eval(Obj)
             except Exception:
                 Obj = ObjBackup
             
             if not IsJsonObj(Obj) and kw.setdefault("WithinJson", True):
-                utils_torch.AddLog("_ParsePyObjStaticInPlace: Not a Json Obj: %s of type %s ."%(Obj, type(Obj)))
+                DLUtils.AddLog("_ParsePyObjStaticInPlace: Not a Json Obj: %s of type %s ."%(Obj, type(Obj)))
             else:
                 parent[attr] = Obj
         else:
@@ -477,7 +477,7 @@ def ParseStr(Str, Dynamic=False, Verbose=True, **kw):
     # if Str in ["&^object.agent.Dynamics.TrainEpochInit"]:
     #     print("aaa")
 
-    Str = utils_torch.RemoveHeadTailWhiteChars(Str)
+    Str = DLUtils.RemoveHeadTailWhiteChars(Str)
     ObjCurrent = kw.get("ObjCurrent")
     ObjRoot = kw.get("ObjRoot")
     parent = kw.get("parent")
@@ -509,7 +509,7 @@ def ParseStr(Str, Dynamic=False, Verbose=True, **kw):
         if Str in ["__ToBeSet__"]:
             success = False
             raise Exception()
-        elif isinstance(Str, utils_torch.PyObj) and Str.IsCreateFromGetAttr():
+        elif isinstance(Str, DLUtils.PyObj) and Str.IsCreateFromGetAttr():
             success = False
             raise Exception()
         else:
@@ -518,18 +518,18 @@ def ParseStr(Str, Dynamic=False, Verbose=True, **kw):
         Str = StrBackup
         success = False
         # if Verbose:
-        #     utils_torch.AddLog("ParseStr: Failed to run %s"%sentence)
+        #     DLUtils.AddLog("ParseStr: Failed to run %s"%sentence)
     if success:
-        if not utils_torch.IsJsonObj(Str):
+        if not DLUtils.IsJsonObj(Str):
             if kw.get("WithinJson"):
                 # if Verbose:
-                #     utils_torch.AddLog("ParseStr: Not a Json Obj: %s of type %s ."%(Str, type(Str)))
+                #     DLUtils.AddLog("ParseStr: Not a Json Obj: %s of type %s ."%(Str, type(Str)))
                 success = False
                 Str = StrBackup
     return Str, success
 
 def ParseStrWithWell(Str, Dynamic=True, **kw):
-    Str = utils_torch.RemoveHeadTailWhiteChars(Str)
+    Str = DLUtils.RemoveHeadTailWhiteChars(Str)
     _Str = Str
     if Dynamic:
         if Str.startswith("&#"):
@@ -551,9 +551,9 @@ def ParseStrWithWell(Str, Dynamic=True, **kw):
         if kw.get("RaiseFailedParse"):
             raise Exception("ParseStrWithWell: Failed to run: %s"%Str)
         else:
-            # if Str in ["utils_torch.GetMainSaveDir"]:
+            # if Str in ["DLUtils.GetMainSaveDir"]:
             #     print("aaa")
-            utils_torch.AddWarning("ParseStrWithWell: Failed to run: %s"%Str)
+            DLUtils.AddWarning("ParseStrWithWell: Failed to run: %s"%Str)
             ObjParsed = _Str
     return ObjParsed, success
 
@@ -593,7 +593,7 @@ def ParseStrLocal(Str, Dynamic=False, **kw):
     if success:
         if not IsJsonObj(Str):
             Str = _Str
-            utils_torch.AddLog("_ParsePyObjStaticInPlace: Not a Json Obj: %s of type %s ."%(Str, type(Str)))
+            DLUtils.AddLog("_ParsePyObjStaticInPlace: Not a Json Obj: %s of type %s ."%(Str, type(Str)))
             success = False
 
     return Str, success 
@@ -607,15 +607,15 @@ def _ParsePyObjStatic(Obj, parent, Attr, **kw):
         ObjParsed = {}
         for Key, Value in Obj.items():
             ObjParsed[Key] = _ParsePyObjStatic(Value, Obj, Key, **kw)
-    elif utils_torch.IsPyObj(Obj):
+    elif DLUtils.IsPyObj(Obj):
         if hasattr(Obj, "__IsResolveBase__"):
             kw["ObjCurrent"] = Obj
-        ObjParsed = utils_torch.PyObj()
+        ObjParsed = DLUtils.PyObj()
         Sig = True
         while Sig:
             for _Attr, Value in ListAttrsAndValues(Obj, Exceptions=["__ResolveRef__"]):
                 setattr(ObjParsed, _Attr, _ParsePyObjStatic(Value, Obj, _Attr, **kw))
-                if _Attr in ["__value__"] and isinstance(ObjParsed, utils_torch.PyObj):
+                if _Attr in ["__value__"] and isinstance(ObjParsed, DLUtils.PyObj):
                     Obj.FromPyObj(ObjParsed)
                     delattr(Obj, _Attr)
                     break
@@ -634,9 +634,9 @@ def _ParsePyObjStatic(Obj, parent, Attr, **kw):
             try:
                 sentence = eval(sentence)
             except Exception:
-               utils_torch.AddLog("_ParsePyObjStatic: Exception when running %s"%sentence)
+               DLUtils.AddLog("_ParsePyObjStatic: Exception when running %s"%sentence)
         if isinstance(sentence, str) and sentence.startswith("#"):
-            sentence = utils_torch.RemoveHeadTailWhiteChars(sentence.lstrip("#"))
+            sentence = DLUtils.RemoveHeadTailWhiteChars(sentence.lstrip("#"))
             sentence = eval(sentence)
         ObjParsed = sentence
     else:
@@ -721,29 +721,29 @@ def ParseParamStaticAndDynamic(Args):
 
 def ParseParamStatic(Args, Save=False, SavePath=None):
     if SavePath is None:
-        SavePath = utils_torch.GetMainSaveDir() + "param_parsed_static.jsonc"
-    GlobalParam = utils_torch.GetGlobalParam()
+        SavePath = DLUtils.GetMainSaveDir() + "param_parsed_static.jsonc"
+    GlobalParam = DLUtils.GetGlobalParam()
     param = GlobalParam.param
-    utils_torch.json.PyObj2JsonFile(param, SavePath)
-    utils_torch.parse.ParsePyObjStatic(param, ObjCurrent=param, ObjRoot=utils_torch.GetGlobalParam(), InPlace=True)
+    DLUtils.json.PyObj2JsonFile(param, SavePath)
+    DLUtils.parse.ParsePyObjStatic(param, ObjCurrent=param, ObjRoot=DLUtils.GetGlobalParam(), InPlace=True)
     if Save:
-        SavePath = utils_torch.RenameIfFileExists(SavePath)
-        utils_torch.json.PyObj2JsonFile(param, SavePath)
+        SavePath = DLUtils.RenameIfFileExists(SavePath)
+        DLUtils.json.PyObj2JsonFile(param, SavePath)
     return
 
 def ParseParamDynamic(Args, Save=False, SavePath=None):
-    GlobalParam = utils_torch.GetGlobalParam()
+    GlobalParam = DLUtils.GetGlobalParam()
     if SavePath is None:
-        utils_torch.GetMainSaveDir() + "param_parsed_dynamic.jsonc"
-    for attr, param in utils_torch.ListAttrsAndValues(GlobalParam.param):
-        utils_torch.parse.ParsePyObjDynamic(param, ObjCurrent=param, ObjRoot=utils_torch.GetGlobalParam(), InPlace=True)
+        DLUtils.GetMainSaveDir() + "param_parsed_dynamic.jsonc"
+    for attr, param in DLUtils.ListAttrsAndValues(GlobalParam.param):
+        DLUtils.parse.ParsePyObjDynamic(param, ObjCurrent=param, ObjRoot=DLUtils.GetGlobalParam(), InPlace=True)
     if Save:
-        utils_torch.json.PyObj2JsonFile(GlobalParam.param, utils_torch.RenameIfFileExists(SavePath))
+        DLUtils.json.PyObj2JsonFile(GlobalParam.param, DLUtils.RenameIfFileExists(SavePath))
     return
 
 def ParseClass(ClassPath):
     try:
-        Module = utils_torch.ImportModule(ClassPath)
+        Module = DLUtils.ImportModule(ClassPath)
         if hasattr(Module, "__MainClass__"):
             return Module.__MainClass__
         else:

@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-import utils_torch
-from utils_torch.attr import *
+import DLUtils
+from DLUtils.attr import *
 
 def Build(param):
     model = NonLinearLayer()
@@ -12,20 +12,20 @@ def Build(param):
 
 def ParseNonLinearMethod(param):
     if isinstance(param, str):
-        param = utils_torch.PyObj({
+        param = DLUtils.PyObj({
             "Type": param,
             "Coefficient": 1.0
         })
     elif isinstance(param, list):
         if len(param)==2:
-            param = utils_torch.PyObj({
+            param = DLUtils.PyObj({
                 "Type": param[0],
                 "Coefficient": param[1]
             })
         else:
             # to be implemented
             pass
-    elif isinstance(param, utils_torch.PyObj):
+    elif isinstance(param, DLUtils.PyObj):
         if not hasattr(param, "Coefficient"):
             param.Coefficient = 1.0
     else:
@@ -59,12 +59,12 @@ def GetNonLinearMethod(param, **kw):
         raise Exception("GetNonLinearMethod: Invalid nonlinear function Type: %s"%Type)
 GetActivationFunction = GetNonLinearMethod
 
-from utils_torch.transform.SingleLayer import SingleLayer
+from DLUtils.transform.SingleLayer import SingleLayer
 class NonLinearLayer(SingleLayer):
     DataIsNotEmpty = True
     # def __init__(self, param=None, data=None, **kw):
     #     super().__init__()
-    #     self.InitModule(self, param, data, ClassPath="utils_torch.transform.NonLinearLayer", **kw)
+    #     self.InitModule(self, param, data, ClassPath="DLUtils.transform.NonLinearLayer", **kw)
     def __init__(self, **kw):
         super().__init__(**kw)
         return
@@ -83,7 +83,7 @@ class NonLinearLayer(SingleLayer):
                 SetAttrs(param, "Bias.Size", param.Output.Num)
             self.SetWeight()
             self.SetBias()
-            self.NonLinear = utils_torch.transform.GetNonLinearMethod(param.NonLinear)
+            self.NonLinear = DLUtils.transform.GetNonLinearMethod(param.NonLinear)
             self.forward = lambda x:self.NonLinear(torch.mm(x, self.GetWeight()) + self.GetBias())
         elif param.Subtype in ["f(Wx)+b"]:
             if cache.IsInit:
@@ -91,13 +91,13 @@ class NonLinearLayer(SingleLayer):
                 SetAttrs(param, "Bias.Size", param.Output.Num)
             self.SetWeight()
             self.SetBias()
-            self.NonLinear = utils_torch.transform.GetNonLinearMethod(param.NonLinear)
+            self.NonLinear = DLUtils.transform.GetNonLinearMethod(param.NonLinear)
             self.forward = lambda x:self.NonLinear(torch.mm(x, self.GetWeight())) + data.Bias
         elif param.Subtype in ["f(Wx)"]:
             if cache.IsInit:
                 SetAttrs(param, "Bias", False)
             self.SetWeight()
-            self.NonLinear = utils_torch.transform.GetNonLinearMethod(param.NonLinear)
+            self.NonLinear = DLUtils.transform.GetNonLinearMethod(param.NonLinear)
             self.forward = lambda x:self.NonLinear(torch.mm(x, self.GetWeight()))
         elif param.Subtype in ["f(W(x+b))"]:
             if cache.IsInit:
@@ -114,4 +114,4 @@ class NonLinearLayer(SingleLayer):
         return self
     
 __MainClass__ = NonLinearLayer
-#utils_torch.transform.SetMethodForTransformModule(__MainClass__)
+#DLUtils.transform.SetMethodForTransformModule(__MainClass__)

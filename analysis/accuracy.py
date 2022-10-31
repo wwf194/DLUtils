@@ -1,19 +1,19 @@
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 
-import utils_torch
-from utils_torch.attr import *
+import DLUtils
+from DLUtils.attr import *
 
 class LogForAccuracy:
     def __init__(self):
-        self.param = utils_torch.EmptyPyObj()
-        self.cache = utils_torch.EmptyPyObj()
+        self.param = DLUtils.EmptyPyObj()
+        self.cache = DLUtils.EmptyPyObj()
 
 
 class LogForAccuracyAlongTrain:
     def __init__(self):
-        self.param = utils_torch.EmptyPyObj()
-        self.cache = utils_torch.EmptyPyObj()
+        self.param = DLUtils.EmptyPyObj()
+        self.cache = DLUtils.EmptyPyObj()
         param = self.param
         cache = self.cache
         
@@ -37,10 +37,10 @@ class LogForAccuracyAlongTrain:
 def PlotAccuracyEpochBatch(LogTrain, LogTest=None, SaveDir=None, SaveName=None, ContextObj=None):
     XsData, YsData = [], []
     
-    EpochsFloatTrain = utils_torch.log.LogDict2EpochsFloat(LogTrain, BatchNum=ContextObj["BatchNum"])
+    EpochsFloatTrain = DLUtils.log.LogDict2EpochsFloat(LogTrain, BatchNum=ContextObj["BatchNum"])
     CorrectRateTrain = LogTrain["CorrectRate"]
-    fig, ax = utils_torch.plot.CreateFigurePlt()
-    utils_torch.plot.PlotLineChart(
+    fig, ax = DLUtils.plot.CreateFigurePlt()
+    DLUtils.plot.PlotLineChart(
         ax, Xs=EpochsFloatTrain, Ys=CorrectRateTrain,
         PlotTicks=False, Label="Train", Color="Red",
         Title="Accuracy - Epoch", XLabel="Epoch", YLabel="Accuracy",
@@ -49,9 +49,9 @@ def PlotAccuracyEpochBatch(LogTrain, LogTest=None, SaveDir=None, SaveName=None, 
     YsData.append(CorrectRateTrain)
 
     if LogTest is not None:
-        EpochsFloatTest = utils_torch.log.LogDict2EpochsFloat(LogTest, BatchNum=ContextObj["BatchNum"])
+        EpochsFloatTest = DLUtils.log.LogDict2EpochsFloat(LogTest, BatchNum=ContextObj["BatchNum"])
         CorrectRateTest = LogTest["CorrectRate"]
-        utils_torch.plot.PlotLineChart(
+        DLUtils.plot.PlotLineChart(
             ax, Xs=EpochsFloatTest, Ys=CorrectRateTest,
             PlotTicks=False, Label="Test", Color="Blue",
             Title="Accuracy - Epoch", XLabel="Epoch", YLabel="Accuracy",
@@ -59,14 +59,14 @@ def PlotAccuracyEpochBatch(LogTrain, LogTest=None, SaveDir=None, SaveName=None, 
         XsData.append(EpochsFloatTest)
         YsData.append(CorrectRateTest)
 
-    utils_torch.plot.SetXTicksFloatFromData(ax, XsData)
-    utils_torch.plot.SetYTicksFloatFromData(ax, YsData)
+    DLUtils.plot.SetXTicksFloatFromData(ax, XsData)
+    DLUtils.plot.SetYTicksFloatFromData(ax, YsData)
     ax.legend()
     plt.tight_layout()
 
     if SaveName is None:
         SaveName = "Accuracy~Epoch"
 
-    utils_torch.plot.SaveFigForPlt(SavePath=SaveDir + SaveName + ".svg")
-    utils_torch.file.Table2TextFileDict(LogTrain, SavePath=SaveDir + SaveName + ".txt")
+    DLUtils.plot.SaveFigForPlt(SavePath=SaveDir + SaveName + ".svg")
+    DLUtils.file.Table2TextFileDict(LogTrain, SavePath=SaveDir + SaveName + ".txt")
     return

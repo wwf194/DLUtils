@@ -4,8 +4,8 @@ import torch.nn.functional as F
 
 import numpy as np
 
-import utils_torch
-from utils_torch.attr import *
+import DLUtils
+from DLUtils.attr import *
 
 def Build(param):
     # to be implemented
@@ -13,12 +13,12 @@ def Build(param):
 def load_model(param):
     return
 
-from utils_torch.transform import AbstractTransformWithTensor
-#from utils_torch.transform.__init__ import AbstractTransformWithTensor
+from DLUtils.transform import AbstractTransformWithTensor
+#from DLUtils.transform.__init__ import AbstractTransformWithTensor
 class MLP(AbstractTransformWithTensor):
     #def __init__(self, param=None, data=None, **kw):
         # super(MLP, self).__init__()
-        # self.InitModule(self, param, data, ClassPath="utils_torch.transform.MLP", **kw)
+        # self.InitModule(self, param, data, ClassPath="DLUtils.transform.MLP", **kw)
     def __init__(self, **kw):
         super().__init__(**kw)
         return
@@ -44,7 +44,7 @@ class MLP(AbstractTransformWithTensor):
             self.SetNeuronsNum()
             for LayerIndex in range(param.Layers.Num):
                 LayerParam = eval("param.Modules.Layer%d"%LayerIndex)
-                #LayerParam = utils_torch.EmptyPyObj()
+                #LayerParam = DLUtils.EmptyPyObj()
                 EnsureAttr(LayerParam.Type,      param.Layers.Type)
                 EnsureAttr(LayerParam.Subtype,   param.Layers.Subtype)
                 EnsureAttr(LayerParam.NonLinear, param.Neurons.NonLinear)
@@ -73,7 +73,7 @@ class MLP(AbstractTransformWithTensor):
         cache.Layers = []
         for LayerIndex in range(param.Layers.Num):
             #LayerParam = GetAttrs(param, "Modules.Layer%d"%LayerIndex)
-            #Layer = utils_torch.module.BuildModule(LayerParam, LoadDir=cache.LoadDir)
+            #Layer = DLUtils.module.BuildModule(LayerParam, LoadDir=cache.LoadDir)
             #SetAttrs(cache, "Modules.Layer%d"%LayerIndex, Layer)
             cache.Layers.append(getattr(cache.Modules, "Layer%d"%LayerIndex))             
             #self.add_module("Layer%d"%LayerIndex, Layer)
@@ -103,4 +103,4 @@ class MLP(AbstractTransformWithTensor):
 
 
 __MainClass__ = MLP
-# utils_torch.transform.SetMethodForTransformModule(__MainClass__)
+# DLUtils.transform.SetMethodForTransformModule(__MainClass__)

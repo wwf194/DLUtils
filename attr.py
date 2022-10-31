@@ -1,5 +1,5 @@
 from re import L
-import utils_torch
+import DLUtils
 
 def CheckAttrs(Obj, attrs=[], *args, **kw):
     if kw.get("value") is None:
@@ -22,7 +22,7 @@ def SetAttrs(Obj, attrs=[], *args, **kw):
     kw["default"] = kw["value"]
 
     value = kw["value"]
-    if utils_torch.IsPyObj(value) and hasattr(value, "__value__"):
+    if DLUtils.IsPyObj(value) and hasattr(value, "__value__"):
         kw["value"] = value.__value__
 
     EnsureAttrs(Obj, attrs, *args, **kw)
@@ -41,12 +41,12 @@ def SetAttrs(Obj, attrs=[], *args, **kw):
     kw["default"] = kw["value"]
 
     value = kw["value"]
-    if utils_torch.IsPyObj(value) and hasattr(value, "__value__"):
+    if DLUtils.IsPyObj(value) and hasattr(value, "__value__"):
         kw["value"] = value.__value__
 
     if not isinstance(attrs, list):
         print("aaa")
-    assert isinstance(Obj, utils_torch.PyObj)
+    assert isinstance(Obj, DLUtils.PyObj)
     Obj.SetAttrs(attrs, value)
 
     #EnsureAttrs(Obj, attrs, *args, **kw)
@@ -89,14 +89,14 @@ def MatchAttrs(Obj, attrs=None, *args, **kw):
         return False
 
 def SetAttr(Obj, Value):
-    # Obj: utils_torch.PyObj
-    if isinstance(Value, utils_torch.PyObj):
+    # Obj: DLUtils.PyObj
+    if isinstance(Value, DLUtils.PyObj):
         Obj.FromPyObj(Value)
         return
     elif isinstance(Value, dict):
         Obj.FromDict(Value)
         return
-    if hasattr(Obj, "__value__"): # and Obj is not isinstance of utils_torch.PyObj
+    if hasattr(Obj, "__value__"): # and Obj is not isinstance of DLUtils.PyObj
         Obj.__value__ = Value
         return
     else: # Obj does not have __value__
@@ -106,13 +106,13 @@ def SetAttr(Obj, Value):
             Obj.ResetParentAttr(Value)
 
 def HasAttr(Obj):
-    if isinstance(Obj, utils_torch.PyObj):
+    if isinstance(Obj, DLUtils.PyObj):
         if Obj.IsCreateFromGetAttr() and Obj.IsEmpty():
             Obj.GetParent().RemoveAttr(Obj.GetParentAttr())
             return False
     return True
 def EnsureAttr(Obj, Value):
-    if isinstance(Obj, utils_torch.PyObj):
+    if isinstance(Obj, DLUtils.PyObj):
         if Obj.IsCreateFromGetAttr() and Obj.IsEmpty():
             Obj.GetParent().SetAttr(Obj.GetParentAttr(), Value)
             return
@@ -132,7 +132,7 @@ def EnsureAttrs(Obj, attrs=[], *args, **kw):
                 raise Exception()
     default = kw["default"]
     count = 0
-    assert isinstance(Obj, utils_torch.PyObj)
+    assert isinstance(Obj, DLUtils.PyObj)
 
     Obj.EnsureAttrs(attrs, default)
 
@@ -151,7 +151,7 @@ def EnsureAttrs(Obj, attrs=[], *args, **kw):
 #     count = 0
 
 #     if len(attrs) == 0:
-#         if isinstance(Obj, utils_torch.PyObj):
+#         if isinstance(Obj, DLUtils.PyObj):
 #             if kw.get("WriteDefault")==True:
 #                 setattr(Obj, "__value__", default)
 #         return
@@ -159,21 +159,21 @@ def EnsureAttrs(Obj, attrs=[], *args, **kw):
 #     parent, parentAttr = None, None
 #     for index, attr in enumerate(attrs):
 #         if index < len(attrs) - 1:
-#             #if utils_torch.IsPyObj(Obj):
+#             #if DLUtils.IsPyObj(Obj):
 #             if hasattr(Obj, "__dict__"):
 #                 parent = Obj
 #                 parentAttr = attr
 #                 if hasattr(Obj, attr):
 #                     Obj = getattr(Obj, attr)
 #                 else:
-#                     setattr(Obj, attr, utils_torch.PyObj())
+#                     setattr(Obj, attr, DLUtils.PyObj())
 #                     Obj = getattr(Obj, attr)               
 #             else:
-#                 SetAttr(parent, parentAttr, utils_torch.PyObj({"__value__": Obj}))
+#                 SetAttr(parent, parentAttr, DLUtils.PyObj({"__value__": Obj}))
 #                 Obj = getattr(parent, parentAttr)
 #                 parent = Obj
 #                 parentAttr = attr
-#                 setattr(Obj, attr, utils_torch.PyObj())
+#                 setattr(Obj, attr, DLUtils.PyObj())
 #                 Obj = getattr(Obj, attr)                    
 #         else:
 #             if hasattr(Obj, "__dict__"):
@@ -181,7 +181,7 @@ def EnsureAttrs(Obj, attrs=[], *args, **kw):
 #                     value = getattr(Obj, attr)
 #                     if value is not None: # Obj already has a not None attribute
 #                         if kw.get("WriteDefault"):
-#                             if utils_torch.IsPyObj(value):
+#                             if DLUtils.IsPyObj(value):
 #                                 if hasattr(value, "__value__"):
 #                                     value.__value__ = default
 #                                 else:
@@ -199,7 +199,7 @@ def EnsureAttrs(Obj, attrs=[], *args, **kw):
 #                     if parent is None:
 #                         raise Exception("EnsureAttrs: Cannot redirect parent attribute.")
 #                     SetAttr(parent, parentAttr, 
-#                         utils_torch.PyObj({
+#                         DLUtils.PyObj({
 #                             "__value__": Obj,
 #                         }))
                     
@@ -217,7 +217,7 @@ ensure_attrs = EnsureAttrs
 #     elif isinstance(Obj, dict):
 #         Obj[Attr] = Value
 #         return Obj[Attr]
-#     elif utils_torch.IsPyObj(Obj):
+#     elif DLUtils.IsPyObj(Obj):
 #         setattr(Obj, Attr, Value)
 #         return getattr(Obj, Attr)
 #     else:
@@ -226,7 +226,7 @@ ensure_attrs = EnsureAttrs
 def GetAttr(Obj, Attr):
     if isinstance(Obj, list) or isinstance(Obj, dict):
         return Obj[Attr]
-    elif isinstance(Obj, utils_torch.PyObj):
+    elif isinstance(Obj, DLUtils.PyObj):
         return getattr(Obj, Attr)
     else:
         raise Exception()
@@ -310,7 +310,7 @@ def _ParseAttrs(attrs, *args):
         attrs_origin = [*attrs, *args]
     elif isinstance(attrs, str):
         attrs_origin = [attrs, *args]
-    elif isinstance(attrs, utils_torch.PyObj) and attrs.IsListLike():
+    elif isinstance(attrs, DLUtils.PyObj) and attrs.IsListLike():
         attrs_origin = [*attrs, *args]
     else:
         raise Exception()

@@ -1,6 +1,6 @@
 import functools
-import utils_torch
-from utils_torch.attr import *
+import DLUtils
+from DLUtils.attr import *
 
 def StackFunctions(FunctionList, *Functions, Inverse=False, InputNum=1):
     if isinstance(FunctionList, list):
@@ -37,7 +37,7 @@ def ParseFunctionParamsStatic(paramList):
         paramList[index] = ParseFunctionParamStatic(param)
 
 def Call(Callable, *Args, **kw):
-    if utils_torch.IsPyObj(Callable):
+    if DLUtils.IsPyObj(Callable):
         Output = Callable(*Args, **kw)
         if isinstance(Output, list):
             return tuple(Output)
@@ -46,11 +46,11 @@ def Call(Callable, *Args, **kw):
         return Callable(*Args, **kw)
 
 def ParseFunctionParamStatic(param, InPlace=False):
-    if callable(param) and not utils_torch.IsPyObj(param):
+    if callable(param) and not DLUtils.IsPyObj(param):
         return [param, []]
     elif isinstance(param, str):
         return [param, []]
-    elif utils_torch.IsListLike(param):
+    elif DLUtils.IsListLike(param):
         if len(param)==0:
             param.append([])
         return param
@@ -60,19 +60,19 @@ def ParseFunctionParamStatic(param, InPlace=False):
 def CallFunctions(param, **kw):
     ContextDict = kw
     Outputs = []
-    if isinstance(param, utils_torch.PyObj):
+    if isinstance(param, DLUtils.PyObj):
         param = GetAttrs(param)
-    if isinstance(param, utils_torch.PyObj): # Call one function
+    if isinstance(param, DLUtils.PyObj): # Call one function
         Output = _CallFunction(param, ContextDict)
         Outputs.append(Output)
-    elif isinstance(param, list) or utils_torch.IsListLikePyObj(param): # Call a cascade of functions
+    elif isinstance(param, list) or DLUtils.IsListLikePyObj(param): # Call a cascade of functions
         for _param in param:
             Output = _CallFunction(_param, ContextDict)
             Outputs.append(Output)
     elif isinstance(param, str):
         Output = _CallFunction([param], ContextDict)
         Outputs.append(Output)
-    elif callable(param) and not utils_torch.IsPyObj(): # Already parsed to methods.
+    elif callable(param) and not DLUtils.IsPyObj(): # Already parsed to methods.
         Output = _CallFunction([param], ContextDict)
         Outputs.append(Output)        
     else:
@@ -86,21 +86,21 @@ def _CallFunction(param, ContextInfo={}):
     ContextInfo.setdefault("__PreviousFunctionOutput__", None)
     if isinstance(param, str):
         param = [param]
-    elif callable(param) and not utils_torch.IsPyObj(param):
+    elif callable(param) and not DLUtils.IsPyObj(param):
         param = [param]
 
     if len(param)==1:
         param.append([])
     
     FunctionName = param[0]
-    FunctionArgs = utils_torch.ToList(param[1])
-    # if FunctionName in ["&#utils_torch.ExternalMethods.AddObjRefForParseRouters"]:
+    FunctionArgs = DLUtils.ToList(param[1])
+    # if FunctionName in ["&#DLUtils.ExternalMethods.AddObjRefForParseRouters"]:
     #     print("aaa")
-    Function = utils_torch.parse.ResolveStr(
+    Function = DLUtils.parse.ResolveStr(
         FunctionName,
         ContextInfo
     )
-    PositionalArgs, KeyWordArgs = utils_torch.parse.ParseFunctionArgs(FunctionArgs, ContextInfo)
+    PositionalArgs, KeyWordArgs = DLUtils.parse.ParseFunctionArgs(FunctionArgs, ContextInfo)
     FunctionOutput = Function(*PositionalArgs, **KeyWordArgs)    
     ContextInfo["__PreviousFunctionOutput__"] = FunctionOutput
     if FunctionOutput is None:
@@ -115,7 +115,7 @@ def CallGraph(Router, *InList, **InDict):
         States = InDict["__States__"]
         InDict.pop("__States__")
     else:
-        States = utils_torch.EmptyPyObj()
+        States = DLUtils.EmptyPyObj()
     
     Index = 0
     for Key in Router.In:
@@ -128,7 +128,7 @@ def CallGraph(Router, *InList, **InDict):
         # if isinstance(Routing, list):
         #     CallFunction(Routing, **kw)
         if routing.HasOnlineParseAttrs:
-            utils_torch.router.ParseRoutingAttrsOnline(routing, States)
+            DLUtils.router.ParseRoutingAttrsOnline(routing, States)
         if routing.cache.Condition:
             for TimeIndex in range(routing.cache.RepeatTime):
                 # Prepare Module InputList.
@@ -141,9 +141,9 @@ def CallGraph(Router, *InList, **InDict):
                 #     if isinstance(Value, str) and Value.startswith("%"):
                 #         InputDict[Key] = States[Value[1:]]
                 InputDict = routing.cache.InDict
-                #InputList = utils_torch.parse.FilterFromPyObj(States, Routing.In)
+                #InputList = DLUtils.parse.FilterFromPyObj(States, Routing.In)
                 # Routing.Module is a router
-                if isinstance(routing.Module, utils_torch.PyObj):
+                if isinstance(routing.Module, DLUtils.PyObj):
                     if routing.cache.InheritStates:
                         OutputList = CallGraph(routing.Module, *InputList, __States__=States, **InputDict)
                     else:
@@ -157,7 +157,7 @@ def CallGraph(Router, *InList, **InDict):
                     OutputList = routing.Module(*InputList, **InputDict)
             RegisterModuleOutput(OutputList, routing, States)
 
-    return utils_torch.parse.FilterFromPyObj(States, Router.Out)
+    return DLUtils.parse.FilterFromPyObj(States, Router.Out)
 
 def RegisterModuleOutput(OutputList, routing, States):
     # Process Module OutputList
@@ -178,4 +178,4 @@ def RegisterModuleOutput(OutputList, routing, States):
             States[routing.Out[0]] = OutputList
     else:
         pass
-    # utils_torch.parse.Register2PyObj(OutputList, States, Routing.Out)
+    # DLUtils.parse.Register2PyObj(OutputList, States, Routing.Out)

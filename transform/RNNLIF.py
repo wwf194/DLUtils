@@ -10,15 +10,15 @@ import torch.nn.functional as F
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 
-from utils_torch.attr import *
-import utils_torch
+from DLUtils.attr import *
+import DLUtils
 
-from utils_torch.transform import AbstractTransformWithTensor
+from DLUtils.transform import AbstractTransformWithTensor
 class RNNLIF(AbstractTransformWithTensor):
     # Singel-Layer Recurrent Neural Network with Leaky Integrate-and-Fire Dynamics
     # def __init__(self, param=None, data=None, **kw):
     #     super(RNNLIF, self).__init__()
-    #     self.InitModule(self, param, data, ClassPath="utils_torch.transform.RNNLIF", **kw)
+    #     self.InitModule(self, param, data, ClassPath="DLUtils.transform.RNNLIF", **kw)
     def __init__(self, **kw):
         super().__init__(**kw)
         return
@@ -29,9 +29,9 @@ class RNNLIF(AbstractTransformWithTensor):
         cache = self.cache
         
         if cache.IsInit:
-            utils_torch.AddLog("RNNLIF: Initializing...")
+            DLUtils.AddLog("RNNLIF: Initializing...")
         else:
-            utils_torch.AddLog("RNNLIF: Loading...")
+            DLUtils.AddLog("RNNLIF: Loading...")
         Neurons = param.Neurons
         EnsureAttrs(Neurons.Recurrent, "IsExciInhi", value=True)
         if GetAttrs(Neurons.Recurrent.IsExciInhi):
@@ -45,9 +45,9 @@ class RNNLIF(AbstractTransformWithTensor):
         self.ParseRouters()
 
         if cache.IsInit:
-            utils_torch.AddLog("RNNLIF: Initialized.")
+            DLUtils.AddLog("RNNLIF: Initialized.")
         else:
-            utils_torch.AddLog("RNNLIF: Loaded.")
+            DLUtils.AddLog("RNNLIF: Loaded.")
 
 
         return self
@@ -110,4 +110,4 @@ class RNNLIF(AbstractTransformWithTensor):
         # },
 
 __MainClass__ = RNNLIF
-#utils_torch.transform.SetMethodForTransformModule(__MainClass__)
+#DLUtils.transform.SetMethodForTransformModule(__MainClass__)
