@@ -2,7 +2,7 @@
 from DLUtils.system import GetSystemType
 SystemType = GetSystemType()
 
-from DLUtils.json import IsJsonObj, PyObj, EmptyPyObj, IsPyObj, IsDictLikePyObj, IsListLikePyObj, CheckIsLegalPyName
+from .json import IsJsonObj, PyObj, EmptyPyObj, IsPyObj, IsDictLikePyObj, IsListLikePyObj, CheckIsLegalPyName
 import DLUtils.attr as attrs
 import DLUtils.parse as parse
 import DLUtils.geometry2D as geometry2D
@@ -25,6 +25,6 @@ import DLUtils.evaluate as evaluate
 import DLUtils.system as system
 import DLUtils.analysis as analysis
 
-from DLUtils.utils import *
-from DLUtils.functions import *
-from DLUtils.log import *
+from .utils import *
+from .functions import *
+from .log import *
