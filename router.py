@@ -211,3 +211,4 @@ class RouterStatic(DLUtils.PyObj):
         self.FromPyObj(DLUtils.router.ParseRouterStatic(Obj, InPlace=False))
     def ToRouterDynamic(self, **kw):
         return DLUtils.router.ParseRouterDynamic(self, **kw)
+
