@@ -11,7 +11,6 @@ import importlib
 from typing import Iterable, List
 #import pynvml
 #from pynvml.nvml import nvmlDeviceOnSameBoard
-from types import SimpleNamespace
 
 #import timeout_decorator
 import numpy as np
@@ -25,6 +24,99 @@ from DLUtils.file import *
 
 import argparse
 import traceback
+
+def EmptyObj():
+    return types.SimpleNamespace()
+GenerateEmptyObj = EmptyObj
+
+def _ExtractPaths(Obj):
+    PathTable = []
+    _ExtractPaths_Recur(Obj, PathTable, ["ROOT"])
+    return
+
+def _ExtractPaths_Recur(Obj, PathTable, PathCurrent):
+    # ParamDict: 
+    #     All keys should be string.
+    #
+    if isinstance(Obj, dict):
+        for SubPath, Value in Obj.items():
+            assert isinstance(SubPath, str)
+            Keys = SubPath.split(".")
+            _ExtractPaths(
+                Obj[SubPath],
+                PathTable,
+                PathCurrent = PathCurrent + Keys
+            )
+    elif isinstance(Obj, list):
+        for Index, Value in enumerate(Obj):
+            _ExtractPaths(
+                Obj[Index], PathTable, PathCurrent + [Index]
+            )
+    else:
+        PathTable.append(
+            [PathCurrent], Obj
+        )
+    return
+
+def _NodeHasKey(Node, Key):
+    return Key in Node["_DICT"].keys()
+
+def _NewNode(_TYPE, _PATH_FROM_ROOT=None, _VALUE=None):
+    return {
+        "_TYPE": _TYPE,
+        "_VALUE": _VALUE,
+        "_VALUE_CONFLICT": [],
+        "_DICT": {},
+        "_LIST": [],
+        "_PATH_FROM_ROOT": _PATH_FROM_ROOT
+    }
+
+def _BuildTreeFromPaths(Paths):
+    Obj = EmptyObj()
+    NodeRoot = _NewNode(
+        _TYPE="ROOT", _PATH_FROM_ROOT=["_ROOT"]
+    )
+    for Path, Value in Paths:
+        Node = NodeRoot
+        PathLength = len(Path)
+        # Dealing with keys that are not last.
+        for Index, Key in enumerate(Path[:-1]):
+            if _NodeHasKey(Node, Key):
+                Node = Node["_DICT"][Key]
+                _TYPE = Node["_TYPE"]
+                if _TYPE=="LEAF":
+                    Node["_TYPE"]=="SPINE_WITH_LEAF"
+                    pass
+                elif _TYPE in ["SPINE", "SPINE_WITH_LEAF"]:
+                    pass
+                else:
+                    raise Exception()
+            else:
+                Node["_DICT"][Key] = _NewNode(
+                    "SPINE",
+                    Node["_PATH_FROM_ROOT"] + [Key]
+                )
+                Node = Node["_DICT"][Key]
+        # Dealing with last key.   
+        Index, Key = PathLength - 1, Key
+        if _NodeHasKey(Key):
+            Node = Node["_DICT"][Key]
+            _TYPE = Node["_TYPE"]
+            if _TYPE=="SPINE":
+                Node["_TYPE"]=="SPINE_WITH_LEAF"
+                Node["_VALUE"] = Value
+            elif _TYPE==["LEAF", "SPINE_WITH_LEAF"]:
+                warnings.warn("Overwriting")
+                Node["_VALUE"] = Value
+            else:
+                raise Exception()
+        else:
+            Node["_DICT"][Key] = _NewNode(
+                "LEAF",
+                Node["_PATH_FROM_ROOT"] + [Key],
+                Value
+            )
+    
 
 def ParseCmdArgs():
     parser = argparse.ArgumentParser()
@@ -589,6 +681,17 @@ def ToPyObj(Obj):
         return Obj
     else:
         return DLUtils.PyObj(Obj)
+
+def ToTrainableTorchTensor(data):
+    if isinstance(data, np.ndarray):
+        return NpArray2Tensor(data, RequiresGrad=True)
+    elif isinstance(data, list):
+        return NpArray2Tensor(List2NpArray(data), RequiresGrad=True)
+    elif isinstance(data, torch.Tensor):
+        data.requires_grad = True
+        return data
+    else:
+        raise Exception(type(data))
 
 def ToTorchTensor(data):
     if isinstance(data, np.ndarray):
@@ -1270,11 +1373,16 @@ def MountObj(MountPath, Obj, **kw):
 def MountDictOnObj(Obj, Dict):
     Obj.__dict__.update(Dict)
 
-ExternalMethods = DLUtils.EmptyPyObj()
+ExternalMethods = None
+ExternalClasses = None
+def InitExternalMethods():
+    global ExternalMethods, ExternalClasses
+    ExternalMethods = DLUtils.utils.EmptyPyObj()
+    ExternalClasses = DLUtils.utils.EmptyPyObj()
+
 def RegisterExternalMethods(Name, Method):
     setattr(ExternalMethods, Name, Method)
 
-ExternalClasses = DLUtils.EmptyPyObj()
 def RegisterExternalClasses(Name, Class):
     setattr(ExternalClasses, Name, Class)
 

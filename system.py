@@ -1,11 +1,11 @@
 from inspect import Traceback
 import re
 import sys
-import torch
 import time
 import DLUtils
 
 def ReportPyTorchInfo():
+    import torch
     Report = ""
     if torch.cuda.is_available():
         Report += "Cuda is available"

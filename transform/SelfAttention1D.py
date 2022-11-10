@@ -5,20 +5,16 @@ import torch.nn.functional as F
 import DLUtils
 from DLUtils.attr import *
 
-class SelfAttention1D(nn.Module):
+class SelfAttention1D(DLUtils.module.AbstractModule):
     def __init__(self, **kw):
         super().__init__(**kw)
         return
-    # def __init__(self, param=None, data=None, **kw):
-    #     super(SelfAttention1D, self).__init__()
-    #     self.InitModule(self, param, data, ClassPath="DLUtils.transform.Bias", **kw)
-
     def Build(self, IsLoad=False):
         self.BeforeBuild(IsLoad)
         param = self.param
-        data = self.data
+        data  = self.data
         cache = self.cache
-        
+
         assert HasAttrs(param, "Input.Num")
         assert HasAttrs(param, "Output.Num")
         EnsureAttrs(param, "Attention.Feature.Num", default=param.Input.Num)
@@ -33,17 +29,20 @@ class SelfAttention1D(nn.Module):
 
         if cache.IsInit:
             data.Input2Query = DLUtils.transform.CreateWeight2D(param.Weight.Input2Query)
-            data.Input2Key = DLUtils.transform.CreateWeight2D(param.Weight.Input2Key)
+            data.Input2Key   = DLUtils.transform.CreateWeight2D(param.Weight.Input2Key)
             data.Input2Value = DLUtils.transform.CreateWeight2D(param.Weight.Input2Value)
         else:
             data.Input2Query = DLUtils.ToTorchTensor(data.Input2Query)
             data.Input2Key   = DLUtils.ToTorchTensor(data.Input2Key)
             data.Input2Value = DLUtils.ToTorchTensor(data.Input2Value)
 
+        cache.Tensor = DLUtils.EmptyPyObj()
+        
+        cache.TensorDict["Input2Query"] = cache.Input
+
         cache.Tensors.append([data, "Input2Query", data.Input2Query])
         cache.Tensors.append([data, "Input2Key",   data.Input2Key])
         cache.Tensors.append([data, "Input2Value", data.Input2Value])
-        
         cache.AttentionCoefficient = 1.0 / param.Attention.Feature.Num ** 0.5
 
         return self
@@ -59,7 +58,7 @@ class SelfAttention1D(nn.Module):
         data = self.data
         cache = self.cache
         Query = torch.mm(Input, data.Input2Query) # [BatchSize, TokenNum, AttentionFeatureNum]
-        Key = torch.mm(Input, data.Input2Key) # [BatchSize, TokenNum, AttentionFeatureNum]
+        Key = torch.mm(Input, data.Input2Key)     # [BatchSize, TokenNum, AttentionFeatureNum]
         Value = torch.mm(Input, data.Input2Value) # [BatchSize, TokenNum, OutputNum]
 
         self.LogCache("Attention.Key", Key, "Attention", log=log)
@@ -95,5 +94,6 @@ class SelfAttention1D(nn.Module):
             self.LogCache("Attention", Attention, "Attention", log=log)
             self.LogCache("Output", Output, "Activity", log=log)
             return Output
+
 __MainClass__ = SelfAttention1D
 DLUtils.transform.SetMethodForTransformModule(__MainClass__)

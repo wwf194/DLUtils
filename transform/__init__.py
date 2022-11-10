@@ -71,7 +71,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 import DLUtils
-from DLUtils.json import *
+from DLUtils.utils.json import *
 from DLUtils.attr import *
 from DLUtils.LRSchedulers import LinearLR
 

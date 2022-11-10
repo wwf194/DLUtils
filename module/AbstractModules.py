@@ -42,7 +42,6 @@ class AbstractModule:
         if hasattr(cache, "Tensors"):
             for ParamIndex in cache.Tensors:
                 setattr(ParamIndex[0], ParamIndex[1], ParamIndex[2].to(Location).detach().requires_grad_(True))
-
         if hasattr(cache, "Modules"):
             for name, module in ListAttrsAndValues(cache.Modules):
                 if hasattr(module, "SetTensorLocation"):
@@ -50,7 +49,7 @@ class AbstractModule:
                 # else:
                 #     if isinstance(module, nn.Module):
                 #         DLUtils.AddWarning("%s is an instance of nn.Module, but has not implemented SetTensorLocation method."%name)
-    def AddModule(self, Name, Module, Type=None):
+    def AddSubModule(self, Name, Module, Type=None):
         param = self.param
         cache = self.cache
         if not hasattr(param, "Modules"):
@@ -61,9 +60,9 @@ class AbstractModule:
             assert Type is not None and isinstance(Type, str)
             setattr(param.Modules, Name, DLUtils.PyObj({"Type": Type}))
         setattr(cache.Modules, Name, Module)
-    def HasModule(self, Name):
+    def HasSubModule(self, Name):
         return hasattr(self.param.Modules, Name)
-        
+
 class AbstractModuleWithParam(AbstractModule):
     def __init__(self, **kw):
         return

@@ -2,13 +2,13 @@
 from DLUtils.system import GetSystemType
 SystemType = GetSystemType()
 
-from .json import IsJsonObj, PyObj, EmptyPyObj, IsPyObj, IsDictLikePyObj, IsListLikePyObj, CheckIsLegalPyName
+from .utils.json import IsJsonObj, PyObj, EmptyPyObj, IsPyObj, IsDictLikePyObj, IsListLikePyObj, CheckIsLegalPyName
+import DLUtils.utils.json as json
 import DLUtils.attr as attrs
 import DLUtils.parse as parse
 import DLUtils.geometry2D as geometry2D
 import DLUtils.file as file
-import DLUtils.json as json
-import DLUtils.math as math
+#import DLUtils.math as math
 import DLUtils.plot as plot
 import DLUtils.module as module
 import DLUtils.log as log # log -> transform
@@ -28,3 +28,9 @@ import DLUtils.analysis as analysis
 from .utils import *
 from .functions import *
 from .log import *
+
+def NewNetwork(Name, Param=None):
+    if Name in ["Transformer"]:
+        BuildTransformer()
+    else:
+        raise Exception(f"No such network: {Name}")
