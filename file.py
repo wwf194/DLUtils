@@ -656,4 +656,4 @@ def Data2TextFile(data, Name=None, FilePath=None):
     DLUtils.Str2File(str(data), FilePath)
 
 from .utils.json import PyObj2DataFile, DataFile2PyObj, PyObj2JsonFile, \
-    JsonFile2PyObj, JsonFile2JsonObj, JsonObj2JsonFile, DataFile2JsonObj, JsonObj2DataFile
+    JsonFile2PyObj, JsonFile2JsonDict, JsonObj2JsonFile, DataFile2JsonObj, JsonObj2DataFile

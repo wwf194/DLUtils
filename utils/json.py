@@ -163,11 +163,12 @@ def JsonStr2PyObj(JsonStr):
 JsonStr_to_object = JsonStr2PyObj
 
 def JsonFile2PyObj(FilePath):
-    JsonObj = JsonFile2JsonObj(FilePath)
+    JsonObj = JsonFile2JsonDict(FilePath)
     Obj = JsonObj2PyObj(JsonObj)
     return Obj
 
-def JsonFile2JsonObj(FilePath):
+def JsonFile2JsonDict(FilePath):
+    # JsonObj is either a list or dict.
     # with open(FilePath, "r") as f:
     #     JsonStrLines = f.readlines()
     # JsonStrLines = RemoveJsonStrLinesComments(JsonStrLines)
@@ -206,10 +207,11 @@ def IsJsonObj(Obj):
     isinstance(Obj, tuple)
 
 import pickle
-def JsonObj2DataFile(Obj, FilePath):
+def Obj2File(Obj, FilePath):
     DLUtils.EnsureFileDir(FilePath)
     with open(FilePath, "wb") as f:
         pickle.dump(Obj, f)
+JsonObj2DataFile = Obj2File
 
 def DataFile2JsonObj(FilePath):
     with open(FilePath, "rb") as f:
