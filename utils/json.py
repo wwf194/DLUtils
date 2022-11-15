@@ -206,12 +206,7 @@ def IsJsonObj(Obj):
     isinstance(Obj, dict) or \
     isinstance(Obj, tuple)
 
-import pickle
-def Obj2File(Obj, FilePath):
-    DLUtils.EnsureFileDir(FilePath)
-    with open(FilePath, "wb") as f:
-        pickle.dump(Obj, f)
-JsonObj2DataFile = Obj2File
+
 
 def DataFile2JsonObj(FilePath):
     with open(FilePath, "rb") as f:

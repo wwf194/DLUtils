@@ -18,10 +18,17 @@ if __name__=="__main__":
     obj = utils.EmptyObj()
     print(obj.__dict__)
 
-def TestJsonUtils():
-    JsonDict = DLUtils.JsonFile2JsonDict("test/JsonTestFile.json")
-    ToParamObj(JsonDict)
 
+import os
+def TestJsonUtils():
+    FolderPath = DLUtils.file.FolderPathOfFile(__file__)
+    print(FolderPath)
+    JsonDict = DLUtils.JsonFile2JsonDict(FolderPath + "test/JsonTestFile.jsonc")
+    Obj = DLUtils.param.ToParamObj(JsonDict)
+    print(Obj[0].A.B.C.D.E)
+    Str = DLUtils.param.Param2JsonStr(Obj)
+    DLUtils.Str2File(Str, "test/JsonTestFile - Reproduce.jsonc")
+    return
 #net = NewNetwork("Transformer")
 
 if __name__=="__main__":

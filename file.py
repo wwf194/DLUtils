@@ -7,6 +7,9 @@ import DLUtils
 from DLUtils.attr import *
 import warnings
 
+def FolderPathOfFile(FilePath):
+    return os.path.dirname(os.path.realpath(FilePath)) + "/"
+
 def RemoveFiles(FilesPath):
     for FilePath in FilesPath:
         RemoveFile(FilePath)
@@ -425,11 +428,20 @@ def cal_path_from_main(path_rel=None, path_start=None, path_main=None):
     #print('path_rel: %s path_start: %s path_main: %s'%(path_rel, path_start, path_main))
     return path_from_main
 
-def LoadBinaryFilePickle(FilePath):
-    import pickle
-    with open(FilePath, 'rb') as fo:
-        Obj = pickle.load(fo, encoding='bytes')
+import pickle
+
+def File2ObjPickle(FilePath):
+    with open(FilePath, 'rb') as f:
+        Obj = pickle.load(f, encoding='bytes')
     return Obj
+File2Obj = File2ObjPickle
+
+def Obj2FilePickle(Obj, FilePath):
+    DLUtils.EnsureFileDir(FilePath)
+    with open(FilePath, "wb") as f:
+        pickle.dump(Obj, f)
+Obj2File = Obj2FilePickle
+JsonObj2DataFile = Obj2File
 
 def File2Md5(FilePath):
     import hashlib
@@ -656,4 +668,4 @@ def Data2TextFile(data, Name=None, FilePath=None):
     DLUtils.Str2File(str(data), FilePath)
 
 from .utils.json import PyObj2DataFile, DataFile2PyObj, PyObj2JsonFile, \
-    JsonFile2PyObj, JsonFile2JsonDict, JsonObj2JsonFile, DataFile2JsonObj, JsonObj2DataFile
+    JsonFile2PyObj, JsonFile2JsonDict, JsonObj2JsonFile, DataFile2JsonObj
