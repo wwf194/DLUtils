@@ -429,6 +429,10 @@ def cal_path_from_main(path_rel=None, path_start=None, path_main=None):
     return path_from_main
 
 import pickle
+from pathlib import Path
+
+def File2Str(FilePath):
+    return Path(FilePath).read_text()
 
 def File2ObjPickle(FilePath):
     with open(FilePath, 'rb') as f:

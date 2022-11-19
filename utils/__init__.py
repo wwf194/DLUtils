@@ -23,6 +23,7 @@ from DLUtils.attr import *
 from DLUtils.file import *
 
 import DLUtils.utils.param as param
+import DLUtils.utils.json as json
 
 import argparse
 import traceback

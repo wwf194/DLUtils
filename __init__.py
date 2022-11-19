@@ -8,7 +8,6 @@ import DLUtils.attr as attrs
 import DLUtils.parse as parse
 import DLUtils.geometry2D as geometry2D
 import DLUtils.file as file
-#import DLUtils.math as math
 import DLUtils.plot as plot
 import DLUtils.module as module
 import DLUtils.log as log # log -> transform
@@ -17,7 +16,6 @@ import DLUtils.train as train # module -> train
 import DLUtils.router as router
 import DLUtils.functions as functions
 
-#import DLUtils.analysis as analysis
 import DLUtils.optimize as optimize # module -> optimize
 import DLUtils.dataset as dataset
 import DLUtils.loss as loss

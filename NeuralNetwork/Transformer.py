@@ -78,8 +78,9 @@ class Transformer():
     def forward(X):
         # X: [BatchSize, TokenNum, EmbeddingNum]
     def LayerNorm(X):
-        
-
+        return
+    def Init():
+        return
 
 
 
