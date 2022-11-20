@@ -1,3 +1,5 @@
+import DLUtils
+
 import warnings
 from enum import Enum
 
@@ -682,7 +684,40 @@ def _Tree2ObjRecur(Node):
                 Obj.GetAttr("_LIST")[Index] = _Tree2ObjRecur(Node["_LIST"][Index])
         else:
             raise Exception()
-        
-
-        
         return Obj
+
+from .json.parse import _JsonStr2Tree
+from .json.parse import NODE_TYPE as NODE_PARSE_TYPE
+
+def _AnalyzeTree(Node):
+    _AnalyzeTreeRecur(Node)
+def _AnalyzeTreeRecur(Node):
+    _PARSE_TYPE = Node["_TYPE"]
+    if _PARSE_TYPE == NODE_PARSE_TYPE.DICT:
+        Node["_SUBTYPE"] = NODE_SUBTYPE.DICT
+        Dict = Node["_DICT"]
+        if Dict.get("_LEAF") is not None:
+            Node["_LEAF"] = Dict.pop("_LEAF")
+            Node["_TYPE"] = NODE_TYPE.SPINE_WITH_LEAF
+        else:
+            Node["_TYPE"] = NODE_TYPE.SPINE
+    
+    elif _PARSE_TYPE == NODE_PARSE_TYPE.LIST:
+        Node["_SUBTYPE"] = NODE_SUBTYPE.LIST
+        if Node["_DICT"].get("_LEAF") is not None:
+            Node["_TYPE"] = NODE_TYPE.SPINE_WITH_LEAF
+        else:
+            Node["_TYPE"] = NODE_TYPE.SPINE
+        for Index, SubNode in enumerate(Node["_LIST"]):
+            _AnalyzeTreeRecur(SubNode)
+    
+    elif _PARSE_TYPE == NODE_PARSE_TYPE.LEAF:
+        Node["_TYPE"] = NODE_TYPE.LEAF
+    
+    else:
+        raise Exception()
+
+def JsonFile2Tree(FilePath):
+    JsonStr = DLUtils.file.File2Str(FilePath)
+    Tree = _JsonStr2Tree(JsonStr)
+    _AnalyzeTree(Tree)

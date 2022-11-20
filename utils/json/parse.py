@@ -102,6 +102,13 @@ class NODE_TYPE:
     LEAF = 10
     ENDL = 11
 
+class NODE_LEAF_TYPE:
+    INT = 0
+    FLOAT = 1
+    STR = 2
+    BOOLEAN = 3
+    NULL = 4
+
 node_dict_nodes = {
     "_TYPE": NODE_TYPE.DICT_NODES,
     "_DICT": {}
@@ -132,18 +139,17 @@ def p_root(p):
     '''
     p[0] = p[1]
 
-
-def p_nodes(p):
+def p_list_nodes(p):
     '''
-        nodes : nodes_non_empty
-              | nodes_non_empty comma
+        list_nodes : list_nodes_non_empty
+              | list_nodes_non_empty comma
     '''  
     p[0] = p[1]
 
-def p_nodes_non_empty(p):
+def p_list_nodes_non_empty(p):
     '''
-        nodes_non_empty : node
-                        | nodes_non_empty comma node
+        list_nodes_non_empty : node
+                             | list_nodes_non_empty comma node
     '''
     # allows trailing empty dict, empty list, comma.
     if len(p) == 3 and isinstance(p[2], dict):
@@ -230,7 +236,7 @@ def p_dict_nodes_non_empty(p):
 
 def p_list(p):
     '''
-        list : BRACKET_SQUARE_LEFT endl nodes BRACKET_SQUARE_RIGHT
+        list : BRACKET_SQUARE_LEFT endl list_nodes BRACKET_SQUARE_RIGHT
              | BRACKET_SQUARE_LEFT endl BRACKET_SQUARE_RIGHT
     '''
     if len(p) == 4:
@@ -250,15 +256,49 @@ def p_endl(p):
 
 def p_leaf(p):
     '''
-        leaf : STR_SINGLE_QUOTATION_MARK
-             | STR_DOUBLE_QUOTATION_MARK
-             | INT
-             | FLOAT
-             | NULL
-             | BOOLEAN
+        leaf : str
+             | int
+             | float
+             | null
+             | boolean
     '''
-    p[0] = dict(node_leaf)
-    p[0]["_LEAF"] = p[1]
+    p[0] = p[1]
+
+def p_int(p):
+    '''
+        int : INT
+    '''   
+    Node = dict(node_leaf)
+    Node["_LEAF"] = int(p[1])
+    Node["_LEAF_TYPE"] = NODE_LEAF_TYPE.INT
+    p[0] = Node
+
+def p_float(p):
+    '''
+        float : FLOAT
+    '''   
+    Node = dict(node_leaf)
+    Node["_LEAF"] = float(p[1])
+    Node["_LEAF_TYPE"] = NODE_LEAF_TYPE.FLOAT
+    p[0] = Node
+
+def p_boolean(p):
+    '''
+        null : BOOLEAN
+    '''   
+    Node = dict(node_leaf)
+    Node["_LEAF"] = bool(p[1])
+    Node["_LEAF_TYPE"] = NODE_LEAF_TYPE.BOOLEAN
+    p[0] = Node
+
+def p_null(p):
+    '''
+        null : NULL
+    '''   
+    Node = dict(node_leaf)
+    Node["_LEAF"] = None
+    Node["_LEAF_TYPE"] = NODE_LEAF_TYPE.NULL
+    p[0] = Node
 
 def p_str(p):
     '''
@@ -289,8 +329,7 @@ def YaccTest():
     while True:
         token = lexer.token()
         print(token)
-        if not token:
-            # 返回的token为None，表示到达末尾
+        if token is None:
             break
     lexer = lex.lex()
     parser = yacc.yacc(debug=True)
@@ -298,8 +337,7 @@ def YaccTest():
     # returns p[0] in method p_root(p)
     Tree = parser.parse(JsonStr, lexer=lexer)
 
-def ParseJsonFile(FilePath):
-    JsonStr = DLUtils.file.File2Str(FilePath)
+def _JsonStr2Tree(FilePath):
     lexer = lex.lex()
     lexer.input(JsonStr)
     parser = yacc.yacc(debug=True)
