@@ -259,7 +259,7 @@ def _CopyFolder(SourceDir, DestDir, subpath='', exceptions=[], verbose=True):
 def ExistsPath(Path):
     return os.path.exists(Path)
 
-def ParseNameSuffix(FilePath):
+def ParseFileNameSuffix(FilePath):
     if FilePath.endswith("/"):
         raise Exception()
     MatchResult = re.match(r"(.*)\.(.*)", FilePath)
@@ -267,6 +267,10 @@ def ParseNameSuffix(FilePath):
         return FilePath, ""
     else:
         return MatchResult.group(1), MatchResult.group(2)
+
+def AddSuffixToFileWithFormat(FilePath, Suffix):
+    _FilePath, Format = ParseFileNameSuffix(FilePath)
+    return _FilePath + Suffix + "." + Format
 
 def RenameFile(DirPath, FileName, FileNameNew):
     DirPath = CheckDir(DirPath)
@@ -277,7 +281,7 @@ def RenameFileIfExists(FilePath):
     if FilePath.endswith("/"):
         raise Exception()
 
-    FileName, Suffix = ParseNameSuffix(FilePath)
+    FileName, Suffix = ParseFileNameSuffix(FilePath)
 
     Sig = True
     MatchResult = re.match(r"^(.*)-(\d+)$", FileName)

@@ -167,7 +167,7 @@ def JsonFile2PyObj(FilePath):
     Obj = JsonObj2PyObj(JsonObj)
     return Obj
 
-def JsonFile2JsonDict(FilePath):
+def JsonFile2JsonDictJson5(FilePath):
     # JsonObj is either a list or dict.
     # with open(FilePath, "r") as f:
     #     JsonStrLines = f.readlines()
@@ -179,6 +179,8 @@ def JsonFile2JsonDict(FilePath):
     with open(FilePath, "r") as f:
         JsonObj = json5.load(f) # json5 allows comments
     return JsonObj
+
+JsonFile2JsonDict = JsonFile2JsonDictJson5
 
 def RemoveJsonStrLinesComments(JsonStrLines): # Remove Single Line Comments Like //...
     for Index, JsonStrLine in enumerate(JsonStrLines):

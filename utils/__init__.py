@@ -34,7 +34,7 @@ GenerateEmptyObj = EmptyObj
 
 def JsonFile2ParamObj(FilePath):
     JsonDict = JsonFile2JsonDict(FilePath)
-    Obj = param.ToParamObj(JsonDict)
+    Obj = param.JsonStyleObj2Param(JsonDict)
     return Obj
 
 def ParseCmdArgs():

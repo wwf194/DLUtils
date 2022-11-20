@@ -33,7 +33,7 @@ class Param():
             self.SetAttr("_TYPE", Dict["_TYPE"])
             self.SetAttr("_SUBTYPE", Dict["_SUBTYPE"])
             self.SetAttr("_PATH_FROM_ROOT", Dict["_PATH_FROM_ROOT"])
-            self.SetAttr("_LEAF", Dict["_LEAF"])
+            self.SetAttr("_LEAF", Dict.get("_LEAF"))
     def __getattr__(self, Value):
         return self._DICT[Value]
     def __setattr__(self, Key, Value):
@@ -83,10 +83,6 @@ def _SetNodeKey(Node, Key, Value):
 def Param2JsonFile(Obj):
     assert isinstance(Obj, Param)
     Tree = Param2Tree(Obj)
-
-    return
-
-def _Tree2JsonDict(Tree):
     return
 
 def ToJsonElement(Obj):
@@ -94,10 +90,6 @@ def ToJsonElement(Obj):
         isinstance(Obj, int) or \
         isinstance(Obj, str):
         return Obj
-
-
-
-
 
 def _NodeTypeDetail(Node):
     HAS_LEAF =  _HasLeaf(Node)
@@ -118,7 +110,7 @@ def _NodeTypeDetail(Node):
             return NODE_CHILD_TYPE.MULTI_SUBNODE_WITH_LEAF
         else:
             return NODE_CHILD_TYPE.MULTI_SUBNODE
-    
+
 def _SubNodeNum(Node):
     _TYPE = Node["_TYPE"]
     _SUBTYPE = Node["_SUBTYPE"]
@@ -231,7 +223,6 @@ def _CompressedTree2JsonStrRecur(Node, StrList, IndentNum, Key):
     elif _TYPE==NODE_TYPE.SPINE:
         if _SUBTYPE==NODE_SUBTYPE.DICT:
             IndexMax = len(Node["_DICT"].keys()) - 1
-            Index = 0
             if IndexMax == -1: # Empty Dict
                 if isinstance(Key, int):
                     _AppendWithIndent(StrList, IndentNum, "{}")
@@ -242,8 +233,10 @@ def _CompressedTree2JsonStrRecur(Node, StrList, IndentNum, Key):
                 _AppendWithIndent(StrList, IndentNum, "{\n")
             else:
                 _AppendWithIndent(StrList, 0, "{\n") # Include root node.
-
+            Index = 0
             for SubKey, SubNodes in Node["_DICT"].items():
+                if SubKey=="G":
+                    a = 1
                 if SubKey != "_LEAF":
                     if isinstance(SubNodes, dict):
                         SubNodes = [SubNodes]
@@ -252,7 +245,7 @@ def _CompressedTree2JsonStrRecur(Node, StrList, IndentNum, Key):
                     for SubIndex, SubNode in enumerate(SubNodes):
                         _AppendWithIndent(StrList, IndentNum + 1, f"\"{SubKey}\": ")
                         _CompressedTree2JsonStrRecur(SubNode, StrList, IndentNum + 1, SubKey)
-                        if Index < IndexMax:
+                        if Index < IndexMax or SubIndex < SubIndexMax:
                             StrList.append(",\n")
                         else:
                             StrList.append("\n")
@@ -392,7 +385,6 @@ def JsonDict2Str(Dict):
     _JsonDict2StrRecur(Dict, [], 0)
     return "".join(StrList)
 
-
 def _GetOnlyChild(Node):
     Dict = Node["_DICT"]
     if isinstance(Dict, dict):
@@ -491,10 +483,9 @@ def Param2TreeRecur(Obj, SupNode, SupNodeKey):
             SupNode["_PATH_FROM_ROOT"] + [SupNodeKey]
         )
 
-
-def ToParamObj(Obj):
+def JsonStyleObj2Param(Obj):
     PathTable = _ExtractPaths(Obj)
-    #print(PathTable)
+
     if isinstance(Obj, dict):
         Tree = _NewNode(
             _TYPE=NODE_TYPE.SPINE, # Root node must be list / dict.
@@ -508,12 +499,12 @@ def ToParamObj(Obj):
             _PATH_FROM_ROOT=["ROOT"]
         )
     Tree = _Paths2Tree(PathTable, Tree)
-    return _Tree2Obj(Tree)
+    return _Tree2Param(Tree)
 
-class _SymboEmptyList():
+class _SymbolEmptyList():
     pass
 
-class _SymboEmptyDict():
+class _SymbolEmptyDict():
     pass
 
 def _ExtractPaths(Obj):
@@ -521,24 +512,70 @@ def _ExtractPaths(Obj):
     _ExtractPathsRecur(Obj, PathTable, ["ROOT"])
     return PathTable
 
+def _Tree2Paths(Root):
+    PathTable = []
+    _Tree2PathsRecur(Root, PathTable, ["ROOT"])
+    return PathTable
+
+def _Tree2PathsRecur(Node, PathTable, PathCurrent):
+    _TYPE = Node["_TYPE"]
+    _SUBTYPE = Node["_SUBTYPE"]
+    if _TYPE == NODE_TYPE.SPINE:
+        if _SUBTYPE == NODE_SUBTYPE.DICT:
+            Dict = Node["_DICT"]
+            if len(Dict.keys()) == 0:
+                PathTable.append(
+                    [PathCurrent, _SymbolEmptyDict()]
+                )
+                return
+            for Keys, SubNodes in Dict.items():
+                KeyList = Keys.split(".")
+                for Index, SubNode in enumerate(SubNodes):
+                    # assert isinstance(Key, str)
+                    _Tree2PathsRecur(
+                        SubNode,
+                        PathTable,
+                        PathCurrent = PathCurrent + KeyList
+                    )
+        elif _SUBTYPE == NODE_SUBTYPE.LIST:
+            List = Node["_LIST"]
+            if len(List) == 0:
+                PathTable.append(
+                    [PathCurrent, _SymbolEmptyList()]
+                )
+                return
+            for Index, SubNode in enumerate(List):
+                _Tree2PathsRecur(
+                    SubNode, PathTable, PathCurrent + [Index]
+                )
+        else:
+            raise Exception()
+    elif _TYPE == NODE_TYPE.LEAF:
+        PathTable.append(
+            [PathCurrent, Node["_LEAF"]]
+        )
+    else:
+        raise Exception()
+
 def _ExtractPathsRecur(Obj, PathTable, PathCurrent):
     if isinstance(Obj, dict):
         if len(Obj.keys()) == 0:
             PathTable.append(
-                [PathCurrent, _SymboEmptyDict()]
+                [PathCurrent, _SymbolEmptyDict()]
             )
-        for SubPath, Value in Obj.items():
-            assert isinstance(SubPath, str)
-            Keys = SubPath.split(".")
+            return
+        for Keys, Value in Obj.items():
+            assert isinstance(Keys, str)
+            KeyList = Keys.split(".")
             _ExtractPathsRecur(
-                Obj[SubPath],
+                Obj[Keys],
                 PathTable,
-                PathCurrent = PathCurrent + Keys
+                PathCurrent = PathCurrent + KeyList
             )
     elif isinstance(Obj, list):
         if len(Obj) == 0:
             PathTable.append(
-                [PathCurrent, _SymboEmptyList()]
+                [PathCurrent, _SymbolEmptyList()]
             )
         for Index, Value in enumerate(Obj):
             _ExtractPathsRecur(
@@ -548,16 +585,15 @@ def _ExtractPathsRecur(Obj, PathTable, PathCurrent):
         PathTable.append(
             [PathCurrent, Obj]
         )
-    return
 
 def _GetNodeKey(Node, Key):
     if isinstance(Key, int):
-        assert Node["_SUBTYPE"] != NODE_SUBTYPE.DICT
+        assert Node["_SUBTYPE"] == NODE_SUBTYPE.LIST
         Node["_SUBTYPE"] == NODE_SUBTYPE.LIST
         if Key in Node["_LIST"].keys():
             return Node["_LIST"][Key]
     elif isinstance(Key, str):
-        assert Node["_SUBTYPE"] != NODE_SUBTYPE.LIST, Node
+        assert Node["_SUBTYPE"] == NODE_SUBTYPE.DICT, Node
         Node["_SUBTYPE"] = NODE_SUBTYPE.DICT
         if Key in Node["_DICT"].keys():
             return Node["_DICT"][Key]
@@ -565,10 +601,11 @@ def _GetNodeKey(Node, Key):
         raise Exception()
     return None
 
-def _Paths2Tree(PathTable, RootNode):
+def _Paths2Tree(PathTable, RootNode=None):
+    if RootNode is None:
+        pass
     for Path, Leaf in PathTable:
-
-        if Path == ['ROOT', 0, 'A', 'B', 'G', 0]:
+        if Path == ['ROOT', 0, 'A', 'B', 'C']:
             a = 1
         Node = RootNode
         PathLength = len(Path)
@@ -577,29 +614,25 @@ def _Paths2Tree(PathTable, RootNode):
         for Key in Path[1:-1]: #Path with ROOT.
             NextKey = Path[Index + 1]
             SubNode = _GetNodeKey(Node, Key)
-
             if SubNode is not None:
-                # if(SubNode["_PATH_FROM_ROOT"]==['ROOT', 0, 'A', 'B', 'C']):
-                #     a = 1
+                if(SubNode["_PATH_FROM_ROOT"]==['ROOT', 0, 'A', 'B', 'C']):
+                    a = 1
                 _TYPE = SubNode["_TYPE"]
                 if _TYPE == NODE_TYPE.LEAF:
                     SubNode["_TYPE"] = NODE_TYPE.SPINE_WITH_LEAF
-                    pass
+                    SubNode["_SUBTYPE"] = NODE_SUBTYPE.LIST if isinstance(NextKey, int) else NODE_SUBTYPE.DICT
                 elif _TYPE in [NODE_TYPE.SPINE, NODE_TYPE.SPINE_WITH_LEAF]:
                     pass
                 else:
                     raise Exception()
                 Node = SubNode
             else:
-                if isinstance(NextKey, int):
-                    NodeSubType = NODE_SUBTYPE.LIST
-                else:
-                    NodeSubType = NODE_SUBTYPE.DICT
+                SubNodeType = NODE_SUBTYPE.LIST if isinstance(NextKey, int) else NODE_SUBTYPE.DICT
                 Node = _SetNodeKey(
                     Node, Key,
                     _NewNode(
                         NODE_TYPE.SPINE,
-                        NodeSubType,
+                        SubNodeType,
                         _PATH_FROM_ROOT=Node["_PATH_FROM_ROOT"] + [Key]
                     )
                 )
@@ -619,7 +652,7 @@ def _Paths2Tree(PathTable, RootNode):
             else:
                 raise Exception()
         else:
-            if isinstance(Leaf, _SymboEmptyDict):
+            if isinstance(Leaf, _SymbolEmptyDict):
                 _SetNodeKey(
                     Node, Key,
                     _NewNode(
@@ -629,7 +662,7 @@ def _Paths2Tree(PathTable, RootNode):
                         _PATH_FROM_ROOT=Node["_PATH_FROM_ROOT"] + [Key],
                     )
                 )
-            elif isinstance(Leaf, _SymboEmptyList):
+            elif isinstance(Leaf, _SymbolEmptyList):
                 _SetNodeKey(
                     Node, Key,
                     _NewNode(
@@ -651,10 +684,10 @@ def _Paths2Tree(PathTable, RootNode):
                 )
     return RootNode
 
-def _Tree2Obj(Tree):
-    return _Tree2ObjRecur(Tree)
+def _Tree2Param(Tree):
+    return _Tree2ParamRecur(Tree)
 
-def _Tree2ObjRecur(Node):
+def _Tree2ParamRecur(Node):
     _TYPE = Node["_TYPE"]
     _SUBTYPE = Node["_SUBTYPE"]
 
@@ -673,15 +706,24 @@ def _Tree2ObjRecur(Node):
                 # if key=='D':
                 #     a = 1
                 setattr(    
-                    Obj, key, _Tree2ObjRecur(item)  
+                    Obj, key, _Tree2ParamRecur(item)  
                 )
             return Obj
 
-        elif _SUBTYPE==NODE_SUBTYPE.LIST: 
-            IndexList = Node["_LIST"].keys()
-            Obj.SetAttr("_LIST", [None for Index in range(len(IndexList))])
-            for Index in IndexList:
-                Obj.GetAttr("_LIST")[Index] = _Tree2ObjRecur(Node["_LIST"][Index])
+        elif _SUBTYPE==NODE_SUBTYPE.LIST:
+            List = Node["_LIST"]
+            if isinstance(List, dict):
+                IndexList = Node["_LIST"].keys()
+                Obj.SetAttr("_LIST", [None for Index in range(len(IndexList))])
+                for Index in IndexList:
+                    Obj.GetAttr("_LIST")[Index] = _Tree2ParamRecur(Node["_LIST"][Index])
+            elif isinstance(List, list):
+                ObjList = []
+                Obj.SetAttr("_LIST", ObjList)
+                for Index, Item in enumerate(List):
+                    ObjList.append(Item)
+            else:
+                raise Exception()
         else:
             raise Exception()
         return Obj
@@ -689,35 +731,73 @@ def _Tree2ObjRecur(Node):
 from .json.parse import _JsonStr2Tree
 from .json.parse import NODE_TYPE as NODE_PARSE_TYPE
 
-def _AnalyzeTree(Node):
-    _AnalyzeTreeRecur(Node)
-def _AnalyzeTreeRecur(Node):
+def _AnalyzeTree(Root):
+    Root["_PATH_FROM_ROOT"] = ["ROOT"]
+    _AnalyzeTreeRecur(Root)
+
+def _AnalyzeTreeRecur(Node, Key=None):
     _PARSE_TYPE = Node["_TYPE"]
+    if Key == "_DICT":
+        a = 1
     if _PARSE_TYPE == NODE_PARSE_TYPE.DICT:
         Node["_SUBTYPE"] = NODE_SUBTYPE.DICT
         Dict = Node["_DICT"]
-        if Dict.get("_LEAF") is not None:
-            Node["_LEAF"] = Dict.pop("_LEAF")
-            Node["_TYPE"] = NODE_TYPE.SPINE_WITH_LEAF
-        else:
-            Node["_TYPE"] = NODE_TYPE.SPINE
-    
+        Node["_TYPE"] = NODE_TYPE.SPINE
+        # if Node.get("_LEAF") is not None:
+        #     Node["_LEAF"] = Dict.pop("_LEAF")
+        #     Node["_TYPE"] = NODE_TYPE.SPINE_WITH_LEAF
+        for Key, SubNodes in Dict.items():
+            for Index, SubNode in enumerate(SubNodes):
+                SubNode["_PATH_FROM_ROOT"] = Node["_PATH_FROM_ROOT"] + [Key]
+                _AnalyzeTreeRecur(SubNode, Key)
     elif _PARSE_TYPE == NODE_PARSE_TYPE.LIST:
         Node["_SUBTYPE"] = NODE_SUBTYPE.LIST
-        if Node["_DICT"].get("_LEAF") is not None:
-            Node["_TYPE"] = NODE_TYPE.SPINE_WITH_LEAF
+        List = Node["_LIST"]
+        Node["_TYPE"] = NODE_TYPE.SPINE
+        # if Node.get("_LEAF") is not None:
+        #     Node["_TYPE"] = NODE_TYPE.SPINE_WITH_LEAF
+        if isinstance(List, dict):
+            for Index, SubNode in List.items():
+                SubNode["_PATH_FROM_ROOT"] = Node["_PATH_FROM_ROOT"] + [Index]
+                _AnalyzeTreeRecur(SubNode, Index)
+        elif isinstance(List, list):
+            for Index, SubNode in enumerate(List):
+                SubNode["_PATH_FROM_ROOT"] = Node["_PATH_FROM_ROOT"] + [Index]
+                _AnalyzeTreeRecur(SubNode, Index)
         else:
-            Node["_TYPE"] = NODE_TYPE.SPINE
-        for Index, SubNode in enumerate(Node["_LIST"]):
-            _AnalyzeTreeRecur(SubNode)
-    
+            raise Exception()
     elif _PARSE_TYPE == NODE_PARSE_TYPE.LEAF:
         Node["_TYPE"] = NODE_TYPE.LEAF
-    
+        Node["_SUBTYPE"] = NODE_SUBTYPE.NULL
     else:
         raise Exception()
 
 def JsonFile2Tree(FilePath):
     JsonStr = DLUtils.file.File2Str(FilePath)
     Tree = _JsonStr2Tree(JsonStr)
-    _AnalyzeTree(Tree)
+    if Tree is None:
+        raise Exception("Failed to parse json file.")
+    _AnalyzeTree(Tree)    
+    return Tree
+
+def JsonFile2Param(FilePath):
+    Tree = JsonFile2Tree(FilePath)
+    assert Tree["_TYPE"] == NODE_TYPE.SPINE
+    if Tree["_SUBTYPE"] == NODE_SUBTYPE.DICT:
+        Root = _NewNode(
+            _TYPE=NODE_TYPE.SPINE, # Root node must be list / dict.
+            _SUBTYPE=NODE_SUBTYPE.DICT,
+            _PATH_FROM_ROOT=["ROOT"]
+        )
+    elif Tree["_SUBTYPE"] == NODE_SUBTYPE.LIST:
+        Root = _NewNode(
+            _TYPE=NODE_TYPE.SPINE, # Root node must be list / dict.
+            _SUBTYPE=NODE_SUBTYPE.LIST,
+            _PATH_FROM_ROOT=["ROOT"]
+        )   
+    else:
+        raise Exception()
+
+    PathTable = _Tree2Paths(Tree)
+    Tree = _Paths2Tree(PathTable, Root)
+    return _Tree2Param(Tree)

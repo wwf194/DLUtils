@@ -17,7 +17,8 @@ tokens = (
     "BOOLEAN", "NULL",
     "STR_SINGLE_QUOTATION_MARK",
     "STR_DOUBLE_QUOTATION_MARK",
-    "ENDL"
+    "ENDL",
+    "LINE_COMMENT"
 )
 
 t_BRACKET_CURLY_LEFT = r'\{'
@@ -31,17 +32,22 @@ t_COLON = r'\:'
 t_BOOLEAN = r'(true|false)'
 t_NULL = "null"
 
-#要忽略的符号. 忽略空格和制表符\t(就是TAB)
+# single characters to be ignored.
+# 忽略空格和制表符\t(就是TAB)
 t_ignore = ' \t\r'
 
-# 函数定义的TOKEN匹配规则 > 正则表达式字符串定义的TOKEN匹配规则
-def t_FLOAT(t):
-    r'[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)'
+def t_LINE_COMMENT(t):
+    r'\/\/.*\n'
     return t
 
 def t_INT(t):
     r'(0[xX][0-9a-fA-F]+)|([0-9]+)|([01]+[bB])'
     # 必须返回 t. 可以给t设置属性，方便后续语法分析
+    return t
+
+# 函数定义的TOKEN匹配规则 > 正则表达式字符串定义的TOKEN匹配规则
+def t_FLOAT(t):
+    r'[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)'
     return t
 
 def t_STR_DOUBLE_QUOTATION_MARK(t):
@@ -66,7 +72,7 @@ def find_column(input, token):
     line_start = input.rfind('\n', 0, token.lexpos) + 1
     return (token.lexpos - line_start) + 1
 
-# 遇到无法匹配的TOKEN时会进入此方法
+# This method will be called when faced with unmatchable TOKEN
 def t_error(t):
     # t是以下list
     # [type, value, lineno, lexpos]
@@ -88,7 +94,7 @@ def LexerTest(Input=None):
 from DLUtils.utils.json.ply import yacc
 from enum import Enum
 
-class NODE_TYPE:
+class _NODE_TYPE(Enum):
     EMPTY = 0
     NODES = 1
     NODE = 2
@@ -96,11 +102,16 @@ class NODE_TYPE:
     DICT_NODE = 4
     DICT_NODES = 5
     LIST = 6
-    STR = 7
-    INT = 8
-    FLOAT = 9
     LEAF = 10
     ENDL = 11
+    LINE_COMMENT = 12
+
+class NODE_TYPE(Enum):
+    EMPTY, NODES, NODE, \
+    DICT, DICT_NODE, DICT_NODES, \
+    LIST, LEAF, ENDL, COMMA,\
+    LINE_COMMENT \
+    = range(11)
 
 class NODE_LEAF_TYPE:
     INT = 0
@@ -109,26 +120,51 @@ class NODE_LEAF_TYPE:
     BOOLEAN = 3
     NULL = 4
 
-node_dict_nodes = {
-    "_TYPE": NODE_TYPE.DICT_NODES,
-    "_DICT": {}
-}
-node_dict_node = {
-    "_TYPE": NODE_TYPE.DICT_NODE
-}
-node_empty = {"_TYPE": NODE_TYPE.EMPTY}
-node_nodes = {
-    "_TYPE": NODE_TYPE.NODES,
-    "_LIST": []
-}
-node_list = {
-    "_TYPE": NODE_TYPE.LIST
-}
-node_dict = {
-    "_TYPE": NODE_TYPE.DICT
-}
-node_leaf = {"_TYPE": NODE_TYPE.LEAF}
-node_endl = {"_TYPE": NODE_TYPE.ENDL}
+def dict_nodes_template():
+    return {
+        "_TYPE": NODE_TYPE.DICT_NODES,
+        "_DICT": {}
+    }
+
+def dict_node_template():
+    return {
+        "_TYPE": NODE_TYPE.DICT_NODE
+    }
+def empty_template():
+    return  {"_TYPE": NODE_TYPE.EMPTY}
+
+def list_node_template():
+    return {
+        "_TYPE": NODE_TYPE.NODES,
+        "_LIST": []
+    }
+def list_template():
+    return {
+        "_TYPE": NODE_TYPE.LIST,
+        "_LIST": []
+    }
+
+def dict_template():
+    return {
+        "_TYPE": NODE_TYPE.DICT,
+        "_DICT": {}
+    }
+
+def endl_template():
+    return {"_TYPE": NODE_TYPE.ENDL}
+
+def leaf_template():
+    return {"_TYPE": NODE_TYPE.LEAF}
+
+def line_comment_template():
+    return {"_TYPE": NODE_TYPE.LINE_COMMENT}
+
+def comma_template():
+    return {"_TYPE": NODE_TYPE.COMMA}
+
+def add_comment(node, comment_node):
+    if isinstance(comment_node, dict) and comment_node.get("_COMMENT") is not None:
+        node["_COMMENT"] = comment_node["_COMMENT"]
 
 start = "root"
 
@@ -138,13 +174,16 @@ def p_root(p):
              | list
     '''
     p[0] = p[1]
+    return
 
 def p_list_nodes(p):
     '''
         list_nodes : list_nodes_non_empty
-              | list_nodes_non_empty comma
-    '''  
+                   | list_nodes_non_empty comma
+    '''
     p[0] = p[1]
+    if len(p) == 3:
+        add_comment(p[0], p[2])
 
 def p_list_nodes_non_empty(p):
     '''
@@ -152,15 +191,16 @@ def p_list_nodes_non_empty(p):
                              | list_nodes_non_empty comma node
     '''
     # allows trailing empty dict, empty list, comma.
-    if len(p) == 3 and isinstance(p[2], dict):
-        p[0] = p[1]
-    elif len(p) == 2 or len(p) == 3:
-        Node = dict(node_nodes)
+    # if len(p) == 3 and isinstance(p[2], dict):
+    #     p[0] = p[1]
+    if len(p) == 2:
+        Node = list_node_template()
         Node["_LIST"] = [p[1]]
         p[0] = Node
     elif len(p) == 4:
         Node = p[1]
-        Node["_LIST"].append(p[3])  
+        add_comment(Node["_LIST"][-1], p[2])
+        Node["_LIST"].append(p[3])
         p[0] = Node
     else:
         raise Exception()
@@ -170,21 +210,20 @@ def p_node(p):
         node : leaf
              | dict
              | list
-             | node ENDL
+             | node comment
     '''
-    p[0] = p[1]
-
-# def p_comma_trailing(p):
-#     'comma_trailing : COMMA '
+    Node = p[1]
+    if len(p) == 3:
+        add_comment(Node, p[2])
+    p[0] = Node
 
 def p_dict(p):
     '''
-        dict : BRACKET_CURLY_LEFT endl dict_nodes BRACKET_CURLY_RIGHT
-             | BRACKET_CURLY_LEFT endl BRACKET_CURLY_RIGHT
+        dict : BRACKET_CURLY_LEFT endl_optional dict_nodes BRACKET_CURLY_RIGHT
+             | BRACKET_CURLY_LEFT endl_optional BRACKET_CURLY_RIGHT
     '''
-
     if len(p) == 4:
-        p[0] = dict(node_dict)
+        p[0] = dict_template()
     else:
         p[0] = p[3]
         p[0]["_TYPE"] = NODE_TYPE.DICT
@@ -193,12 +232,14 @@ def p_dict_node(p):
     '''
         dict_node : str COLON node
     '''
-    if len(p) == 3:
-        p[0] = p[1]
-    else:
-        p[0] = dict(node_dict_node)
-        p[0]["_KEY"] = p[1]
-        p[0]["_VALUE"] = p[3]
+
+    p[0] = dict_node_template()
+    if p[1] == "C":
+        a = 1
+    if p[1] == "A.B":
+        a = 1
+    p[0]["_KEY"] = p[1]["_LEAF"]
+    p[0]["_VALUE"] = p[3]
 
 def p_dict_nodes(p):
     '''
@@ -213,16 +254,16 @@ def p_dict_nodes_non_empty(p):
                              | dict_nodes_non_empty comma dict_node
     '''
     # allows trailing empty dict, empty list, comma.
-    if len(p) == 2 and p[1]["_TYPE"] == NODE_TYPE.EMPTY:
-        p[0] = dict(node_dict_nodes)
-    elif len(p) == 3 and isinstance(p[2], dict) and p[2]["_TYPE"] == NODE_TYPE.ENDL:
-        p[0] = p[1]
-    elif len(p) == 2 or len(p) == 3:
+    # if len(p) == 2 and p[1]["_TYPE"] == NODE_TYPE.EMPTY:
+    #     p[0] = dict(node_dict_nodes)
+    # elif len(p) == 3 and isinstance(p[2], dict) and p[2]["_TYPE"] == NODE_TYPE.ENDL:
+    #     p[0] = p[1]
+    if len(p) == 2:
         SubNode = p[1]
-        Node = dict(node_dict_nodes)
+        Node = dict_nodes_template()
         Node["_DICT"][SubNode["_KEY"]] = [SubNode["_VALUE"]]
         p[0] = Node
-    elif len(p) == 4 and p[3]["_TYPE"] == NODE_TYPE.DICT_NODE:
+    elif len(p) == 4:
         Node = p[1]
         SubNode = p[3]
         SubNodeKey = SubNode["_KEY"]
@@ -236,23 +277,29 @@ def p_dict_nodes_non_empty(p):
 
 def p_list(p):
     '''
-        list : BRACKET_SQUARE_LEFT endl list_nodes BRACKET_SQUARE_RIGHT
-             | BRACKET_SQUARE_LEFT endl BRACKET_SQUARE_RIGHT
+        list : BRACKET_SQUARE_LEFT endl_optional list_nodes BRACKET_SQUARE_RIGHT
+             | BRACKET_SQUARE_LEFT endl_optional BRACKET_SQUARE_RIGHT
     '''
     if len(p) == 4:
-        p[0] = dict(node_list)
+        p[0] = list_template()
     elif len(p) == 5:  
         p[0] = p[3]
         p[0]["_TYPE"] = NODE_TYPE.LIST
     else:
         raise Exception()
 
+def p_endl_optional(p):
+    '''
+        endl_optional : endl
+                      | empty
+    '''
+    p[0] = p[1]
+
 def p_endl(p):
     '''
         endl : ENDL
-             | empty
     '''
-    p[0] = dict(node_endl)
+    p[0] = endl_template()
 
 def p_leaf(p):
     '''
@@ -268,7 +315,7 @@ def p_int(p):
     '''
         int : INT
     '''   
-    Node = dict(node_leaf)
+    Node = leaf_template()
     Node["_LEAF"] = int(p[1])
     Node["_LEAF_TYPE"] = NODE_LEAF_TYPE.INT
     p[0] = Node
@@ -277,16 +324,16 @@ def p_float(p):
     '''
         float : FLOAT
     '''   
-    Node = dict(node_leaf)
+    Node = leaf_template()
     Node["_LEAF"] = float(p[1])
     Node["_LEAF_TYPE"] = NODE_LEAF_TYPE.FLOAT
     p[0] = Node
 
 def p_boolean(p):
     '''
-        null : BOOLEAN
+        boolean : BOOLEAN
     '''   
-    Node = dict(node_leaf)
+    Node = leaf_template()
     Node["_LEAF"] = bool(p[1])
     Node["_LEAF_TYPE"] = NODE_LEAF_TYPE.BOOLEAN
     p[0] = Node
@@ -295,7 +342,7 @@ def p_null(p):
     '''
         null : NULL
     '''   
-    Node = dict(node_leaf)
+    Node = leaf_template()
     Node["_LEAF"] = None
     Node["_LEAF_TYPE"] = NODE_LEAF_TYPE.NULL
     p[0] = Node
@@ -305,20 +352,43 @@ def p_str(p):
         str : STR_SINGLE_QUOTATION_MARK 
             | STR_DOUBLE_QUOTATION_MARK
     '''
+
+    Node = leaf_template()
+    Node["_LEAF"] = p[1][1:-1] # remove quotation mark
+    Node["_LEAF_TYPE"] = NODE_LEAF_TYPE.STR
+    p[0] = Node
+
+def p_comment(p):
+    '''
+        comment : endl
+                | line_comment
+    '''
     p[0] = p[1]
+
+def p_line_comment(p):
+    '''
+        line_comment : LINE_COMMENT
+    '''
+    p[0] = line_comment_template()
+    p[0]["_COMMENT"] = p[1]
 
 def p_comma(p):
     '''
         comma : COMMA
-              | COMMA ENDL
+              | COMMA comment
     '''
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        return comma_template()
+
 def p_empty(p):
     '''empty : '''
-    p[0] = dict(node_empty)
+    p[0] = empty_template()
 
 def p_error(p):
     #print(f"Syntax error at '{p.value}'. Line:{p.lineno} Pos:{p.lexpos}")
-    print(f"Syntax error at '{p.value}'. Line:{p.lineno}")
+    raise Exception(f"Syntax error at '{p.value}'. Line:{p.lineno}")
 
 def YaccTest():
     from pathlib import Path
@@ -337,15 +407,25 @@ def YaccTest():
     # returns p[0] in method p_root(p)
     Tree = parser.parse(JsonStr, lexer=lexer)
 
-def _JsonStr2Tree(FilePath):
+def _JsonStr2Tree(JsonStr, Verbose=True, Debug=True):
     lexer = lex.lex()
     lexer.input(JsonStr)
+    if Verbose:
+        while True:
+            token = lexer.token()
+            print(token)
+            if token is None:
+                break
+
     parser = yacc.yacc(debug=True)
     Tree = None
-    try:
+    if Debug:
         Tree = parser.parse(JsonStr, lexer=lexer)
-    except Exception:
-        pass
+    else:
+        try:
+            Tree = parser.parse(JsonStr, lexer=lexer)
+        except Exception:
+            raise Exception()
     return Tree
 
 
