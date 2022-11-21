@@ -4,16 +4,16 @@
         "A.B":{
             "G":1
         },
-        "A.B.G":[
+        "A.B.G":[ //Comment
             1,
-            []
-        ],
-        "A.B.C":{
-            "D.E.F":"1",
-            "D":2,
+            [] // Comment
+        ], // Comment
+        "A.B.C":{ // Comment
+            "D.E.F":"1", // Comment
+            "D":2, // Comment
             "F":{} // Comment
-        },
-        "H":true,
+        }, //Comment
+        "H":true, //Comment
         "I":null,
     }
 ]

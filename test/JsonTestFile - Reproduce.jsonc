@@ -5,12 +5,12 @@
 			"C": {
 				"D.E.F": "1",
 				"D": 2,
-				"F": {}
+				"F": "_NONE_BASIC_JSON_TYPE"
 			},
 			"G": 1,
 			"G": [
 				1,
-				[]
+				"_NONE_BASIC_JSON_TYPE"
 			]
 		},
 		"H": true,

@@ -37,7 +37,12 @@ t_NULL = "null"
 t_ignore = ' \t\r'
 
 def t_LINE_COMMENT(t):
-    r'\/\/.*\n'
+    r'\/\/.*\n+'
+    t.lexer.lineno += 1
+    value = t.value
+    while value[-1] == '\n':
+        value = value[:-1]
+    t.value = value
     return t
 
 def t_INT(t):
@@ -163,8 +168,14 @@ def comma_template():
     return {"_TYPE": NODE_TYPE.COMMA}
 
 def add_comment(node, comment_node):
-    if isinstance(comment_node, dict) and comment_node.get("_COMMENT") is not None:
-        node["_COMMENT"] = comment_node["_COMMENT"]
+    comment = None if not isinstance(comment_node, dict) else comment_node.get("_COMMENT")        
+    if comment is not None:
+        if isinstance(comment, list):
+            node["_COMMENT"] = comment
+        elif isinstance(comment, str):
+            node["_COMMENT"] = [comment]
+        else:
+            raise Exception()
 
 start = "root"
 
@@ -180,10 +191,11 @@ def p_list_nodes(p):
     '''
         list_nodes : list_nodes_non_empty
                    | list_nodes_non_empty comma
+                   | list_nodes_non_empty comment
     '''
     p[0] = p[1]
     if len(p) == 3:
-        add_comment(p[0], p[2])
+        add_comment(p[0]["_LIST"][-1], p[2])
 
 def p_list_nodes_non_empty(p):
     '''
@@ -219,14 +231,16 @@ def p_node(p):
 
 def p_dict(p):
     '''
-        dict : BRACKET_CURLY_LEFT endl_optional dict_nodes BRACKET_CURLY_RIGHT
-             | BRACKET_CURLY_LEFT endl_optional BRACKET_CURLY_RIGHT
+        dict : BRACKET_CURLY_LEFT comment dict_nodes BRACKET_CURLY_RIGHT
+             | BRACKET_CURLY_LEFT comment BRACKET_CURLY_RIGHT
     '''
     if len(p) == 4:
         p[0] = dict_template()
     else:
         p[0] = p[3]
         p[0]["_TYPE"] = NODE_TYPE.DICT
+    
+    add_comment(p[0], p[2])
 
 def p_dict_node(p):
     '''
@@ -245,15 +259,18 @@ def p_dict_nodes(p):
     '''
         dict_nodes : dict_nodes_non_empty
                    | dict_nodes_non_empty comma
+                   | dict_nodes_non_empty comment
     '''
+    # allows trailing comma
     p[0] = p[1]
+    if len(p) == 3:
+        add_comment(list(p[0]["_DICT"].values())[-1], p[2])
 
 def p_dict_nodes_non_empty(p):
     '''
         dict_nodes_non_empty : dict_node
                              | dict_nodes_non_empty comma dict_node
     '''
-    # allows trailing empty dict, empty list, comma.
     # if len(p) == 2 and p[1]["_TYPE"] == NODE_TYPE.EMPTY:
     #     p[0] = dict(node_dict_nodes)
     # elif len(p) == 3 and isinstance(p[2], dict) and p[2]["_TYPE"] == NODE_TYPE.ENDL:
@@ -277,8 +294,8 @@ def p_dict_nodes_non_empty(p):
 
 def p_list(p):
     '''
-        list : BRACKET_SQUARE_LEFT endl_optional list_nodes BRACKET_SQUARE_RIGHT
-             | BRACKET_SQUARE_LEFT endl_optional BRACKET_SQUARE_RIGHT
+        list : BRACKET_SQUARE_LEFT comment list_nodes BRACKET_SQUARE_RIGHT
+             | BRACKET_SQUARE_LEFT comment BRACKET_SQUARE_RIGHT
     '''
     if len(p) == 4:
         p[0] = list_template()
@@ -352,7 +369,6 @@ def p_str(p):
         str : STR_SINGLE_QUOTATION_MARK 
             | STR_DOUBLE_QUOTATION_MARK
     '''
-
     Node = leaf_template()
     Node["_LEAF"] = p[1][1:-1] # remove quotation mark
     Node["_LEAF_TYPE"] = NODE_LEAF_TYPE.STR
@@ -360,7 +376,7 @@ def p_str(p):
 
 def p_comment(p):
     '''
-        comment : endl
+        comment : endl_optional
                 | line_comment
     '''
     p[0] = p[1]
@@ -370,7 +386,7 @@ def p_line_comment(p):
         line_comment : LINE_COMMENT
     '''
     p[0] = line_comment_template()
-    p[0]["_COMMENT"] = p[1]
+    p[0]["_COMMENT"] = p[1] # \n already stripped
 
 def p_comma(p):
     '''

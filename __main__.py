@@ -19,7 +19,7 @@ if __name__=="__main__":
     print(obj.__dict__)
 
 def TestJsonUtils():
-    FileName = "test/JsonTestFile - Reproduce.jsonc"
+    FileName = "test/JsonTestFile.jsonc"
     FilePath = DLUtils.file.FolderPathOfFile(__file__) + FileName
     # JsonDict = DLUtils.JsonFile2JsonDict(FilePath)
     # Obj = DLUtils.param.JsonStyleObj2Param(JsonDict)
