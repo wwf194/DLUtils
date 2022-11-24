@@ -146,49 +146,6 @@ def GetConstraintFunction(Method):
         raise Exception("GetConstraintFunction: Invalid consraint Method: %s"%Method)
 
 
-def CreateWeight2D(param, DataType=torch.float32):
-    Init = param.Init
-    if Init.Method in ["Kaiming", "KaimingUniform", "KaimingNormal"]:
-        if Init.Method in ["KaimingNormal"]: # U ~ [-bound, bound], bound = sqrt(6/(1+a^2)*FanIn)
-            SetAttrs(Init, "Distribution", value="Normal")
-        elif Init.Method in ["KaimingUniform"]:
-            SetAttrs(Init, "Distribution", value="Uniform")
-        else:
-            EnsureAttrs(Init, "Distribution", default="Uniform")
-        EnsureAttrs(Init, "Mode", default="In")
-        EnsureAttrs(Init, "Coefficient", default=1.0)
-        if Init.Mode in ["BasedOnInputNum", "BasedOnInput", "In"]:
-            if Init.Distribution in ["Uniform"]:
-                Init.Range = [
-                    - Init.Coefficient * (6.0 / param.Size[0]) ** 0.5,
-                    Init.Coefficient * (6.0 / param.Size[0]) ** 0.5
-                ]
-                weight = np.random.uniform(*Init.Range, tuple(param.Size))
-            elif Init.Distribution in ["Uniform+"]:
-                Init.Range = [
-                    0.0,
-                    2.0 * Init.Coefficient * 6.0 ** 0.5 / param.Size[0] ** 0.5
-                ]
-                weight = np.random.uniform(*Init.Range, tuple(param.Size))
-            elif Init.Distribution in ["Normal"]:
-                # std = sqrt(2 / (1 + a^2) * FanIn)
-                Mean = 0.0
-                Std = Init.Coefficient * (2.0 / param.Size[0]) ** 0.5
-                weight = np.random.normal(Mean, Std, tuple(param.Size))
-            else:
-                # to be implemented
-                raise Exception()
-        else:
-            raise Exception()
-            # to be implemented
-    elif Init.Method in ["xaiver", "glorot"]:
-        Init.Method = "xaiver"
-        raise Exception()
-        # to be implemented
-    else:
-        raise Exception()
-        # to be implemented
-    return DLUtils.NpArray2Tensor(weight, DataType=DataType, RequiresGrad=True)
 
 def GetLossFunction(LossFunctionDescription, truth_is_label=False, num_class=None):
     if LossFunctionDescription in ['MSE', 'mse']:
@@ -568,7 +525,6 @@ from DLUtils.transform.noise import NoiseFromDistribution, GaussianNoise
 from DLUtils.transform.Bias import Bias
 from DLUtils.transform.SingleLayer import SingleLayer
 from DLUtils.transform.nonlinear import NonLinearLayer
-from DLUtils.transform.LinearLayer import LinearLayer
 from DLUtils.transform.RNNLIF import RNNLIF
 
 ModuleDict = {
@@ -577,7 +533,6 @@ ModuleDict = {
     "SerialSend": SerialSender,
     "SignalHolder": SignalHolder,
     "SingalLayer": SingleLayer,
-    "LinearLayer": LinearLayer,
     "NonLinearLayer": NonLinearLayer,
     "LambbdaLayer": LambdaLayer,
     "RNNLIF": RNNLIF,

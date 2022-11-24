@@ -4,6 +4,10 @@ SystemType = GetSystemType()
 
 from .utils.json import IsJsonObj, PyObj, EmptyPyObj, IsPyObj, IsDictLikePyObj, IsListLikePyObj, CheckIsLegalPyName
 import DLUtils.utils.json as json
+
+from .utils.param import Param, ToParam
+import DLUtils.utils.param as param
+
 import DLUtils.attr as attrs
 import DLUtils.parse as parse
 import DLUtils.geometry2D as geometry2D
@@ -23,7 +27,11 @@ import DLUtils.evaluate as evaluate
 import DLUtils.system as system
 import DLUtils.analysis as analysis
 
+import DLUtils.NeuralNetwork as NeuralNetwork
+
 from .utils import *
+
+
 from .functions import *
 from .log import *
 

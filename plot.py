@@ -13,7 +13,7 @@ default_res=60
 import DLUtils
 from DLUtils.attr import *
 
-ColorPlt = DLUtils.EmptyPyObj().FromDict({
+ColorPlt = DLUtils.Param().FromDict({
     "White": (1.0, 1.0, 1.0),
     "Black": (0.0, 0.0, 0.0),
     "Red":   (1.0, 0.0, 0.0),
@@ -22,7 +22,6 @@ ColorPlt = DLUtils.EmptyPyObj().FromDict({
     "Gray":  (0.5, 0.5, 0.5),
     "Grey":  (0.5, 0.5, 0.5),
 })
-
 
 # def get_cmap(n, name='gist_rainbow'):
 #     '''Returns a function that maps each index in 0, 1, ..., n-1 to a distinct 

@@ -25,8 +25,11 @@ def TestJsonUtils():
     # Obj = DLUtils.param.JsonStyleObj2Param(JsonDict)
     # Str = DLUtils.param.Param2JsonStr(Obj)
     # DLUtils.Str2File(Str, DLUtils.file.AddSuffixToFileWithFormat(FilePath, " - Reproduce"))
-    Obj = DLUtils.param.JsonFile2Param(FilePath)
-    Str = DLUtils.param.Param2JsonStr(Obj)
+    Param = DLUtils.param.JsonFile2Param(FilePath)
+    
+    Param[0].A.B.I.J.K = 5
+    print(Param.I.J.K)
+    Str = DLUtils.param.Param2JsonStr(Param)
     DLUtils.Str2File(Str, DLUtils.file.AddSuffixToFileWithFormat(FilePath, " - Reproduce"))
     return
 

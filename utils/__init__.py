@@ -595,6 +595,21 @@ def ToNpArray(data, DataType=np.float32):
     else:
         raise Exception(type(data))
 
+def ToNpArrayOrNum(data, DataType=np.float32):
+    data = ToNpArray(data)
+    if data.size == 0: # empty array
+        return None
+    elif data.size == 1: # single element array
+        return data.reshape(1)[0]
+    else:
+        return data
+
+def ToNpArrayIfIsTensor(data):
+    if isinstance(data, torch.Tensor):
+        return DLUtils.ToNpArray(data), False
+    else:
+        return data, True
+
 def ToPyObj(Obj):
     if isinstance(Obj, DLUtils.json.PyObj):
         return Obj

@@ -3,7 +3,7 @@ import numpy as np
 
 import DLUtils
 import DLUtils.utils as utils
-class LayerNorm(DLUtils.NeuralNetwork.AbstractNetwork):
+class LayerNorm(DLUtils.NeuralNetwork.AbstractModule):
     "Construct a layernorm module (See citation for details)."
     def __init__(self, FeatureNum, eps:float=1e-6):
         super().__init__()
@@ -20,7 +20,8 @@ class LayerNorm(DLUtils.NeuralNetwork.AbstractNetwork):
         XStd  = X.std(1, keepdim=True)
         return self.a * (X - XMean) / (XStd + self.eps) + self.B
     def ToDict(self):
-        return {
+        self.Dict = self.Param.ToDict()
+        {
             "Name": self.Name,
             "Type": "LayerNorm",
             "Data":{
@@ -29,6 +30,7 @@ class LayerNorm(DLUtils.NeuralNetwork.AbstractNetwork):
                 "eps": self.eps
             }
         }
+        return super().ToDict()
     def FromDict(self, Dict):
         DLUtils.NewObj(Dict)
         self.Dict = Dict

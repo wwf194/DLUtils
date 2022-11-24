@@ -1,11 +1,7 @@
 
 import torch
 import DLUtils
-def ToNpArrayIfIsTensor(data):
-    if isinstance(data, torch.Tensor):
-        return DLUtils.ToNpArray(data), False
-    else:
-        return data, True
+
 
 KB = 1024
 MB = 1048576

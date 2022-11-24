@@ -128,7 +128,8 @@ class NODE_LEAF_TYPE:
 def dict_nodes_template():
     return {
         "_TYPE": NODE_TYPE.DICT_NODES,
-        "_DICT": {}
+        "_DICT": {},
+        "_IS_LEAF": False
     }
 
 def dict_node_template():
@@ -146,20 +147,25 @@ def list_node_template():
 def list_template():
     return {
         "_TYPE": NODE_TYPE.LIST,
-        "_LIST": []
+        "_LIST": [],
+        "_IS_LEAF": False
     }
 
 def dict_template():
     return {
         "_TYPE": NODE_TYPE.DICT,
-        "_DICT": {}
+        "_DICT": {},
+        "_IS_LEAF": False
     }
 
 def endl_template():
     return {"_TYPE": NODE_TYPE.ENDL}
 
 def leaf_template():
-    return {"_TYPE": NODE_TYPE.LEAF}
+    return {
+        "_TYPE": NODE_TYPE.LEAF,
+        "_IS_LEAF": True,
+    }
 
 def line_comment_template():
     return {"_TYPE": NODE_TYPE.LINE_COMMENT}
@@ -167,23 +173,34 @@ def line_comment_template():
 def comma_template():
     return {"_TYPE": NODE_TYPE.COMMA}
 
-def add_comment(node, comment_node):
-    comment = None if not isinstance(comment_node, dict) else comment_node.get("_COMMENT")        
-    if comment is not None:
-        if isinstance(comment, list):
-            node["_COMMENT"] = comment
-        elif isinstance(comment, str):
-            node["_COMMENT"] = [comment]
-        else:
-            raise Exception()
+class COMMENT_TYPE(Enum):
+    NULL = 0
+    LEAF = 1
+    SPINE = 2
+    SPINE_BEFORE = 3
+    SPINE_AFTER = 4
+
+def add_comment(node, comment_node, _TYPE=None):
+    comments = None if not isinstance(comment_node, dict) else comment_node.get("_COMMENT")        
+    comment_list = node.setdefault("_COMMENT", [])
+    if comments is not None:
+        if comments == '// Comment A.B.C.D':
+            a = 1
+        assert isinstance(comments, list)
+        if _TYPE is not None:
+            for comment in comments:
+                comment[1] = _TYPE
+        comment_list += comments
+    return
 
 start = "root"
 
 def p_root(p):
     '''
-        root : dict
-             | list
+        root : node
     '''
+    if p[1]["_TYPE"] == NODE_TYPE.LEAF:
+        raise Exception("Root node must be dict or list.")
     p[0] = p[1]
     return
 
@@ -195,7 +212,12 @@ def p_list_nodes(p):
     '''
     p[0] = p[1]
     if len(p) == 3:
-        add_comment(p[0]["_LIST"][-1], p[2])
+        NodeLast = p[0]["_LIST"][-1]
+
+        if NodeLast["_IS_LEAF"]:
+            add_comment(NodeLast, p[2], COMMENT_TYPE.LEAF)
+        else:
+            add_comment(NodeLast, p[2], COMMENT_TYPE.SPINE_AFTER)
 
 def p_list_nodes_non_empty(p):
     '''
@@ -211,7 +233,11 @@ def p_list_nodes_non_empty(p):
         p[0] = Node
     elif len(p) == 4:
         Node = p[1]
-        add_comment(Node["_LIST"][-1], p[2])
+        NodeLast = Node["_LIST"][-1]
+        if NodeLast["_IS_LEAF"]:
+            add_comment(NodeLast, p[2], COMMENT_TYPE.LEAF)
+        else:
+            add_comment(NodeLast, p[2], COMMENT_TYPE.SPINE_AFTER)
         Node["_LIST"].append(p[3])
         p[0] = Node
     else:
@@ -219,14 +245,32 @@ def p_list_nodes_non_empty(p):
 
 def p_node(p):
     '''
-        node : leaf
-             | dict
-             | list
-             | node comment
+        node : node_leaf
+             | node_non_leaf
+    '''
+    p[0] = p[1]
+
+def p_node_leaf(p):
+    '''
+        node_leaf : leaf
+                  | node_leaf comment
     '''
     Node = p[1]
     if len(p) == 3:
-        add_comment(Node, p[2])
+        add_comment(Node, p[2], COMMENT_TYPE.LEAF)
+    Node["_IS_LEAF"] = True
+    p[0] = Node
+
+def p_node_non_leaf(p):
+    '''
+        node_non_leaf : dict
+                      | list
+                      | node_non_leaf comment
+    '''
+    Node = p[1]
+    if len(p) == 3:
+        add_comment(Node, p[2], COMMENT_TYPE.SPINE_AFTER)
+    Node["_IS_LEAF"] = False
     p[0] = Node
 
 def p_dict(p):
@@ -240,20 +284,18 @@ def p_dict(p):
         p[0] = p[3]
         p[0]["_TYPE"] = NODE_TYPE.DICT
     
-    add_comment(p[0], p[2])
+    add_comment(p[0], p[2], COMMENT_TYPE.SPINE_BEFORE)
 
 def p_dict_node(p):
     '''
         dict_node : str COLON node
     '''
 
-    p[0] = dict_node_template()
-    if p[1] == "C":
-        a = 1
-    if p[1] == "A.B":
-        a = 1
-    p[0]["_KEY"] = p[1]["_LEAF"]
-    p[0]["_VALUE"] = p[3]
+    Node = dict_node_template()
+    Node["_KEY"] = p[1]["_LEAF"]
+    Node["_IS_LEAF"] = p[3]["_IS_LEAF"]
+    Node["_LEAF"] = p[3]
+    p[0] = Node
 
 def p_dict_nodes(p):
     '''
@@ -264,7 +306,11 @@ def p_dict_nodes(p):
     # allows trailing comma
     p[0] = p[1]
     if len(p) == 3:
-        add_comment(list(p[0]["_DICT"].values())[-1], p[2])
+        NodeLast = p[0]["_DICT"][p[0]["_LAST_KEY"]][-1]
+        if NodeLast["_IS_LEAF"]:
+            add_comment(NodeLast, p[2], COMMENT_TYPE.LEAF)
+        else:
+            add_comment(NodeLast, p[2], COMMENT_TYPE.SPINE_AFTER)
 
 def p_dict_nodes_non_empty(p):
     '''
@@ -278,17 +324,25 @@ def p_dict_nodes_non_empty(p):
     if len(p) == 2:
         SubNode = p[1]
         Node = dict_nodes_template()
-        Node["_DICT"][SubNode["_KEY"]] = [SubNode["_VALUE"]]
+        Node["_DICT"][SubNode["_KEY"]] = [SubNode["_LEAF"]]
+        Node["_LAST_KEY"] = SubNode["_KEY"]
         p[0] = Node
     elif len(p) == 4:
         Node = p[1]
+        NodeLast = Node["_DICT"][Node["_LAST_KEY"]][-1]
+        if NodeLast["_IS_LEAF"]:
+            add_comment(NodeLast, p[2], COMMENT_TYPE.LEAF)
+        else:
+            add_comment(NodeLast, p[2], COMMENT_TYPE.SPINE_AFTER)
         SubNode = p[3]
         SubNodeKey = SubNode["_KEY"]
         if Node["_DICT"].get(SubNodeKey) is not None:
-            Node["_DICT"][SubNodeKey].append(SubNode["_VALUE"])
+            Node["_DICT"][SubNodeKey].append(SubNode["_LEAF"])
         else:
-            Node["_DICT"][SubNodeKey] = [SubNode["_VALUE"]]
+            Node["_DICT"][SubNodeKey] = [SubNode["_LEAF"]]
+        Node["_LAST_KEY"] = SubNodeKey
         p[0] = Node
+        
     else:
         raise Exception()
 
@@ -304,6 +358,8 @@ def p_list(p):
         p[0]["_TYPE"] = NODE_TYPE.LIST
     else:
         raise Exception()
+
+    add_comment(p[0], p[2], COMMENT_TYPE.SPINE_BEFORE)
 
 def p_endl_optional(p):
     '''
@@ -386,7 +442,7 @@ def p_line_comment(p):
         line_comment : LINE_COMMENT
     '''
     p[0] = line_comment_template()
-    p[0]["_COMMENT"] = p[1] # \n already stripped
+    p[0]["_COMMENT"] = [[p[1], COMMENT_TYPE.NULL]] # \n already stripped
 
 def p_comma(p):
     '''
@@ -394,9 +450,9 @@ def p_comma(p):
               | COMMA comment
     '''
     if len(p) == 2:
-        p[0] = p[1]
-    else:
         return comma_template()
+    else:
+        p[0] = p[2]
 
 def p_empty(p):
     '''empty : '''

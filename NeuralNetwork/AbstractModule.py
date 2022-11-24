@@ -4,12 +4,8 @@ class AbstractModule:
         self.Name = "NullName"
         self.SubModules = {}
     def ToDict(self):
-        SubModuleDict = {}
-        for Name, Module in self.SubModules:
-            SubModuleDict[Name] = Module.ToDict()
-        Dict = {
-            "Class": "DLUtils.NeuralNetwork.AbstractNetwork",
-        }
+        Dict = self.Param.ToDict()
+        Dict["Class"] = "DLUtils.NeuralNetwork.AbstractModule"
         Dict = self.ToDictRecur(Dict)
         return Dict
     def ToDictRecur(self, Dict):
@@ -20,7 +16,7 @@ class AbstractModule:
         return Dict
     def FromDict(self, Dict):
         self.FromDictRecur(Dict)
-        self.Dict = Dict
+        self.Param = DLUtils.Param(Dict)
     def FromDictRecur(self, Dict):
         for Name, ModuleDict in Dict["SubModules"].items():
             ModuleClass = DLUtils.SearchClass(ModuleDict["Class"])()
