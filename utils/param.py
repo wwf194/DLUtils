@@ -36,9 +36,7 @@ class NODE_CHILD_TYPE(Enum):
     MULTI_SUBNODE_WITH_LEAF = 5
 
 class Param():
-    def __init__(self, Dict=None):
-        self.Init(Dict)
-    def Init(self, Dict=None):
+    def __init__(self, Dict=None, _PATH_FROM_ROOT=["ROOT"], _TYPE=NODE_TYPE.SPINE, _SUBTYPE=NODE_SUBTYPE.DICT):    
         self.SetAttr("_LIST", [])
         self.SetAttr("_DICT", {})
         self.SetAttr("_DICT_TEMP", {})
@@ -47,37 +45,58 @@ class Param():
             self.SetAttr("_SUBTYPE", Dict["_SUBTYPE"])
             self.SetAttr("_PATH_FROM_ROOT", Dict["_PATH_FROM_ROOT"])
             self.SetAttr("_LEAF", Dict.get("_LEAF"))
+        else:
+            self.SetAttr("_TYPE", _TYPE)
+            self.SetAttr("_SUBTYPE", _SUBTYPE)
+            self.SetAttr("_PATH_FROM_ROOT", _PATH_FROM_ROOT)
     def FromParam(self, Node):
-        self.__dict__ = Node.__dict__
+        for Key, Item in Node.__dict__.items():
+            self.SetAttr(Key, Item)
+        #self.SetAttr("__dict__", Node.__dict__)
+        return
+    def AbsorbDict(self, Dict):
+        TreeSelf = Param2Tree(self)
+        PathsSelf = _Tree2Paths(TreeSelf)
+
+        Paths = _JsonLike2Paths(Dict)
+        Tree = _Paths2Tree(PathsSelf + Paths)
+        
+        Node = _Tree2Param(Tree)
+        self.FromParam(Node)
+        return self    
+    def AddComment(self, Comment, Type=None):
+        CommentList = self.SetDefault("_COMMENT", [])
+        if Type is None:
+            if self._TYPE == NODE_TYPE.LEAF:
+                Type = COMMENT_TYPE.LEAF
+            else:
+                if len(CommentList) == 0:
+                    Type = COMMENT_TYPE.SPINE_BEFORE
+                else:
+                    IsBeforeEmpty, IsAfterEmpty = True, True
+                    for Comment in CommentList:
+                        _Type = Comment[1]
+                        if _Type == COMMENT_TYPE.SPINE_BEFORE:
+                            IsBeforeEmpty = False
+                        elif _Type == COMMENT_TYPE.SPINE_AFTER:
+                            IsAfterEmpty = False
+                        else:
+                            raise Exception()
+                    if IsBeforeEmpty:
+                        Type = COMMENT_TYPE.SPINE_BEFORE
+                    elif IsAfterEmpty:
+                        Type = COMMENT_TYPE.SPINE_AFTER
+                    else:
+                        Type = COMMENT_TYPE.SPINE_AFTER
+        CommentList.append([Comment, Type])
+    def AddCommentToChild(self, Key, Comment, Type=None):
+        self.Get(Key)
     def FromDict(self, Dict):
         Paths = _JsonLike2Paths(Dict)
         Tree = _Paths2Tree(Paths)
         Node = _Tree2Param(Tree)
         self.FromParam(Node)
         return self
-    def __hasattr__(self, Key):
-        return Key in self._DICT
-    def __setattr__(self, Key, Value):
-        self._DICT[Key] = Value
-        if self.Get("_IS_FALSE") is True:
-            self.SubstantiateAlongSpine(NODE_TYPE.SPINE, NODE_SUBTYPE.DICT)
-    def __getattr__(self, Key):
-        if Key in self._DICT:
-            return self._DICT[Key]
-        else:
-            if Key in self._DICT_TEMP:
-                return self._DICT_TEMP[Key]
-            else:
-                SubNode = Param()
-                SubNode.SetAttr("_IS_FALSE", True)
-                SubNode.SetAttr("_PATH_FROM_ROOT", self.GetAttr("_PATH_FROM_ROOT") + [Key])
-                self._DICT_TEMP[Key] = SubNode
-                SubNode.SetParent(self, Key)
-                return SubNode
-    def setdefault(self, Key, Value):
-        if not Key in self._DICT:
-            self._DICT[Key] = Value
-        return self._DICT[Key]
     def Exists(self):
         if self.Get("_IS_FALSE") is True:
             self.DestroyAlongSpine()
@@ -113,14 +132,16 @@ class Param():
     def SetParent(self, Parent, Key):
         self.SetAttr("_PARENT", Parent)
         self.SetAttr("_PARENT_KEY", Key)
-    def __delattr__(self, Name):
-        self._DICT.pop(Name)
-    def __getitem__(self, Index):
-        return self._LIST[Index]
     def HasAttr(self, Key):
         return Key in self.__dict__
     def SetAttr(self, Key, Value):
         self.__dict__[Key] = Value
+        return Value
+    def SetDefault(self, Key, DefaultValue):
+        if self.HasAttr(Key):
+            return self.GetAttr(Key)
+        else:
+            return self.SetAttr(Key, DefaultValue)
     def GetAttr(self, Key):
         return self.__dict__[Key]
     def GetAttrAndDelete(self, Key):
@@ -133,11 +154,54 @@ class Param():
     def DelAttr(self, Key):
         self.__dict__.pop(Key)
     def ToJsonFile(self, FilePath):
-        Dict = {}
+        Param2JsonFile(self, FilePath)
+        return self
     def ToFile(self, FilePath):
         return
     def FromFile(self, FilePath):
         return
+    def __hasattr__(self, Key):
+        return Key in self._DICT
+    def __setattr__(self, Key, Value):
+        self._DICT[Key] = Value
+        if self.Get("_IS_FALSE") is True:
+            self.SubstantiateAlongSpine(NODE_TYPE.SPINE, NODE_SUBTYPE.DICT)
+    def __getattr__(self, Key):
+        if Key in self._DICT:
+            return self._DICT[Key]
+        else:
+            if Key in self._DICT_TEMP:
+                return self._DICT_TEMP[Key]
+            else:
+                SubNode = Param()
+                SubNode.SetAttr("_IS_FALSE", True)
+                _PATH_FROM_ROOT = self.Get("_PATH_FROM_ROOT")
+                if _PATH_FROM_ROOT is not None:
+                    SubNode.SetAttr("_PATH_FROM_ROOT", self.GetAttr("_PATH_FROM_ROOT") + [Key])
+                self._DICT_TEMP[Key] = SubNode
+                SubNode.SetParent(self, Key)
+                return SubNode
+    def delattr(self, Key):
+        self._DICT.pop(Key)
+    def hasattr(self, Key):
+        return Key in self._DICT
+    def setdefault(self, Key, Value):
+        if not Key in self._DICT:
+            self._DICT[Key] = Value
+        return self._DICT[Key]
+    def __delattr__(self, Name):
+        self._DICT.pop(Name)
+    def __getitem__(self, Index):
+        return self._LIST[Index]
+    # For Serialization
+    def __getstate__(self):
+        return self.__dict__
+    # For Unserialization
+    def __setstate__(self, Dict):
+        for Key, Item in Dict.items():
+            self.SetAttr(Key, Item)
+    def items(self):
+        return self._DICT.items()
 
 def _NewNode(
         _TYPE, 
@@ -166,9 +230,9 @@ def _SetNodeKey(Node, Key, Value):
         raise Exception()
     return Value
 
-def Param2JsonFile(Obj):
-    assert isinstance(Obj, Param)
-    Tree = Param2Tree(Obj)
+def Param2JsonFile(Obj:Param, FilePath):
+    JsonStr = Param2JsonStr(Obj)
+    DLUtils.file.Str2TextFile(JsonStr, FilePath)
     return
 
 def ToJsonElement(Obj):
@@ -245,6 +309,7 @@ def Tree2JsonStr(RootNode):
     _CompressTree(RootNode)
     return _Tree2JsonStr(RootNode)
 
+import json
 def ToJsonStr(Obj):
     if isinstance(Obj, str):
         Content = "\"%s\""%Obj
@@ -257,10 +322,12 @@ def ToJsonStr(Obj):
         Content = str(Obj)
     elif Obj is None:
         Content = "null"
-    elif isinstance(Obj, _SymbolEmptyDict):
+    elif isinstance(Obj, _SymbolEmptyDict) or isinstance(Obj, dict):
         Content = "{}"
-    elif isinstance(Obj, _SymbolEmptyList):
-        Content = "[]"
+    elif isinstance(Obj, _SymbolEmptyList) or isinstance(Obj, list):
+        #Content = "[]"
+        #Content = str(Obj) # avoid single quotation marks
+        Content = json.dumps(Obj)
     else:
         Content = "\"_NON_BASIC_JSON_TYPE\""
     return Content
@@ -692,6 +759,8 @@ def _Tree2PathsRecur(Node, PathTable, PathCurrent):
                 return
             for Keys, SubNodes in Dict.items():
                 KeyList = Keys.split(".")
+                if isinstance(SubNodes, dict):
+                    SubNodes = [SubNodes]
                 for Index, SubNode in enumerate(SubNodes):
                     # assert isinstance(Key, str)
                     _Tree2PathsRecur(
@@ -765,7 +834,24 @@ def _GetNodeKey(Node, Key):
 
 def _Paths2Tree(PathTable, RootNode=None):
     if RootNode is None:
-        pass
+        if len(PathTable) > 0:
+            KeyExample = PathTable[0][0][1]
+            if isinstance(KeyExample, str):
+                RootNode = _NewNode(
+                    _TYPE=NODE_TYPE.SPINE, # Root node must be list / dict.
+                    _SUBTYPE=NODE_SUBTYPE.DICT,
+                    _PATH_FROM_ROOT=["ROOT"]
+                )
+            elif isinstance(KeyExample, int):
+                RootNode = _NewNode(
+                    _TYPE=NODE_TYPE.SPINE, # Root node must be list / dict.
+                    _SUBTYPE=NODE_SUBTYPE.LIST,
+                    _PATH_FROM_ROOT=["ROOT"]
+                )
+            else:
+                raise Exception()
+        else:
+            pass # to be implemented
     for Path, Leaf, _PATH_TYPE in PathTable:
         Node = RootNode
         PathLength = len(Path)
@@ -824,13 +910,17 @@ def _Paths2Tree(PathTable, RootNode=None):
             _TYPE = SubNode["_TYPE"]
             if _PATH_TYPE == PATH_TYPE.LEAF:
                 if _TYPE in [NODE_TYPE.SPINE, NODE_TYPE.SPINE_WITH_LEAF]:
+                    if _TYPE == NODE_TYPE.SPINE_WITH_LEAF:
+                        #WarningStr = f"Overwriting: Path: {SubNode['_PATH_FROM_ROOT']} Value:{SubNode['_LEAF']} with {Leaf}\n"
+                        #warnings.warn(WarningStr)
+                        pass
                     SubNode["_TYPE"] = NODE_TYPE.SPINE_WITH_LEAF
                     SubNode["_LEAF"] = Leaf
-                    if _TYPE == NODE_TYPE.SPINE_WITH_LEAF:
-                        warnings.warn("Overwriting")
                 elif _TYPE == NODE_TYPE.LEAF:
+                    #WarningStr = f"Overwriting: Path: {SubNode['_PATH_FROM_ROOT']} Value:{SubNode['_LEAF']} with {Leaf}\n"
+                    #warnings.warn(WarningStr)
+                    pass
                     SubNode["_LEAF"] = Leaf
-                    warnings.warn("Overwriting")
                 elif _TYPE == NODE_TYPE.COMMENT:
                     SubNode["_TYPE"] = NODE_TYPE.LEAF
                     SubNode["_LEAF"] = Leaf
@@ -1010,13 +1100,13 @@ def JsonFile2Param(FilePath):
     PathTable = _Tree2Paths(Tree)
 
     if Tree["_SUBTYPE"] == NODE_SUBTYPE.DICT:
-        Root = _NewNode(
+        RootNode = _NewNode(
             _TYPE=NODE_TYPE.SPINE, # Root node must be list / dict.
             _SUBTYPE=NODE_SUBTYPE.DICT,
             _PATH_FROM_ROOT=["ROOT"]
         )
     elif Tree["_SUBTYPE"] == NODE_SUBTYPE.LIST:
-        Root = _NewNode(
+        RootNode = _NewNode(
             _TYPE=NODE_TYPE.SPINE, # Root node must be list / dict.
             _SUBTYPE=NODE_SUBTYPE.LIST,
             _PATH_FROM_ROOT=["ROOT"]
@@ -1024,6 +1114,5 @@ def JsonFile2Param(FilePath):
     else:
         raise Exception()
 
-    
-    Tree = _Paths2Tree(PathTable, Root)
+    Tree = _Paths2Tree(PathTable, RootNode)
     return _Tree2Param(Tree)

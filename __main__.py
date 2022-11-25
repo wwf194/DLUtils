@@ -35,10 +35,18 @@ def TestJsonUtils():
 if __name__=="__main__":
     if args.task in ["json", "TestJsonUtils"]:
         TestJsonUtils()
-    elif args.task in ["BuildMLP"]:
+    elif args.task in ["BuildMLP", "mlp"]:
         import DLUtils
-        {
-            "Layer1", DLUtils.NN.OneLayer(100, 50).AddWeight(
-                NewNpArray(())    
-            )
-        }
+        MLP = DLUtils.NN.ModuleSequence(
+            [
+                DLUtils.NN.LinearLayer().SetWeight(
+                    DLUtils.SampleFromKaimingUniform((100, 50), "ReLU")
+                ).SetMode("Wx").SetBias(0.0)
+            ]
+        )
+        MLP.ToFile("./test/mlp - param.dat")
+        MLP.ToJsonFile("./test/mlp - param.json")
+        MLP = DLUtils.NN.ModuleSequence().FromFile("./test/mlp - param.dat")
+        MLP.ToJsonFile("./test/mlp - param - 2.json")
+    else:
+        raise Exception()

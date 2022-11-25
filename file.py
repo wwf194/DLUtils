@@ -451,6 +451,10 @@ def Obj2FilePickle(Obj, FilePath):
 Obj2File = Obj2FilePickle
 JsonObj2DataFile = Obj2File
 
+def Str2TextFile(Str, FilePath):
+    with open(FilePath, 'w') as f:
+        f.write(Str)
+
 def File2Md5(FilePath):
     import hashlib
     Md5Calculator = hashlib.md5()

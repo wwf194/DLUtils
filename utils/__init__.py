@@ -7,7 +7,7 @@ import time
 import warnings
 import pickle
 import random
-import importlib
+
 from typing import Iterable, List
 #import pynvml
 #from pynvml.nvml import nvmlDeviceOnSameBoard
@@ -596,6 +596,10 @@ def ToNpArray(data, DataType=np.float32):
         raise Exception(type(data))
 
 def ToNpArrayOrNum(data, DataType=np.float32):
+    if isinstance(data, float):
+        return data
+    if isinstance(data, int):
+        return data
     data = ToNpArray(data)
     if data.size == 0: # empty array
         return None
@@ -636,6 +640,13 @@ def ToTorchTensor(data):
         return data
     else:
         raise Exception(type(data))
+def ToTorchTensorOrNum(data):
+    if isinstance(data, float):
+        return data
+    elif isinstance(data, int):
+        return data
+    else:
+        return ToTorchTensor(data)
 
 def Line2Square(data):
     DimensionNum = DLUtils.GetDimensionNum(data)
@@ -867,11 +878,7 @@ def cat_batch(dataloader): #data:(batch_num, batch_size, image_size)
         dataloader = list(dataloader)
     return torch.cat(dataloader, dim=0)
 
-def ImportModule(ModulePath):
-    try:
-        return importlib.import_module(ModulePath)
-    except Exception:
-        return eval(ModulePath)
+
 
 def import_file(file_from_sys_path):
     if not os.path.isfile(file_from_sys_path):

@@ -31,9 +31,14 @@ import DLUtils.NeuralNetwork as NN
 
 from .utils import *
 
-
 from .functions import *
 from .log import *
+
+from DLUtils.NeuralNetwork.utils import \
+    SampleFromKaimingNormal, \
+    SampleFromKaimingUniform, \
+    SampleFromXaiverNormal, \
+    SampleFromXaiverUniform
 
 def NewNetwork(Name, Param=None):
     if Name in ["Transformer"]:

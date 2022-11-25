@@ -741,13 +741,4 @@ def ParseParamDynamic(Args, Save=False, SavePath=None):
         DLUtils.json.PyObj2JsonFile(GlobalParam.param, DLUtils.RenameIfFileExists(SavePath))
     return
 
-def ParseClass(ClassPath):
-    try:
-        Module = DLUtils.ImportModule(ClassPath)
-        if hasattr(Module, "__MainClass__"):
-            return Module.__MainClass__
-        else:
-            return Module
-    except Exception:
-        Class = eval(ClassPath)
-        return Class
+

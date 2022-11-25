@@ -27,8 +27,9 @@ def NewNpArray1D(Param: DLUtils.Param):
         else:
             raise Exception(Brief)
     else:
+        pass
 
-def NewNpArray2D(Param, DataType=torch.float32):
+def NewNpArray2D(Param):
     DataType = np.float32
     if Init.Method in ["Kaiming", "KaimingUniform", "KaimingNormal"]:
         if Init.Method in ["KaimingNormal"]: # U ~ [-bound, bound], bound = sqrt(6/(1+a^2)*FanIn)
@@ -118,13 +119,13 @@ def Weight2D(InputNum, OutputNum, Distribution, **Dict):
 from enum import Enum
 import math
 
-def SampleFromKaimingUniform(Shape, NonLinearFunction, **Dict):
+def SampleFromKaimingUniform(Shape, NonLinearFunction="ReLU", **Dict):
     # Y = f(WX). Keep variance of forward signal or backward gradient.
     assert len(Shape) == 2
     InputNum = Shape[0]
     OutputNum = Shape[1]
     if NonLinearFunction in ["ReLU", "relu"]:
-        Priority = Dict.get("Priority")
+        Priority = Dict.setdefault("Priority", "forward")
         if Priority in ["forward", "Forward"]:
             Max = math.sqrt(6.0 / InputNum)
         elif Priority in ["backward", "Backward"]:
@@ -202,7 +203,7 @@ def SampleFromUniformDistribution(Shape, Min, Max):
     if Min == Max:
         return SampleFromConstantDistribution(Shape, Min)
     elif Min < Max:
-        np.random.uniform(low=Min, high=Max, size=Shape)
+        return np.random.uniform(low=Min, high=Max, size=Shape)
     else:
         raise Exception()
 

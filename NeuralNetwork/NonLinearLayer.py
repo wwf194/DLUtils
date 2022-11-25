@@ -3,25 +3,17 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import DLUtils
-from DLUtils.attr import *
 from DLUtils.transform.SingleLayer import SingleLayer
-from .AbstractModule import AbstractModule
-class LinearLayer(AbstractModule):
-    def __init__(self, InputNum=None, OutputNum=None):
+class LinearLayer(DLUtils.NeuralNetwork.AbstractModule):
+    def __init__(self, InputNum, OutputNum):
         super().__init__()
-        Param = self.Param
-        Param.Tensors = ["Weight", "Bias"]
-        Param._CLASS = "DLUtils.NN.LinearLayer"
-        if InputNum is not None:
-            Param.Input.Num = InputNum
-        if OutputNum is not None:
-            Param.Output.Num = OutputNum
     def Init(self):
         Param = self.Param
         assert Param.Data.HasAttr("Weight")
         if Param.Mode != "Wx":
             if not Param.Data.HasAttr("Bias"):
                 Param.Data.Bias = 0.0
+        Param.Tensors = ["Weight", "Bias"]
         if not hasattr(Param, "Mode"):
             self.SetMode("Wx + b")
     def SetMode(self, Mode):
@@ -57,7 +49,6 @@ class LinearLayer(AbstractModule):
                 assert Param.Input.Num == Data.Weight.shape[0]
         return self
     def SetBias(self, Bias):
-        Param = self.Param
         Bias = DLUtils.ToNpArrayOrNum(Bias)
-        Param.Data.Bias = Bias
+        self.Data.Bias = Bias
         return self
