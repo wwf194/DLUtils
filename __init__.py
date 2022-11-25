@@ -27,7 +27,7 @@ import DLUtils.evaluate as evaluate
 import DLUtils.system as system
 import DLUtils.analysis as analysis
 
-import DLUtils.NeuralNetwork as NeuralNetwork
+import DLUtils.NeuralNetwork as NN
 
 from .utils import *
 

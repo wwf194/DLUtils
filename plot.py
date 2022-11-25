@@ -678,17 +678,16 @@ def PlotActivityAndDistributionAlongTime(
 
 def PlotWeightChange(axes=None, weights=None):
     if axes is None:
-        fig, axes = CreateFigurePlt(3)
-
+        fig, axes = DLUtils.plot.CreateFigurePlt(3)
     return
 
 def PlotWeightAndDistribution(axes=None, weight=None, Name=None, SavePath=None):
     if axes is None:
-        fig, axes = CreateFigurePlt(2)
+        fig, axes = DLUtils.plot.CreateFigurePlt(2)
         ax1, ax2 = axes[0], axes[1]
     else:
-        ax1 = GetAx(axes, 0)
-        ax2 = GetAx(axes, 1)
+        ax1 = DLUtils.plot.GetAx(axes, 0)
+        ax2 = DLUtils.plot.GetAx(axes, 1)
 
     plt.suptitle(Name)
     weight = DLUtils.ToNpArray(weight)
@@ -714,19 +713,6 @@ def PlotWeightAndDistribution(axes=None, weight=None, Name=None, SavePath=None):
         Coordinate="Fig", Ticks="Int",
         Title="Visualization", XLabel=XLabel, YLabel=YLabel
     )
-    
-    #DLUtils.plot.PlotGaussianDensityCurve(axRight, weight) # takes too much time
-    DLUtils.plot.PlotHistogram(
-        ax2, weightForColorMap, Color="Black",
-        XLabel="Connection Strength", YLabel="Ratio", Title="Distribution"
-    )
-
-    plt.suptitle("%s Shape:%s"%(Name, weight.shape))
-    plt.tight_layout()
-    if SavePath is None:
-        SavePath = DLUtils.GetMainSaveDir + "weights/" + "%s.svg"%Name
-    DLUtils.plot.SaveFigForPlt(SavePath=SavePath)
-    return
 
 def Merge2Mask(mask1, mask2):
     if mask1 is not None and mask2 is not None:

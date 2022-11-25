@@ -6,20 +6,20 @@ import DLUtils
 from DLUtils.attr import *
 from DLUtils.transform.SingleLayer import SingleLayer
 class LinearLayer(DLUtils.NeuralNetwork.AbstractModule):
-    def __init__(self, **kw):
-        super().__init__(**kw)
-    def ToDict():
-        super().ToDict()
+    def __init__(self, InputNum, OutputNum):
+        super().__init__()
+        Param = self.Param
+        Param.Tensors = ["Weight", "Bias"]
     def Init(self):
         Param = self.Param
         assert Param.Data.HasAttr("Weight")
         if Param.Mode != "Wx":
             if not Param.Data.HasAttr("Bias"):
                 Param.Data.Bias = 0.0
-        
-        self.Weight = DLUtils.ToTorchTensor(self.Param.Weight)
-        self.Bias = DLUtils.ToTorchTensor(self.Param.Bias)
+        if not hasattr(Param, "Mode"):
+            self.SetMode("Wx + b")
     def SetMode(self, Mode):
+        Param = self.Param
         if Mode in ["Wx"]:
             self.Receive = self.Receive0
         elif Mode in ["Wx+b"]:
@@ -28,7 +28,7 @@ class LinearLayer(DLUtils.NeuralNetwork.AbstractModule):
             self.Receive = self.Receive2
         else:
             raise Exception(Mode)
-        self.Param.Mode = Mode
+        Param.Mode = Mode
         return self
     def Receive0(self, Input): #Wx
         return torch.mm(Input, self.Weight)
@@ -54,6 +54,3 @@ class LinearLayer(DLUtils.NeuralNetwork.AbstractModule):
         Bias = DLUtils.ToNpArrayOrNum(Bias)
         self.Data.Bias = Bias
         return self
-
-__MainClass__ = LinearLayer
-# DLUtils.transform.SetMethodForTransformModule(__MainClass__)
