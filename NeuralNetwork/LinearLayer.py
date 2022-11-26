@@ -5,8 +5,8 @@ import torch.nn.functional as F
 import DLUtils
 from DLUtils.attr import *
 from DLUtils.transform.SingleLayer import SingleLayer
-from .AbstractModule import AbstractModule
-class LinearLayer(AbstractModule):
+from .AbstractModule import AbstractNetwork
+class LinearLayer(AbstractNetwork):
     def __init__(self, InputNum=None, OutputNum=None):
         super().__init__()
         Param = self.Param
@@ -24,6 +24,7 @@ class LinearLayer(AbstractModule):
                 Param.Data.Bias = 0.0
         if not hasattr(Param, "Mode"):
             self.SetMode("Wx + b")
+        return self
     def SetMode(self, Mode):
         Param = self.Param
         if Mode in ["Wx"]:

@@ -592,6 +592,8 @@ def ToNpArray(data, DataType=np.float32):
         return np.array(data, dtype=DataType)
     elif isinstance(data, torch.Tensor):
         return Tensor2NpArray(data)
+    elif isinstance(data, float):
+        return np.asarray([data],dtype=DataType)
     else:
         raise Exception(type(data))
 
@@ -649,9 +651,9 @@ def ToTorchTensorOrNum(data):
         return ToTorchTensor(data)
 
 def Line2Square(data):
+    # turn 1-D data to 2-D data for visualization
     DimensionNum = DLUtils.GetDimensionNum(data)
-    if not DimensionNum == 1:
-        raise Exception(DimensionNum)
+    assert DimensionNum == 1, DimensionNum
 
     dataNum = data.shape[0]
     RowNum, ColNum = DLUtils.plot.ParseRowColNum(dataNum)

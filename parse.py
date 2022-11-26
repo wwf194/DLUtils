@@ -742,3 +742,17 @@ def ParseParamDynamic(Args, Save=False, SavePath=None):
     return
 
 
+def ParseSavePath(SaveDir=None, SaveName=None, SaveNameDefault=None):
+    if SaveName is None:
+        if SaveDir.endswith("/"):
+            return SaveDir + SaveNameDefault
+        else:
+            return SaveDir
+    else:
+        if SaveDir is None:
+            raise Exception()
+        else:
+            if not SaveDir.endswith("/"):
+                SaveDir += "/"
+            assert not SaveName.endswith("/")
+            return SaveDir + SaveName

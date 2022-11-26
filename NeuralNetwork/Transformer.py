@@ -71,12 +71,15 @@ def MultiHeadAttention(Q, K, V, WQ: torch.tensor, WK, WV, WO, HeadNum):
 
 def LayerNorm(X:torch.Tensor):
     # X: [BatchSize, ]
+    pass
 
-class Transformer():
+from .AbstractModule import AbstractNetwork
+class Transformer(AbstractNetwork):
     def __init__(param):
         return
     def forward(X):
         # X: [BatchSize, TokenNum, EmbeddingNum]
+        pass
     def LayerNorm(X):
         return
     def Init():

@@ -48,5 +48,6 @@ if __name__=="__main__":
         MLP.ToJsonFile("./test/mlp - param.json")
         MLP = DLUtils.NN.ModuleSequence().FromFile("./test/mlp - param.dat")
         MLP.ToJsonFile("./test/mlp - param - 2.json")
+        MLP.PlotWeight("./test/")
     else:
         raise Exception()

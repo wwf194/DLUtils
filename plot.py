@@ -420,8 +420,6 @@ def GetDefaultBoundaryBox():
         "YMax": 1.0,
     })
 
-
-
 def XYs2BoundaryBox(XYs):
     XYs = XYs.reshape(-1, 2) # Flatten to [:, (x, y)]
     Xs = XYs[:, 0]
@@ -534,7 +532,7 @@ def PlotMatrixWithColorBar(
     PlotMatrix(
         axMatrix, data, True, ColorMap, XYRange, Coordinate=Coordinate, 
         PixelHeightWidthRatio=PixelHeightWidthRatio, Ticks=Ticks,
-        dataMask=dataMask, Save=False, 
+        dataMask=dataMask, Save=False,
         XLabel=XLabel, YLabel=YLabel, Title=Title, **kw
     )
     
@@ -676,43 +674,67 @@ def PlotActivityAndDistributionAlongTime(
     SaveFigForPlt(Save, SavePath)
     return
 
+def PlotWeight(Name, Data, SavePath):
+    if isinstance(Data, float):
+        Data = DLUtils.ToNpArray([[Data]])
+
+    fig, ax = CreateFigurePlt(1)
+
+    _weightForColorMap, maskInfOrNaN = MaskOutInfOrNaN(Data)
+    PlotMatrix(
+        ax=ax, data=_weightForColorMap, dataMask=maskInfOrNaN
+    )
+
+    SaveFigForPlt(True, SavePath)
+    # if SaveDir is None:
+    #     SaveDir = DLUtils.GetMainSaveDir() + "weights/"
+    # cache = self.cache
+    # if hasattr(self, "PlotSelfWeight"):
+    #     self.PlotSelfWeight(SaveDir)
+    # if hasattr(cache, "Modules"):
+    #     for ModuleName, Module in DLUtils.ListAttrsAndValues(cache.Modules):
+    #         if hasattr(Module,"PlotWeight"):
+    #             Module.PlotWeight(SaveDir)
+
 def PlotWeightChange(axes=None, weights=None):
     if axes is None:
         fig, axes = DLUtils.plot.CreateFigurePlt(3)
     return
 
-def PlotWeightAndDistribution(axes=None, weight=None, Name=None, SavePath=None):
+def PlotWeightAndDistribution(axes=None, Data=None, Name=None, Save=True, SavePath=None):
     if axes is None:
         fig, axes = DLUtils.plot.CreateFigurePlt(2)
         ax1, ax2 = axes[0], axes[1]
     else:
-        ax1 = DLUtils.plot.GetAx(axes, 0)
-        ax2 = DLUtils.plot.GetAx(axes, 1)
+        ax1 = GetAx(axes, 0)
+        ax2 = GetAx(axes, 1)
 
     plt.suptitle(Name)
-    weight = DLUtils.ToNpArray(weight)
+    weight = DLUtils.ToNpArray(Data)
     _weight = weight
-    weightForColorMap, _maskInfOrNaN = MaskOutInfOrNaN(_weight)
+
+    # weightForColorMap, MaskInfOrNaN = MaskOutInfOrNaN(_weight)
 
     # turn 1D weight to 2D shape
     DimentionNum = DLUtils.GetDimensionNum(weight)
     if DimentionNum == 1:
-        weight, maskReshape = DLUtils.Line2Square(weight)
+        weight, MaskReshape = DLUtils.Line2Square(weight)
         XLabel, YLabel = "Dimension 0", "Dimension 0"
     else:
-        maskReshape = None
+        MaskReshape = None
         XLabel, YLabel = "Dimension 1", "Dimension 0"
 
-    _weightForColorMap, maskInfOrNaN = MaskOutInfOrNaN(weight)
+    WeightForColorMap, MaskInfOrNaN = MaskOutInfOrNaN(weight)
     
-    dataMask = Merge2Mask(maskReshape, maskInfOrNaN)
+    dataMask = Merge2Mask(MaskReshape, MaskInfOrNaN)
 
     DLUtils.plot.PlotMatrixWithColorBar(
-        ax1, weight, dataForColorMap=weightForColorMap, dataMask=dataMask,
+        ax1, weight, dataForColorMap=WeightForColorMap, dataMask=dataMask,
         XAxisLocation="top", PixelHeightWidthRatio="Auto",
         Coordinate="Fig", Ticks="Int",
         Title="Visualization", XLabel=XLabel, YLabel=YLabel
     )
+    SaveFigForPlt(Save, SavePath)
 
 def Merge2Mask(mask1, mask2):
     if mask1 is not None and mask2 is not None:
@@ -1536,9 +1558,11 @@ def SetTitleAndLabelForAx(ax, XLabel=None, YLabel=None, Title=None):
         ax.set_title(Title)
 
 def SaveFigForPlt(Save=True, SavePath=None):
+    if Save is None and SavePath is not None:
+        Save = True
     if Save:
         DLUtils.EnsureFileDir(SavePath)
-        plt.savefig(SavePath)
+        plt.savefig(SavePath, format="svg")
         plt.close()
 
 def CompareDensityCurve(data1, data2, Name1, Name2, Save=True, SavePath=None):

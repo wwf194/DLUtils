@@ -131,12 +131,10 @@ class AbstractTransform(DLUtils.module.AbstractModuleWithParam):
 class AbstractTransformWithTensor(AbstractTransform):
     def __init__(self, **kw):
         super().__init__(**kw)
-
     def BeforeBuild(self, IsLoad=False):
         super().BeforeBuild(IsLoad=IsLoad)
         cache = self.cache
         cache.Tensors = DLUtils.PyObj([])
-
     def ClearTrainWeight(self):
         DLUtils.RemoveAttrIfExists(self.cache, "TrainWeight")
     def SetTrainWeight(self):
@@ -165,7 +163,6 @@ class AbstractTransformWithTensor(AbstractTransform):
         for name, method in cache.PlotWeight.items():
             weights[name] = method()
         return weights
-
     def SetPlotWeight(self):
         self.ClearPlotWeight()
         cache = self.cache
@@ -182,7 +179,6 @@ class AbstractTransformWithTensor(AbstractTransform):
             return cache.PlotWeight
         else:
             return {}
-
     def ClearPlotWeight(self):
         cache = self.cache
         if hasattr(cache, "PlotWeight"):

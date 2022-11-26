@@ -374,22 +374,6 @@ def Init(self, param=None, data=None, ClassPath=None, **kw):
     self.Modules = cache.Modules
     self.Dynamics = cache.Dynamics
 
-
-
-
-def PlotWeight(self, SaveDir=None):
-    if SaveDir is None:
-        SaveDir = DLUtils.GetMainSaveDir() + "weights/"
-    cache = self.cache
-    if hasattr(self, "PlotSelfWeight"):
-        self.PlotSelfWeight(SaveDir)
-    if hasattr(cache, "Modules"):
-        for ModuleName, Module in DLUtils.ListAttrsAndValues(cache.Modules):
-            if hasattr(Module,"PlotWeight"):
-                Module.PlotWeight(SaveDir)
-
-
-
 def LoadFromFile(self, LoadDir, Name, **kw):
     DLUtils.RemoveAttrIfExists(self, "cache")
     DLUtils.RemoveAttrIfExists(self, "param")

@@ -36,6 +36,14 @@ class NODE_CHILD_TYPE(Enum):
     MULTI_SUBNODE_WITH_LEAF = 5
 
 class Param():
+    # tree node class for representing json-like structure.
+    # content information is stored in attribute _DICT, or _LIST, _LEAF, depending on node type.
+    # meta information is stored in other attributes such as _TYPE, _SUBTYPE etc.
+    # viewed externally, node acts like an object with its attributes storing content information.
+        # content could be accessed using . or [] operator
+        # this is implemented using magic methods of python. 
+    # method names with UpperCamelCase typically indicates functions to manipulate meta information
+    # method names with   lowercases   typically indicates functions to manipulate content information.
     def __init__(self, Dict=None, _PATH_FROM_ROOT=["ROOT"], _TYPE=NODE_TYPE.SPINE, _SUBTYPE=NODE_SUBTYPE.DICT):    
         self.SetAttr("_LIST", [])
         self.SetAttr("_DICT", {})
@@ -54,16 +62,6 @@ class Param():
             self.SetAttr(Key, Item)
         #self.SetAttr("__dict__", Node.__dict__)
         return
-    def AbsorbDict(self, Dict):
-        TreeSelf = Param2Tree(self)
-        PathsSelf = _Tree2Paths(TreeSelf)
-
-        Paths = _JsonLike2Paths(Dict)
-        Tree = _Paths2Tree(PathsSelf + Paths)
-        
-        Node = _Tree2Param(Tree)
-        self.FromParam(Node)
-        return self    
     def AddComment(self, Comment, Type=None):
         CommentList = self.SetDefault("_COMMENT", [])
         if Type is None:
@@ -160,6 +158,16 @@ class Param():
         return
     def FromFile(self, FilePath):
         return
+    def absorb_dict(self, Dict):
+        TreeSelf = Param2Tree(self)
+        PathsSelf = Tree2Paths(TreeSelf)
+
+        Paths = _JsonLike2Paths(Dict)
+        Tree = _Paths2Tree(PathsSelf + Paths)
+        
+        Node = _Tree2Param(Tree)
+        self.FromParam(Node)
+        return self    
     def __hasattr__(self, Key):
         return Key in self._DICT
     def __setattr__(self, Key, Value):
@@ -185,6 +193,12 @@ class Param():
         self._DICT.pop(Key)
     def hasattr(self, Key):
         return Key in self._DICT
+    def getattr(self, Key):
+        return self._DICT[Key]
+    def setattr(self, Key, Value):
+        self._DICT[Key] = Value
+    def addattr(self, Key, Value):
+        self._DICT[Key] = Value
     def setdefault(self, Key, Value):
         if not Key in self._DICT:
             self._DICT[Key] = Value
@@ -579,8 +593,6 @@ def _CompressTreeRecur(Node, SupNode, SupKey, SupKeyIndex=None):
         raise Exception()
     return
 
-
-
 def Param2JsonStr(Obj):
     Tree = Param2Tree(Obj)
     #JsonDict = _Tree2JsonDict(Tree)
@@ -642,7 +654,6 @@ def _Tree2JsonDictRecur(Node):
                         keys = ".".join(keys)
                         Dict[keys] = SubNode["_LEAF"]
                         break
-                    SubNode
                     keys.append(key)
                 
             elif _SUBTYPE==NODE_SUBTYPE.LIST:
@@ -732,7 +743,7 @@ def _JsonLike2Paths(Obj):
     _JsonLike2PathsRecur(Obj, PathTable, ["ROOT"])
     return PathTable
 
-def _Tree2Paths(Root):
+def Tree2Paths(Root):
     PathTable = []
     _Tree2PathsRecur(Root, PathTable, ["ROOT"])
     return PathTable
@@ -1097,7 +1108,7 @@ def JsonFile2Param(FilePath):
     
     assert Tree["_TYPE"] == NODE_TYPE.SPINE
 
-    PathTable = _Tree2Paths(Tree)
+    PathTable = Tree2Paths(Tree)
 
     if Tree["_SUBTYPE"] == NODE_SUBTYPE.DICT:
         RootNode = _NewNode(

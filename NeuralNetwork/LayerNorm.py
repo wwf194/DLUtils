@@ -7,7 +7,6 @@ class LayerNorm(DLUtils.NeuralNetwork.AbstractModule):
     "Construct a layernorm module (See citation for details)."
     def __init__(self, FeatureNum=None, eps=None):
         super().__init__()
-
         Param = self.Param
         Param.Class = "DLUtils.NN.LayerNorm"
         Param.Tensors = ["A", "B"]
@@ -27,10 +26,7 @@ class LayerNorm(DLUtils.NeuralNetwork.AbstractModule):
         assert hasattr(Param, "FeatureNum")
         Param.Data.A = np.ones((Param.FeatureNum))
         Param.Data.B = np.ones((Param.FeatureNum))
-        self.Tensors = ["A", "B"]
-    # def Build(self):
-    #     self.Tensors.A = DLUtils.utils.ToTrainableTorchTensor(self.A)
-    #     self.Tensors.B = DLUtils.utils.ToTrainableTorchTensor(self.B)
+        Param.Tensors = ["A", "B"]
     def forward(self, X):
         # X: [BatchSize, FeatureNum]
         XMean = X.mean(1, keepdim=True)

@@ -4,18 +4,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 import DLUtils
 from DLUtils.transform.SingleLayer import SingleLayer
-class LinearLayer(DLUtils.NeuralNetwork.AbstractModule):
+class LinearLayer(DLUtils.NN.AbstractNetwork):
     def __init__(self, InputNum, OutputNum):
         super().__init__()
-    def Init(self):
         Param = self.Param
-        assert Param.Data.HasAttr("Weight")
-        if Param.Mode != "Wx":
-            if not Param.Data.HasAttr("Bias"):
-                Param.Data.Bias = 0.0
-        Param.Tensors = ["Weight", "Bias"]
-        if not hasattr(Param, "Mode"):
-            self.SetMode("Wx + b")
     def SetMode(self, Mode):
         Param = self.Param
         if Mode in ["Wx"]:
@@ -28,6 +20,10 @@ class LinearLayer(DLUtils.NeuralNetwork.AbstractModule):
             raise Exception(Mode)
         Param.Mode = Mode
         return self
+    def SetNonLinear(self, NonLinearModule):
+        self.SubModules["NonLinear"] = NonLinearModule
+        self.Param.SubModules["NonLinear"] = 
+    
     def Receive0(self, Input): #Wx
         return torch.mm(Input, self.Weight)
     def Receive1(self, Input): # Wx+b

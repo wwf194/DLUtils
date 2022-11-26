@@ -38,7 +38,9 @@ from DLUtils.NeuralNetwork.utils import \
     SampleFromKaimingNormal, \
     SampleFromKaimingUniform, \
     SampleFromXaiverNormal, \
-    SampleFromXaiverUniform
+    SampleFromXaiverUniform \
+    
+from DLUtils.parse import ParseSavePath
 
 def NewNetwork(Name, Param=None):
     if Name in ["Transformer"]:
