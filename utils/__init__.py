@@ -666,7 +666,9 @@ def Line2Square(data):
         mask[RowIndex, ColIndex] = False
         ColIndex -= 1
     if maskNum > 0:
-        data = np.concatenate([data, np.zeros(maskNum,dtype=data.dtype)])
+        dataEnd = np.zeros(maskNum,dtype=data.dtype)
+        #dataEnd[:] = np.nan
+        data = np.concatenate([data, dataEnd])
     data = data.reshape((RowNum, ColNum))
     return data, mask
 
@@ -895,7 +897,7 @@ def import_file(file_from_sys_path):
 def CopyDict(Dict):
     return dict(Dict)
 
-def GetItemsFromDict(dict_, keys):
+def GetItemsfrom_dict(dict_, keys):
     items = []
     for name in keys:
         items.append(dict_[name])

@@ -43,7 +43,7 @@ class LayerNorm(DLUtils.NeuralNetwork.AbstractModule):
             }
         }
         return super().ToDict()
-    def FromDict(self, Dict):
+    def from_dict(self, Dict):
         DLUtils.NewObj(Dict)
         self.Dict = Dict
         self.Tensors.A = DLUtils.ToTrainableTorchTensor(Dict.Data.A)

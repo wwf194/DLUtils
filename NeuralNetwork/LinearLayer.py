@@ -25,23 +25,30 @@ class LinearLayer(AbstractNetwork):
         if not hasattr(Param, "Mode"):
             self.SetMode("Wx + b")
         return self
+    def LoadParam(self, Param):
+        super().LoadParam(Param)
+        return self
     def SetMode(self, Mode):
         Param = self.Param
+        Param.Mode = Mode
+        self.SetReceiveMethod()
+        return self
+    def SetReceiveMethod(self):
+        Param = self.Param
+        Mode = Param.Mode
         if Mode in ["Wx"]:
-            self.Receive = self.Receive0
+            self.Receive = self.ReceiveMulWx
         elif Mode in ["Wx+b"]:
-            self.Receive = self.Receive1
+            self.Receive = self.ReceiveAddMulWxb
         elif Mode in ["W(x+b)"]:
-            self.Receive = self.Receive2
+            self.Receive = self.ReceiveMulWAddxb
         else:
             raise Exception(Mode)
-        Param.Mode = Mode
-        return self
-    def Receive0(self, Input): #Wx
+    def ReceiveMulWx(self, Input): #Wx
         return torch.mm(Input, self.Weight)
-    def Receive1(self, Input): # Wx+b
+    def ReceiveAddMulWxb(self, Input): # Wx+b
         return torch.mm(Input, self.Weight) + self.Bias
-    def Receive2(self, Input): # W(x+b)
+    def ReceiveMulWAddxb(self, Input): # W(x+b)
         return torch.mm(Input + self.Bias, self.Weight)
     def SetWeight(self, Weight):
         Weight = DLUtils.ToNpArrayOrNum(Weight)
@@ -59,6 +66,29 @@ class LinearLayer(AbstractNetwork):
         return self
     def SetBias(self, Bias):
         Param = self.Param
-        Bias = DLUtils.ToNpArrayOrNum(Bias)
+        if isinstance(Bias, str):
+            assert Param.hasattr("Mode")
+            if Param.Mode in ["Wx+b"]:
+                Num = Param.Output.Num
+            elif Param.Mode in ["W(x+b)"]:
+                Num = Param.Input.Num
+            else:
+                raise Exception()
+
+            if Bias in ["zeros"]:
+                Bias = DLUtils.SampleFromConstantDistribution((Num), 0.0)
+            elif Bias in ["ones"]:
+                Bias = DLUtils.SampleFromConstantDistribution((Num), 1.0)
+            else:
+                raise Exception()
+        else:
+            Bias = DLUtils.ToNpArrayOrNum(Bias)
         Param.Data.Bias = Bias
+        return self
+    def Init(self, IsSuper=False):
+        Param = self.Param
+        if not IsSuper:
+            self.SetReceiveMethod()
+        assert Param.hasattr("Mode")
+        super().Init(True)
         return self

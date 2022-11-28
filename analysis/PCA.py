@@ -86,7 +86,7 @@ class LogForPCAAlongTrain(DLUtils.log.AbstractLogAlongEpochBatchTrain):
         # else:
         for _Data in Data:
             _Data.VarianceExplainedRatioAccumulated = np.cumsum(_Data.VarianceExplainedRatio)
-            _Data.FromDict({
+            _Data.from_dict({
                 "EffectiveDimNums":{
                     "P100": len(_Data.VarianceExplainedRatio),
                     "P099": self.CalculateEffectiveDimNum(_Data, 0.99),

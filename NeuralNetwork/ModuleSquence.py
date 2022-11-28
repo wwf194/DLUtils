@@ -12,6 +12,17 @@ class ModuleSequence(AbstractNetwork):
             "_CLASS": "DLUtils.NN.ModuleSequence",
             "Module.Num": len(self.ModuleList)
         })
+    def LoadParam(self, Param):
+        super().LoadParam(Param)
+        Param = self.Param
+        if Param.hasattr("Module.Num"):
+            self.ModuleNum = Param.Module.Num
+        self.ModuleList = []
+        for Name, SubModuleParam in Param.SubModules.items():
+            self.ModuleList.append(self.SubModules[Name])
+        self.ModuleNum = len(self.ModuleList)
+        
+        return self
     def SetModuleList(self, ModuleList):
         Param = self.Param
         for Index, SubModule in enumerate(ModuleList):
@@ -22,3 +33,8 @@ class ModuleSequence(AbstractNetwork):
         self.ModuleNum = len(ModuleList)
         self.ModuleList = ModuleList
         return self
+    def Receive(self, Input):
+        for ModuleIndex in range(self.ModuleNum):
+            Output = self.ModuleList[ModuleIndex](Input)
+            Input = Output
+        return Output

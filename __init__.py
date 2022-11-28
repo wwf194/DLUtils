@@ -38,8 +38,11 @@ from DLUtils.NeuralNetwork.utils import \
     SampleFromKaimingNormal, \
     SampleFromKaimingUniform, \
     SampleFromXaiverNormal, \
-    SampleFromXaiverUniform \
-    
+    SampleFromXaiverUniform, \
+    SampleFromConstantDistribution, \
+    SampleFromNormalDistribution, \
+    SampleFromUniformDistribution
+
 from DLUtils.parse import ParseSavePath
 
 def NewNetwork(Name, Param=None):

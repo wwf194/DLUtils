@@ -2,7 +2,7 @@ import DLUtils
 import numpy as np
 def NewNpArray(Param):
     if isinstance(Param, dict):
-        Param = DLUtils.Param().FromDict(Param)
+        Param = DLUtils.Param().from_dict(Param)
     
     Dim = Param.setdefault("Dim", 1)
     
@@ -75,7 +75,7 @@ def NewNpArray2D(Param):
 
 def SampleFromDistribution(Param):
     if isinstance(Param, dict):
-        Param = DLUtils.Param().FromDict(Param)
+        Param = DLUtils.Param().from_dict(Param)
     Param.Type = "SampleFromDistribution" # Param as a log of data creation.
     Distribution = Param.Distribution
     Shape = Param.Shape
@@ -140,13 +140,13 @@ def SampleFromKaimingUniform(Shape, NonLinearFunction="ReLU", **Dict):
     else:
         raise Exception()
 
-def SampleFromKaimingNormal(Shape, NonLinearFunction, **Dict):
+def SampleFromKaimingNormal(Shape, NonLinearFunction="ReLU", **Dict):
     # Y = f(WX). Keep variance of forward signal or backward gradient.
     assert len(Shape) == 2
     InputNum = Shape[0]
     OutputNum = Shape[1]
     if NonLinearFunction in ["ReLU", "relu"]:
-        Priority = Dict.get("Priority")
+        Priority = Dict.setdefault("Priority", "all")
         if Priority in ["forward", "Forward"]:
             Std = math.sqrt(2.0 / InputNum)
         elif Priority in ["backward", "Backward"]:
@@ -160,12 +160,12 @@ def SampleFromKaimingNormal(Shape, NonLinearFunction, **Dict):
     else:
         raise Exception()
 
-def SampleFromXaiverUniform(Shape, NonLinearFunction, **Dict):
+def SampleFromXaiverUniform(Shape, **Dict):
     # Y = WX. Keep variance of forward signal or backward gradient.
     assert len(Shape) == 2
     InputNum = Shape[0]
     OutputNum = Shape[1]
-    Priority = Dict.get("Priority")
+    Priority = Dict.setdefault("Priority", "all")
     if Priority in ["forward", "Forward"]:
         Max = math.sqrt(3.0 / InputNum)
     elif Priority in ["backward", "Backward"]:
@@ -196,7 +196,7 @@ def SampleFromXaiverNormal(Shape, NonLinearFunction, **Dict):
     return SampleFromNormalDistribution(Shape, 0.0, Std)
 
 def SampleFromNormalDistribution(Shape, Mean, Std):
-    return np.random.normal(Shape, Mean, Std)
+    return np.random.normal(size=Shape, loc=Mean, scale=Std)
 
 def SampleFromUniformDistribution(Shape, Min, Max):
     assert Min <= Max

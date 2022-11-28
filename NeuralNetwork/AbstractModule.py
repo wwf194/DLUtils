@@ -7,6 +7,8 @@ class AbstractModule:
         Param.Tensors = []
         Param._CLASS = "DLUtils.NN.AbstractModule"
         Param._PATH = "Root"
+    def __call__(self, *List, **Dict):
+        return self.Receive(*List, **Dict)
     def ExtractParam(self, RetainSelf=True):
         Param = self.Param
         if not RetainSelf:
@@ -22,7 +24,7 @@ class AbstractModule:
     def LoadParam(self, Param):
         self.Param = Param
         if Param.hasattr("Tensors"):
-            self.UpdateTensorFromDict()
+            self.UpdateTensorfrom_dict()
         else:
             Param.Tensors = []
         self.LoadParamRecur(Param)
@@ -32,18 +34,21 @@ class AbstractModule:
             ModuleClass = DLUtils.python.ParseClass(SubModule._CLASS)
             SubModule._PATH = Param._PATH + "." + Name
             self.SubModules[Name] = ModuleClass().LoadParam(SubModule)
+            #setattr(self, Name, SubModule)
         return self
     def AddSubModule(self, Name, Module):
         Param = self.Param
-
-        Param.SubModules.setattr(Name, Module)
+        Param.SubModules.setattr(Name, Module.Param)
+        self.SubModules[Name] = Module
+        #setattr(self, Name, Module)
+        return self
     def DelSubModule(self, Name):
         Param = self.Param
         Param.SubModules.delattr(Name)
     def SetAsRoot(self):
         self.Param._IS_ROOT = True
         return self
-    def UpdateTensorFromDict(self):
+    def UpdateTensorfrom_dict(self):
         Param = self.Param
         for Name in Param.Tensors:
             setattr(self, Name, DLUtils.ToTorchTensorOrNum(getattr(Param.Data, Name)))
@@ -63,7 +68,11 @@ class AbstractModule:
     def ToJsonFile(self, FilePath):
         self.ExtractParam(RetainSelf=True).ToJsonFile(FilePath)
         return self
-    
+    def Init(self, IsSuper=False):
+        # Check whether this object is correctly configured.
+        for Name, SubModule in self.SubModules.items():
+            SubModule.Init()
+        return self
 class AbstractNetwork(AbstractModule):
     # network with trainable weights.
     def __init__(self):
@@ -73,16 +82,37 @@ class AbstractNetwork(AbstractModule):
         Param = self.ExtractParam()
         SavePath = DLUtils.ParseSavePath(SaveDir, SaveName, SaveNameDefault=Param._PATH)
         for WeightName in Param.Tensors:
-            DLUtils.plot.PlotWeight(
-                Name=WeightName,
-                Data=Param.Data.getattr(WeightName),
-                SavePath=SavePath + "." + WeightName + ".svg"
-            )
-            DLUtils.plot.PlotWeightAndDistribution(
-                Name=WeightName,
-                Data=Param.Data.getattr(WeightName),
-                SavePath=SavePath + "." + WeightName + " - Distribution.svg"
-            )  
+            Data = Param.Data.getattr(WeightName)
+            if hasattr(Data, "shape"):
+                DimNum = len(Data.shape)
+            else:
+                DimNum = 0
+            if DimNum == 1 or DimNum == 0:
+                DLUtils.plot.PlotData1D(
+                    Name=WeightName,
+                    Data=Data,
+                    SavePath=SavePath + "." + WeightName + ".svg",
+                    #XLabel="Dimension 0", YLabel="Dimension 0"
+                )
+                DLUtils.plot.PlotDataAndDistribution1D(
+                    Name=WeightName,
+                    Data=Data,
+                    SavePath=SavePath + "." + WeightName + " - Distribution.svg",
+                    XLabel="Dimension 0", YLabel="Dimension 0"
+                )
+            elif DimNum == 2:
+                DLUtils.plot.PlotData2D(
+                    Name=WeightName,
+                    Data=Data,
+                    SavePath=SavePath + "." + WeightName + ".svg",
+                    XLabel="Output Dimension", YLabel="Input Dimension"
+                )
+                DLUtils.plot.PlotDataAndDistribution2D(
+                    Name=WeightName,
+                    Data=Data,
+                    SavePath=SavePath + "." + WeightName + " - Distribution.svg",
+                    XLabel="Output Dimension", YLabel="Input Dimension"
+                )
         self.PlotWeightRecur(SaveDir, SaveName)
         return self
     def PlotWeightRecur(self, SaveDir, SaveName):
@@ -90,5 +120,7 @@ class AbstractNetwork(AbstractModule):
             if hasattr(SubModule, "PlotWeight"):
                 SubModule.PlotWeight(SaveDir, SaveName)
         return self
-
-    
+    def Init(self, IsSuper=False):
+        super().Init(True)
+        assert hasattr(self, "Receive")
+        return self

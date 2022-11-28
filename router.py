@@ -82,7 +82,7 @@ def ParseRoutingStatic(Routing):
     param = DLUtils.EmptyPyObj()
     # notice that there might be . in _Routing string.
     SetAttrs(param, "Str", value=_Routing.replace("&", "(At)"))
-    # if param.Str in ['DataBatch, Name=Input |--> (At)FilterFromDict |--> ModelInput']:
+    # if param.Str in ['DataBatch, Name=Input |--> (At)Filterfrom_dict |--> ModelInput']:
     #     print("aaa")
     Routing = re.sub(" ", "", Routing) # remove all spaces
     Routing = Routing.split("||")

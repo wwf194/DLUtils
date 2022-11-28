@@ -200,11 +200,11 @@ def Getact_func_from_str(name='relu', Param=None):
         raise Exception('Invalid act func name: %s'%name)
 
 def build_optimizer(dict_, Params=None, model=None, load=False):
-    Type_ = GetFromDict(dict_, 'Type', default='sgd', write_default=True)
+    Type_ = Getfrom_dict(dict_, 'Type', default='sgd', write_default=True)
     #func = dict_['func'] #forward ; rec, output, input
-    #lr = GetFromDict(dict_, 'lr', default=1.0e-3, write_default=True)
+    #lr = Getfrom_dict(dict_, 'lr', default=1.0e-3, write_default=True)
     lr = dict_['lr']
-    weight_decay = GetFromDict(dict_, 'weight_decay', default=0.0, write_default=True)
+    weight_decay = Getfrom_dict(dict_, 'weight_decay', default=0.0, write_default=True)
     if Params is not None:
         pass
     elif model is not None:

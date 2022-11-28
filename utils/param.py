@@ -10,7 +10,7 @@ def ToParam(Obj):
     if isinstance(Obj, Param):
         return Obj
     elif isinstance(Obj, dict):
-        return Param().FromDict(Obj)
+        return Param(Obj)
     else:
         raise Exception()
 
@@ -35,7 +35,93 @@ class NODE_CHILD_TYPE(Enum):
     MULTI_SUBNODE = 4
     MULTI_SUBNODE_WITH_LEAF = 5
 
-class Param():
+class param():
+    def __init__(self, _DICT=None, Dict=None, _PATH_FROM_ROOT=["ROOT"], _TYPE=NODE_TYPE.SPINE, _SUBTYPE=NODE_SUBTYPE.DICT):    
+        self.SetAttr("_LIST", [])
+        self.SetAttr("_DICT", {})
+        if Dict is not None:
+            self.SetAttr("_SUBTYPE", Dict["_SUBTYPE"])
+            self.SetAttr("_LEAF", Dict.get("_LEAF"))
+        else:
+            self.SetAttr("_TYPE", _TYPE)
+            self.SetAttr("_SUBTYPE", _SUBTYPE)
+            self.SetAttr("_PATH_FROM_ROOT", _PATH_FROM_ROOT)
+        
+        if _DICT is not None:
+            if isinstance(_DICT, dict):
+                self.from_dict(_DICT)
+            else:
+                raise Exception()   
+
+    def from_dict(self, Dict):
+        # assert isinstance(_DICT, dict)
+        _DICT = self.GetAttr("_DICT")
+        for key, item in Dict.items():
+            if isinstance(item, dict):
+                _DICT[key] = Dict(_SUBTYPE=NODE_SUBTYPE.DICT).from_dict(item)
+            elif isinstance(item, list):
+                _DICT[key] = Dict(_SUBTYPE=NODE_SUBTYPE.LIST).from_list(item)
+            else:
+                _DICT[key] = item
+    
+    def from_list(self, List):
+        _LIST = self.GetAttr("_LIST")
+        for index, item in enumerate(List):
+            if isinstance(item, dict):
+                _LIST.append(param(_SUBTYPE=NODE_SUBTYPE.DICT).from_dict(item))
+            elif isinstance(item, list):
+                _LIST[index].append(param(_SUBTYPE=NODE_SUBTYPE.LIST).from_list(item))
+            else:
+                _LIST[index].append(item)
+    def Get(self, Key):
+        if Key in self.__dict__:
+            return self.__dict__[Key]
+        else:
+            return None
+    def HasAttr(self, Key):
+        return Key in self.__dict__
+    def GetAttr(self, Key):
+        return self.__dict__[Key]
+    def GetAttrAndDelete(self, Key):
+        return self.__dict__.pop(Key)
+    def SetAttr(self, Key, Value):
+        self.__dict__[Key] = Value
+        return Value
+    def DelAttr(self, Key):
+        self.__dict__.pop(Key)
+    def hasattr(self, Key):
+        return Key in self._DICT
+    def getattr(self, Key):
+        return self._DICT[Key]
+    def delattr(self, Key):
+        self._DICT.pop(Key)
+    def setdefault(self, Key, Value):
+        if not Key in self._DICT:
+            self._DICT[Key] = Value
+        return self._DICT[Key]
+    def items(self):
+        return self.GetAttr("_DICT").items()
+    def __hasattr__(self, Key):
+        return Key in self._DICT
+    def __setattr__(self, Key, Value):
+        self._DICT[Key] = Value
+    def __getattr__(self, Key):
+        return self._DICT[Key]
+    def __setattr__(self, Key, Value):
+        self._DICT[Key] = Value
+    def __delattr__(self, Name):
+        self._DICT.pop(Name)
+    # For Serialization
+    def __getstate__(self):
+        return self.__dict__
+    # For Unserialization
+    def __setstate__(self, Dict):
+        for Key, Item in Dict.items():
+            self.SetAttr(Key, Item)
+    def __getitem__(self, Index):
+        return self._LIST[Index]
+
+class Param(param):
     # tree node class for representing json-like structure.
     # content information is stored in attribute _DICT, or _LIST, _LEAF, depending on node type.
     # meta information is stored in other attributes such as _TYPE, _SUBTYPE etc.
@@ -44,19 +130,20 @@ class Param():
         # this is implemented using magic methods of python. 
     # method names with UpperCamelCase typically indicates functions to manipulate meta information
     # method names with   lowercases   typically indicates functions to manipulate content information.
-    def __init__(self, Dict=None, _PATH_FROM_ROOT=["ROOT"], _TYPE=NODE_TYPE.SPINE, _SUBTYPE=NODE_SUBTYPE.DICT):    
-        self.SetAttr("_LIST", [])
-        self.SetAttr("_DICT", {})
+    def __init__(self, _DICT=None, Dict=None, _PATH_FROM_ROOT=["ROOT"], _TYPE=NODE_TYPE.SPINE, _SUBTYPE=NODE_SUBTYPE.DICT):
+        super().__init__(_DICT=_DICT, Dict=Dict, _SUBTYPE=_SUBTYPE)
         self.SetAttr("_DICT_TEMP", {})
         if Dict is not None:
             self.SetAttr("_TYPE", Dict["_TYPE"])
-            self.SetAttr("_SUBTYPE", Dict["_SUBTYPE"])
             self.SetAttr("_PATH_FROM_ROOT", Dict["_PATH_FROM_ROOT"])
-            self.SetAttr("_LEAF", Dict.get("_LEAF"))
         else:
             self.SetAttr("_TYPE", _TYPE)
-            self.SetAttr("_SUBTYPE", _SUBTYPE)
             self.SetAttr("_PATH_FROM_ROOT", _PATH_FROM_ROOT)
+        if _DICT is not None:
+            if isinstance(_DICT, dict):
+                self.from_dict(_DICT)
+            else:
+                raise Exception()
     def FromParam(self, Node):
         for Key, Item in Node.__dict__.items():
             self.SetAttr(Key, Item)
@@ -89,7 +176,7 @@ class Param():
         CommentList.append([Comment, Type])
     def AddCommentToChild(self, Key, Comment, Type=None):
         self.Get(Key)
-    def FromDict(self, Dict):
+    def from_dict(self, Dict):
         Paths = _JsonLike2Paths(Dict)
         Tree = _Paths2Tree(Paths)
         Node = _Tree2Param(Tree)
@@ -130,27 +217,11 @@ class Param():
     def SetParent(self, Parent, Key):
         self.SetAttr("_PARENT", Parent)
         self.SetAttr("_PARENT_KEY", Key)
-    def HasAttr(self, Key):
-        return Key in self.__dict__
-    def SetAttr(self, Key, Value):
-        self.__dict__[Key] = Value
-        return Value
     def SetDefault(self, Key, DefaultValue):
         if self.HasAttr(Key):
             return self.GetAttr(Key)
         else:
             return self.SetAttr(Key, DefaultValue)
-    def GetAttr(self, Key):
-        return self.__dict__[Key]
-    def GetAttrAndDelete(self, Key):
-        return self.__dict__.pop(Key)
-    def Get(self, Key):
-        if Key in self.__dict__:
-            return self.__dict__[Key]
-        else:
-            return None
-    def DelAttr(self, Key):
-        self.__dict__.pop(Key)
     def ToJsonFile(self, FilePath):
         Param2JsonFile(self, FilePath)
         return self
@@ -161,15 +232,12 @@ class Param():
     def absorb_dict(self, Dict):
         TreeSelf = Param2Tree(self)
         PathsSelf = Tree2Paths(TreeSelf)
-
         Paths = _JsonLike2Paths(Dict)
         Tree = _Paths2Tree(PathsSelf + Paths)
         
         Node = _Tree2Param(Tree)
         self.FromParam(Node)
         return self    
-    def __hasattr__(self, Key):
-        return Key in self._DICT
     def __setattr__(self, Key, Value):
         self._DICT[Key] = Value
         if self.Get("_IS_FALSE") is True:
@@ -189,33 +257,14 @@ class Param():
                 self._DICT_TEMP[Key] = SubNode
                 SubNode.SetParent(self, Key)
                 return SubNode
-    def delattr(self, Key):
-        self._DICT.pop(Key)
-    def hasattr(self, Key):
-        return Key in self._DICT
-    def getattr(self, Key):
-        return self._DICT[Key]
     def setattr(self, Key, Value):
         self._DICT[Key] = Value
+        if self.Get("_IS_FALSE") is True:
+            self.SubstantiateAlongSpine(NODE_TYPE.SPINE, NODE_SUBTYPE.DICT)
+        return self
     def addattr(self, Key, Value):
         self._DICT[Key] = Value
-    def setdefault(self, Key, Value):
-        if not Key in self._DICT:
-            self._DICT[Key] = Value
-        return self._DICT[Key]
-    def __delattr__(self, Name):
-        self._DICT.pop(Name)
-    def __getitem__(self, Index):
-        return self._LIST[Index]
-    # For Serialization
-    def __getstate__(self):
-        return self.__dict__
-    # For Unserialization
-    def __setstate__(self, Dict):
-        for Key, Item in Dict.items():
-            self.SetAttr(Key, Item)
-    def items(self):
-        return self._DICT.items()
+
 
 def _NewNode(
         _TYPE, 
@@ -997,7 +1046,7 @@ def _Tree2ParamRecur(Node):
     if _TYPE==NODE_TYPE.LEAF:
         return Node["_LEAF"]
     elif _TYPE in [NODE_TYPE.SPINE, NODE_TYPE.SPINE_WITH_LEAF]:
-        Obj = Param(Node)
+        Obj = Param(Dict=Node)
         if _TYPE==NODE_TYPE.SPINE_WITH_LEAF:
             Obj.SetAttr("_LEAF", Node["_LEAF"])
         

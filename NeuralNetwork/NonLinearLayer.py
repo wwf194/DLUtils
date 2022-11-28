@@ -4,47 +4,51 @@ import torch.nn as nn
 import torch.nn.functional as F
 import DLUtils
 from DLUtils.transform.SingleLayer import SingleLayer
-class LinearLayer(DLUtils.NN.AbstractNetwork):
-    def __init__(self, InputNum, OutputNum):
-        super().__init__()
+from .AbstractModule import AbstractNetwork
+from .LinearLayer import LinearLayer
+class NonLinearLayer(LinearLayer):
+    def __init__(self, InputNum=None, OutputNum=None):
+        super().__init__(InputNum=InputNum, OutputNum=OutputNum)
         Param = self.Param
+        Param._CLASS = "DLUtils.NN.NonLinearLayer"
     def SetMode(self, Mode):
         Param = self.Param
-        if Mode in ["Wx"]:
-            self.Receive = self.Receive0
-        elif Mode in ["Wx+b"]:
-            self.Receive = self.Receive1
-        elif Mode in ["W(x+b)"]:
-            self.Receive = self.Receive2
+        Param.Mode = Mode
+        self.SetReceiveMethod()
+        return self
+    def LoadParam(self, Param):
+        super().LoadParam(Param)
+        return self
+    def SetReceiveMethod(self):
+        Param = self.Param
+        Mode = Param.Mode
+        if Mode in ["f(Wx+b)"]:
+            self.Receive = self.ReceiveFAddMulWxb
+        elif Mode in ["f(W(x+b))"]:
+            self.Receive = self.ReceiveFMulWAddxb
+        elif Mode in ["f(Wx)+b"]:
+            self.Receive = self.ReceiveAddFMulWxb
         else:
             raise Exception(Mode)
-        Param.Mode = Mode
-        return self
     def SetNonLinear(self, NonLinearModule):
-        self.SubModules["NonLinear"] = NonLinearModule
-        self.Param.SubModules["NonLinear"] = 
-    
-    def Receive0(self, Input): #Wx
-        return torch.mm(Input, self.Weight)
-    def Receive1(self, Input): # Wx+b
-        return torch.mm(Input, self.Weight) + self.Bias
-    def Receive2(self, Input): # W(x+b)
-        return torch.mm(Input + self.Bias, self.Weight)
-    def SetWeight(self, Weight):
-        Weight = DLUtils.ToNpArrayOrNum(Weight)
-        Param = self.Param
-        Data = self.Param.Data
-        Data.Weight = Weight
-        assert len(Weight.shape) == 2
-        Param.Input.Num = Weight.shape[0]
-        Param.Output.Num = Weight.shape[1]
-        if Data.HasAttr("Bias") and Param.HasAttr("Mode"):
-            if Param.Mode == "Wx+b":
-                assert Param.Output.Num == Data.Weight.shape[1]
-            else:
-                assert Param.Input.Num == Data.Weight.shape[0]
+        if isinstance(NonLinearModule, str):
+            NonLinearModule = DLUtils.NN.NonLinear.BuildNonLinearModule(NonLinearModule)
+        self.AddSubModule("NonLinear", NonLinearModule)
         return self
-    def SetBias(self, Bias):
-        Bias = DLUtils.ToNpArrayOrNum(Bias)
-        self.Data.Bias = Bias
+    def SetNonLinearMethod(self):
+        self.NonLinear = self.SubModules["NonLinear"]
+        return self
+    def ReceiveFAddMulWxb(self, Input):
+        return self.NonLinear(torch.mm(Input + self.Bias, self.Weight))
+    def ReceiveAddFMulWxb(self, Input):
+        return self.NonLinear(torch.mm(Input, self.Weight)) + self.Bias
+    def ReceiveFMulWAddxb(self, Input):
+        return self.NonLinear(torch.mm(Input, self.Weight)) + self.Bias
+    # SetWeight(...) # inherit
+    # SetBias(...) # inherit
+    def Init(self, IsSuper=False):
+        if not IsSuper:
+            self.SetReceiveMethod()
+            self.SetNonLinearMethod()
+        super().Init(True)
         return self

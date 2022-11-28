@@ -224,9 +224,9 @@ def CalculatePearsonCoefficientMatrix(dataA, dataB):
     CorrelationMatrix = DLUtils.TorchTensor2NpArray(CorrelationMatrixGPU)
     return CorrelationMatrix
 
-def CalculateBinnedMeanAndStd(
+def CalculateBinnedMeanStd(
         Xs, Ys, BinNum=30, BinMethod="Overlap", ReturnType="PyObj",
-        Range="MinMax",
+        Range="MinMax", **Dict
     ):
     if Range in ["MinMax"]:
         XMin, XMax = np.nanmin(Xs), np.nanmax(Xs)

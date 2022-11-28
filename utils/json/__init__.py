@@ -14,7 +14,7 @@ def JsonObj2PyObj(JsonObj):
     if isinstance(JsonObj, list):
         return DLUtils.EmptyPyObj().FromList(JsonObj)
     elif isinstance(JsonObj, dict):
-        return DLUtils.EmptyPyObj().FromDict(JsonObj)
+        return DLUtils.EmptyPyObj().from_dict(JsonObj)
     else:
         raise Exception()
 Dict2PyObj = JsonObj2PyObj
@@ -250,7 +250,7 @@ class PyObj(object):
         self.cache = PyObjCache()
         if param is not None:
             if type(param) is dict:
-                self.FromDict(param)
+                self.from_dict(param)
             elif type(param) is list:
                 self.FromList(param)
             elif type(param) is PyObj:
@@ -301,7 +301,7 @@ class PyObj(object):
                 if isinstance(Child, PyObj):
                     # 2 special cases
                     if isinstance(DefaultValue, dict):
-                        Child.FromDict(DefaultValue)
+                        Child.from_dict(DefaultValue)
                         return
                     elif isinstance(DefaultValue, PyObj):
                         Child.FromPyObj(DefaultValue)
@@ -332,7 +332,7 @@ class PyObj(object):
                 if isinstance(Child, PyObj):
                     # 2 special cases
                     if isinstance(DefaultValue, dict):
-                        Child.FromDict(DefaultValue)
+                        Child.from_dict(DefaultValue)
                         return
                     elif isinstance(DefaultValue, PyObj):
                         Child.FromPyObj(DefaultValue)
@@ -414,9 +414,9 @@ class PyObj(object):
             self, *Args, **kw
         )
     def Update(self, Dict):
-        self.FromDict(Dict)
+        self.from_dict(Dict)
         return self
-    def FromDict(self, Dict):
+    def from_dict(self, Dict):
         # Dict keys in form of "A.B.C" are supported.
         # {"A.B": "C"} will be understood as {"A": {"B": "C"}}
         for key, value in Dict.items():
@@ -439,7 +439,7 @@ class PyObj(object):
                             if isinstance(value, PyObj) and value.IsDictLike():
                                 valueOld.FromPyObj(value)
                             elif isinstance(value, dict):
-                                valueOld.FromDict(value)
+                                valueOld.from_dict(value)
                             else:
                                 # if hasattr(value, "__value__"):
                                 #     DLUtils.AddWarning("PyObj: Overwriting key: %s. Original Value: %s, New Value: %s"\
@@ -480,7 +480,7 @@ class PyObj(object):
         return DLUtils.PyObj(self.__dict__)
     def FromPyObj(self, Obj):
         # to be implemented: also copy cache
-        self.FromDict(Obj.__dict__)
+        self.from_dict(Obj.__dict__)
         return self
     def ProcessValue(self, key, value):
         if isinstance(value, dict):

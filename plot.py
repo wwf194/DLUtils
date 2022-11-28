@@ -5,6 +5,7 @@ import math
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
+from matplotlib.patches import Rectangle
 import seaborn as sns
 sns.set_style("white")
 
@@ -13,7 +14,13 @@ default_res=60
 import DLUtils
 from DLUtils.attr import *
 
-ColorPlt = DLUtils.Param().FromDict({
+
+def SetMatplotlibParamToDefault():
+    mpl.rcParams.update(mpl.rcParamsDefault)
+# matplotlib default param might be overwritten by other lib using it, such as seaborn.
+SetMatplotlibParamToDefault() # ticks may disappear after imshow.
+
+NamedColor = DLUtils.Param().from_dict({
     "White": (1.0, 1.0, 1.0),
     "Black": (0.0, 0.0, 0.0),
     "Red":   (1.0, 0.0, 0.0),
@@ -21,6 +28,7 @@ ColorPlt = DLUtils.Param().FromDict({
     "Blue":  (0.0, 0.0, 1.0),
     "Gray":  (0.5, 0.5, 0.5),
     "Grey":  (0.5, 0.5, 0.5),
+    "LightGray": (211.0 / 256.0, 211.0 / 256.0, 211.0 / 256.0) # D3D3D3
 })
 
 # def get_cmap(n, name='gist_rainbow'):
@@ -36,7 +44,7 @@ def GenerateColors(Num=10, ColorMap="gist_rainbow"):
         Colors.append(ColorFunction(Index))
     return Colors
 
-def PlotLinesPlt(ax, XYsStart, XYsEnd=None, Width=1.0, Color=ColorPlt.Black):
+def PlotLinesPlt(ax, XYsStart, XYsEnd=None, Width=1.0, Color=NamedColor.Black):
     if XYsEnd is None:
         Edges = ToNpArray(XYsStart)
         XYsStart = Edges[:, 0]
@@ -54,17 +62,17 @@ PlotLines = PlotLinesPlt
 def SetHeightWidthRatio(ax, ratio):
     ax.set_aspect(ratio)
 
-def PlotLineAndMarkVerticesXY(ax, PointStart, PointEnd, Width=1.0, Color=ColorPlt.Black):
+def PlotLineAndMarkVerticesXY(ax, PointStart, PointEnd, Width=1.0, Color=NamedColor.Black):
     PlotLinePlt(ax, PointStart, PointEnd, Width, Color)
     PlotPointAndMarkXY(ax, PointStart)
     PlotPointAndMarkXY(ax, PointEnd)
 
-def PlotArrowAndMarkVerticesXY(ax, PointStart, PointEnd, Width=0.001, Color=ColorPlt.Black):
+def PlotArrowAndMarkVerticesXY(ax, PointStart, PointEnd, Width=0.001, Color=NamedColor.Black):
     PlotArrowFromVertexPairsPlt(ax, PointStart, PointEnd, Width=Width, Color=Color)
     PlotPointAndMarkXY(ax, PointStart)
     PlotPointAndMarkXY(ax, PointEnd)
 
-def PlotLinePlt(ax, PointStart, PointEnd, Width=1.0, Color=ColorPlt.Black, Style="-"):
+def PlotLinePlt(ax, PointStart, PointEnd, Width=1.0, Color=NamedColor.Black, Style="-"):
     # Width: Line Width in points(?pixels)
     X = [PointStart[0], PointEnd[0]]
     Y = [PointStart[1], PointEnd[1]]
@@ -74,17 +82,17 @@ def PlotLinePlt(ax, PointStart, PointEnd, Width=1.0, Color=ColorPlt.Black, Style
     line.set_linestyle(Style)
 PlotLine = PlotLinePlt
 
-def PlotDashedLinePlt(ax, PointStart, PointEnd, Width=1.0, Color=ColorPlt.Black):
+def PlotDashedLinePlt(ax, PointStart, PointEnd, Width=1.0, Color=NamedColor.Black):
     PlotLinePlt(ax, PointStart, PointEnd, Width, Color, Style=(0, (5, 10)))
 PlotDashedLine = PlotDashedLinePlt
 
-def PlotPointAndAddText(ax, XY, PointColor=ColorPlt.Blue, Text="TextOnPoint", TextColor=None):
+def PlotPointAndAddText(ax, XY, PointColor=NamedColor.Blue, Text="TextOnPoint", TextColor=None):
     if TextColor is None:
         TextColor = PointColor
     PlotPoint(ax, XY, PointColor)
     PlotText(ax, XY, Text, TextColor)
 
-def PlotText(ax, XY, Text, Color=ColorPlt.Blue):
+def PlotText(ax, XY, Text, Color=NamedColor.Blue):
     ax.text(XY[0], XY[1], Text, color=Color)
 
 def print_notes(notes, y_line, y_interv):
@@ -113,8 +121,8 @@ def ParsePointTypePlt(Type):
         #raise Exception(Type)
         return Type
 
-def PlotPoint(ax, XY, Color=ColorPlt.Blue, Type="Circle", Size=None):
-    Color = ParseColorPlt(Color)
+def PlotPoint(ax, XY, Color=NamedColor.Blue, Type="Circle", Size=None):
+    Color = ParseColor(Color)
     Type = ParsePointTypePlt(Type)
     
     if Size is not None:
@@ -142,7 +150,7 @@ def PlotPointsPltNp(
     Points = DLUtils.ToNpArray(Points)
     Xs = Points[:, 0]
     Ys = Points[:, 1]
-    Color=ParseColorPlt(Color)
+    Color=ParseColor(Color)
     Size = ParseMarkerSize(Size)
     Type = ParsePointTypePlt(Type)
     ax.scatter(Xs, Ys, color=Color, s=Size, marker=Type, facecolors="none")
@@ -160,7 +168,7 @@ def PlotMultiPoints(
     if Labels is None:
         Labels = [None for _ in range(GroupNum)]
     for Index, (_Xs, _Ys) in enumerate(zip(Xs, Ys)):
-        Color=ParseColorPlt(Colors[Index])
+        Color=ParseColor(Colors[Index])
         Size = ParseMarkerSize(Size)
         Type = ParsePointTypePlt(Type)
         ax.scatter(_Xs, _Ys, color=Color, s=Size, marker=Type, facecolors="none", label=Labels[Index])
@@ -196,7 +204,7 @@ def PlotPointsPltNp(
     Points = DLUtils.ToNpArray(Points)
     Xs = Points[:, 0]
     Ys = Points[:, 1]
-    Color=ParseColorPlt(Color)
+    Color=ParseColor(Color)
     Size = ParseMarkerSize(Size)
     Type = ParsePointTypePlt(Type)
     ax.scatter(Xs, Ys, color=Color, s=Size, marker=Type, facecolors="none")
@@ -216,38 +224,52 @@ def PlotDirectionsOnEdges(ax, Edges, Directions, **kw):
 def PlotDirectionOnEdge(ax, Edge, Direction, **kw):
     PlotDirectionsOnEdges(ax, [Edge], [Direction], **kw)
 
+def Str2RGB(ColorStr):
+    if ColorStr in NamedCol:
+        return NamedCol.getattr(ColorStr)
+    else:
+        raise Exception()
+
 def Map2Color(
         data, ColorMap="jet", Method="MinMax", Alpha=False,
-        dataForMap=None, **kw
+        RefData=None, **Dict
     ):
     data = DLUtils.ToNpArray(data)
+    ColorForEqualValues = Dict.setdefault("ColorForEqualValues", ParseColor("LightGray"))
 
     if Method in ["MinMax", "GivenRange", "GivenMinMax"]:
         if Method in ["MinMax"]:
-            if dataForMap is not None:
-                if dataForMap.size > 0:
-                    dataMin, dataMax = np.nanmin(dataForMap), np.nanmax(dataForMap)
+            if RefData is not None: # If RefData is provided, color mapping will be on RefData, rather than data.
+                if RefData.size > 0:
+                    dataMin, dataMax = np.nanmin(RefData), np.nanmax(RefData)
                 else:
                     dataMin, dataMax = np.NaN, np.NaN
             else:
                 dataMin, dataMax = np.nanmin(data), np.nanmax(data)
         elif Method in ["GivenRange", "GivenMinMax"]:
-            dataMin, dataMax = kw["Min"], kw["Max"]
+            dataMin, dataMax = Dict["Min"], Dict["Max"]
 
+        # corner case: all values equal to each other.
         if dataMin == dataMax or not np.isfinite(dataMin) or not np.isfinite(dataMax):
-            dataColored = np.full([*data.shape, 4], 0.5)
+            if len(ColorForEqualValues) == 3:
+                Color = [*ColorForEqualValues, 0.0]
+            elif len(ColorForEqualValues) == 4:
+                Color = ColorForEqualValues
+            else:
+                raise Exception()
+            dataInColor = np.full((*data.shape, 4), Color)
         else:
             dataNormed = (data - dataMin) / (dataMax - dataMin) # normalize to [0, 1]
-            dataColored = ParseColorMapPlt(ColorMap)(dataNormed) # [*data.Shape, (r,g,b,a)]
-
+            dataInColor = ParseColorMapPlt(ColorMap)(dataNormed) # [*data.Shape, (r,g,b,a)]
     else:
         raise Exception(Method)
 
-    if not Alpha:
-        dataColored = eval("dataColored[%s 0:3]"%("".join(":," for _ in range(len(data.shape)))))
+    if not Alpha: # Alpha == 1.0 means total transparency / totally unseeable.
+        dataInColor = eval("dataInColor[%s 0:3]"%("".join(":," for _ in range(len(data.shape)))))
         #dataColored = dataColored.take([0, 1, 2], axis=-1)
-    return DLUtils.PyObj({
-        "dataColored": dataColored,
+    return DLUtils.Param({
+        "dataInColor": dataInColor,
+        # "dataNormed": dataNormed,
         "Min": dataMin,
         "Max": dataMax
     })
@@ -278,7 +300,7 @@ def PlotXYs(ax, XYs, XYsMark=None):
 def PlotPointAndMarkXY(ax, XY):
     PlotPointAndAddText(ax, XY, Text="(%.2f, %.2f)"%(XY[0], XY[1]))
 
-def ParseColorPlt(Color):
+def ParseColor(Color):
     if isinstance(Color, tuple):
         if len(Color)==3:
             return Color
@@ -287,8 +309,8 @@ def ParseColorPlt(Color):
         else:
             raise Exception()
     elif isinstance(Color, str):
-        if hasattr(ColorPlt, Color):
-            return getattr(ColorPlt, Color)
+        if hasattr(NamedColor, Color):
+            return getattr(NamedColor, Color)
         else:
             return Color
     else:
@@ -303,7 +325,7 @@ def ParseColorMapPlt(ColorMap):
 ParseColorMap = ParseColorMapPlt
 
 def PlotArrows(
-        ax, XYsStart, dXYs, Color=ColorPlt.Red,
+        ax, XYsStart, dXYs, Color=NamedColor.Red,
         HeadWidth=0.05, HeadLength=0.1, SizeScale=1.0, 
         XLabel=None, YLabel=None, Title=None, XRange=None, YRange=None
     ):
@@ -313,13 +335,13 @@ def PlotArrows(
     SetTitleAndLabelForAx(ax, XLabel, YLabel, Title)
     SetTicksAndRangeForAx(ax, XYsStart[:, 0], XYsStart[:, 1], XRange, YRange)
 
-def PlotArrowFromVertexPairsPlt(ax, XYStart, XYEnd, Width=0.001, Color=ColorPlt.Red, SizeScale=1.0):
+def PlotArrowFromVertexPairsPlt(ax, XYStart, XYEnd, Width=0.001, Color=NamedColor.Red, SizeScale=1.0):
     XYStart = DLUtils.ToNpArray(XYStart)
     XYEnd = DLUtils.ToNpArray(XYEnd)
     PlotArrowPlt(ax, XYStart, XYEnd - XYStart, Width=Width, Color=Color, SizeScale=SizeScale)
 
-def PlotArrowPlt(ax, XYStart, dXY, Width=0.001, HeadWidth=0.05, HeadLength=0.1, Color=ColorPlt.Red, SizeScale=None):
-    Color = ParseColorPlt(Color)
+def PlotArrowPlt(ax, XYStart, dXY, Width=0.001, HeadWidth=0.05, HeadLength=0.1, Color=NamedColor.Red, SizeScale=None):
+    Color = ParseColor(Color)
     XYStart = DLUtils.ToList(XYStart)
     dXY = DLUtils.ToList(dXY)
     if SizeScale is not None:
@@ -336,7 +358,7 @@ def PlotArrowPlt(ax, XYStart, dXY, Width=0.001, HeadWidth=0.05, HeadLength=0.1, 
         edgecolor=Color
     )
 
-def PlotPolyLineFromVerticesPlt(ax, Points, Color=ColorPlt.Black, Width=2.0, Closed=False):
+def PlotPolyLineFromVerticesPlt(ax, Points, Color=NamedColor.Black, Width=2.0, Closed=False):
     # Points: np.ndarray with shape [PointNum, (x,y)]
     Points = DLUtils.ToList(Points)
     PointNum = len(Points)
@@ -468,72 +490,49 @@ def SetAxRangeAndTicksFromBoundaryBox(ax, BoundaryBox):
     SetXTicksFloat(ax, BoundaryBox.XMin, BoundaryBox.XMax)
     SetYTicksFloat(ax, BoundaryBox.YMin, BoundaryBox.YMax)
 
-def ParseIsMatrixDataColored(data):
+def ParseIsDataColored2D(data):
     DimensionNum = DLUtils.GetDimensionNum(data)
-    if DimensionNum==2: # [XNum, YNum]
+    if DimensionNum == 2: # [XNum, YNum]
         IsDataColored = False
-    elif DimensionNum==3: # [XNum, YNum, (r, g, b) or (r, g, b, a)], already mapped to colors.
+    elif DimensionNum == 3: # [XNum, YNum, (r, g, b) or (r, g, b, a)], already mapped to colors.
         IsDataColored = True
     else:
-        raise Exception(DimensionNum)  
+        raise Exception(DimensionNum)
     return IsDataColored
 
 def PlotMatrixWithColorBar(
-        ax, data, IsDataColored=None, ColorMap="jet", ColorMethod="MinMax", 
-        XYRange=None, Coordinate="Math", dataForColorMap=None, dataMask=None,
+        ax, data=None, dataInColor=None, ColorMap="jet", ColorMethod="MinMax", 
+        XYRange=None, Coordinate="Math", dataMask=None,
         Ticks=None, XLabel=None, YLabel=None, Title=None,
         ColorBarOrientation="Auto", ColorBarLocation=None,
-        PixelHeightWidthRatio="Equal",
-        ColorBarTitle=None, Save=False, SavePath=None, **kw
+        PixelHeightWidthRatio="Equal", DataHeightWidthRatioMax = 5.0, DataHeightWidthRatioMin = 0.2,
+        ColorBarTitle=None, Save=False, SavePath=None, **Dict
     ):
-    if IsDataColored is None:
-        IsDataColored = ParseIsMatrixDataColored(data)
+    DataHeightWidthRatioMax = Dict.setdefault("DataHeightWidthRatioMax", 5.0)
+    DataHeightWidthRatioMin = Dict.setdefault("DataHeightWidthRatioMin", 0.2)
+    assert DataHeightWidthRatioMin <= DataHeightWidthRatioMax
 
-    if not IsDataColored:
-        if dataForColorMap is not None:
-            dataMapResult = Map2Color(data, ColorMap, dataForMap=dataForColorMap) 
+    ColorForEqualValues = Dict.setdefault("ColorForEqualValues", ParseColor("LightGray"))
+    if dataInColor is None:
+        RefDataForColorMap = Dict.setdefault("RefDataForColorMap", None)
+        if RefDataForColorMap is not None:
+            MapParam = Map2Color(data, ColorMap, DataRef=RefDataForColorMap, ColorForEqualValues=ColorForEqualValues)
         else:
-            dataMapResult = Map2Color(data, ColorMap)
-        data = dataMapResult.dataColored
-        Min = dataMapResult.Min
-        Max = dataMapResult.Max
-        kw.update({
+            MapParam = Map2Color(data, ColorMap, ColorForEqualValues=ColorForEqualValues)
+        dataInColor = MapParam.dataInColor
+        Min = MapParam.Min
+        Max = MapParam.Max
+        Dict.update({
             "Min": Min,
             "Max": Max,
         })
-    else:
-        pass
 
-    if PixelHeightWidthRatio in ["FillAx"]:
-        PixelHeightWidthRatio = "auto"
-        axMatrix = ax
-    elif PixelHeightWidthRatio in ["Auto", "auto"]:
-        DataHeightWidthRatio = data.shape[0] / data.shape[1]
-        if DataHeightWidthRatio > 5.0:
-            # data.shape[0] * PixelHeight / (data.shape[1] * PixelWidth) = 5.0
-            # data.shape[0] / data.shape[1] * PixelHeightWidthRatio = 5.0
-            PixelHeightWidthRatio = 5.0 * data.shape[1] / data.shape[0]
-            axMatrix = GetSubAx(ax, 0.4, 0.0, 0.2, 1.0)
-        elif DataHeightWidthRatio < 0.2:
-            PixelHeightWidthRatio = 0.2 * data.shape[1] / data.shape[0]
-            axMatrix = GetSubAx(ax, 0.0, 0.4, 1.0, 0.2)
-        else:
-            PixelHeightWidthRatio = "equal"
-            if data.shape[0] > data.shape[1]:
-                WidthHeightRatio = 1.0 * data.shape[1] / data.shape[0]
-                axMatrix = GetSubAx(ax, 0.5 - WidthHeightRatio / 2.0, 0.0, WidthHeightRatio, 1.0)
-            else:
-                HeightWidthRatio = 1.0 * data.shape[0] / data.shape[1]
-                axMatrix = GetSubAx(ax, 0.0, 0.5 - HeightWidthRatio / 2.0, 1.0, HeightWidthRatio)
-    else:
-        axMatrix = ax
-
-    ax.axis("off")
+    #ax.axis("off")
     PlotMatrix(
-        axMatrix, data, True, ColorMap, XYRange, Coordinate=Coordinate, 
+        ax, data=data, dataInColor=dataInColor, ColorMap=ColorMap, XYRange=XYRange, Coordinate=Coordinate, 
         PixelHeightWidthRatio=PixelHeightWidthRatio, Ticks=Ticks,
         dataMask=dataMask, Save=False,
-        XLabel=XLabel, YLabel=YLabel, Title=Title, **kw
+        XLabel=XLabel, YLabel=YLabel, Title=Title, **Dict
     )
     
     # if ColorBarOrientation in ["Auto", "auto"]:
@@ -542,11 +541,15 @@ def PlotMatrixWithColorBar(
     #     else:
     #         ColorBarOrientation = "horizontal"
     
-    axColorBar = GetSubAx(ax, 1.10, 0.0, 0.1, 1.0)
+    aspect = GetAspectOfAx(ax)
+    axColorBar = GetSubAx(ax, 1.0 + 0.1 / aspect, 0.0, 0.1 / aspect, 1.0)
     ColorBarOrientation = "vertical"
+
+
     PlotColorBarInAx(
         axColorBar, ColorMap=ColorMap, Method=ColorMethod, Orientation=ColorBarOrientation, 
-        Location=ColorBarLocation, Title=ColorBarTitle, **kw
+        Location=ColorBarLocation, Title=ColorBarTitle,
+        **Dict
     )
 
     #SetTitleAndLabelForAx(ax, XLabel, YLabel, Title)
@@ -554,82 +557,161 @@ def PlotMatrixWithColorBar(
     SaveFigForPlt(Save, SavePath)
 
 def PlotMatrix(
-        ax, data, IsDataColored=None, 
-        ColorMap="jet", XYRange=None, Coordinate="Math", dataMask=None, PixelHeightWidthRatio="Auto",
-        XLabel=None, YLabel=None, Title=None, dataForColorMap=None, Ticks=None,
-        Save=False, SavePath=None, Format="svg", **kw
+        ax, data=None, dataInColor=None, 
+        ColorMap="jet", XYRange=None, Coordinate="X1Y0", dataMask=None, PixelHeightWidthRatio="Auto",
+        XLabel=None, YLabel=None, Title=None, Ticks=None, Origin=None,
+        Save=False, SavePath=None, Format="svg", **Dict
     ):
-    if IsDataColored is None:
-        DimensionNum = DLUtils.GetDimensionNum(data)
-        if DimensionNum==2: # [XNum, YNum]
-            IsDataColored = False
-        elif DimensionNum==3: # [XNum, YNum, (r, g, b) or (r, g, b, a)], already mapped to colors.
-            IsDataColored = True
+
+    if dataInColor is None:
+        # dataMask: [XNum, YNum]. Value: 0 if elemented is to be masked else 1.
+        MaskInfOrNaN = Dict.setdefault("MaskInfOrNaN", True)
+        if MaskInfOrNaN:
+            MaskInfOrNaN = InfOrNaNMask(data)
+
+        if dataMask is None:
+            dataMask = MaskInfOrNaN
         else:
-            raise Exception(DimensionNum)
-
-    if not IsDataColored:
-        dataMapResult = Map2Color(data, ColorMap, dataForMap=dataForColorMap)
-        data = dataMapResult.dataColored
-
-    if XYRange is not None:
-        extent = [XYRange.XMin, XYRange.XMax, XYRange.YMin, XYRange.YMax]
+            dataMask *= MaskInfOrNaN
+        MapParam = Map2Color(data, ColorMap)
+        dataInColor = MapParam.dataInColor
     else:
-        extent = [0.0, data.shape[1], data.shape[0], 0.0] # [Left, Right, Bottom, Top]
+        # masking out inf or nan will not be proceeded
+        pass
 
     if dataMask is not None:
-        InsideMask = dataMask.astype(np.float32)
-        OutsideMask = (~dataMask).astype(np.float32)
-        maskColor = kw.setdefault("maskColor", "Gray")
-        maskColor = ParseColorPlt(maskColor)
-        data = InsideMask[:, :, np.newaxis] * data + OutsideMask[:, :, np.newaxis] * maskColor
+        MaskIn = dataMask.astype(np.float32)
+        MaskOut = (~dataMask).astype(np.float32)
+        MaskColor = Dict.setdefault("maskColor", "Black")
+        MaskColor = ParseColor(MaskColor)
+        dataInColor = MaskIn[:, :, np.newaxis] * dataInColor + MaskOut[:, :, np.newaxis] * MaskColor
 
-    if Coordinate in ["Math"]:
-        data = data.transpose(1, 0, 2)
-        data = data[::-1, :, :]
-    elif Coordinate in ["Fig", "Picture"]:
-        pass
+    XAxisLocation, YAxisLocation = None, None
+    if Coordinate in ["X1Y0", "YFirst", "Y0X1"]:        
+        # Place the [0, 0] index of the data in the lower left
+        #origin = 'lower'
+        if Origin is None:
+            Origin = "UpperLeft"
+    elif Coordinate in ["X0Y1", "Y1X0", "XFirst"]:
+        # Place the [0, 0] index of the data in the upper left
+        if Origin is None:
+            Origin = "LowerLeft"
+    else:
+        raise Exception()
+    if Origin in ["UpperLeft"]:
+        XAxisLocation = Dict.setdefault("XAXisLocation", "top")
+        YAxisLocation = Dict.setdefault("YAXisLocation", "left")
+    else:
+        XAxisLocation = Dict.setdefault("XAXisLocation", "bottom")
+        YAxisLocation = Dict.setdefault("YAXisLocation", "left")
+
+    if XYRange is not None:
+        # The bounding box the image will fill.
+            # Also the area that will be rendered.
+        extent = [XYRange.XMin, XYRange.XMax, XYRange.YMin, XYRange.YMax] 
+    else:
+        if Coordinate in ["X1Y0", "YFirst", "Y0X1"]:
+            Left, Right, Bottom, Top = 0.0, data.shape[1], 0.0, data.shape[0]
+        else:
+            Left, Right, Bottom, Top = 0.0, data.shape[0], 0.0, data.shape[1]
+        if Origin in ["UpperLeft"]:
+            extent = [Left, Right, Top, Bottom] # [Left, Right, Bottom, Top]
+        else:
+            extent = [Left, Right, Bottom, Top] # [Left, Right, Bottom, Top]
+            # extent = [-0.5, data.shape[1] - 0.5, -0.5, data.shape[0] - 0.5]
+        PixelNumX = Right - Left
+        PixelNumY = Top - Bottom
 
     if PixelHeightWidthRatio in ["FillAx"]:
         PixelHeightWidthRatio = "auto"
+        axPlot = ax
     elif PixelHeightWidthRatio in ["Auto", "auto"]:
-        DataHeightWidthRatio = data.shape[0] / data.shape[1]
-        if DataHeightWidthRatio > 5.0:
-            # data.shape[0] * PixelHeight / (data.shape[1] * PixelWidth) = 5.0
-            # data.shape[0] / data.shape[1] * PixelHeightWidthRatio = 5.0
-            PixelHeightWidthRatio = 5.0 * data.shape[1] / data.shape[0]
-        elif DataHeightWidthRatio < 0.2:
-            PixelHeightWidthRatio = 0.2 * data.shape[1] / data.shape[0]
+        DataHeightWidthRatioMax = Dict.setdefault("DataHeightWidthRatioMax", 5.0)
+        DataHeightWidthRatioMin = Dict.setdefault("DataHeightWidthRatioMin", 0.2)
+        DataHeightWidthRatio = 1.0 * PixelNumY / PixelNumX
+        if DataHeightWidthRatio > DataHeightWidthRatioMax:
+            # PixelNumY * PixelHeight = PixelNumX * PixelWidth * 5.0
+            PixelHeightWidthRatio = 5.0 * PixelNumX / PixelNumY
+        elif DataHeightWidthRatio < DataHeightWidthRatioMin:
+            # PixelNumY * PixelHeight = PixelNumX * PixelWidth * 0.2
+            PixelHeightWidthRatio = 0.2 * PixelNumX / PixelNumY
         else:
-            PixelHeightWidthRatio = "equal"
-    elif PixelHeightWidthRatio in ["Equal"]:
-        PixelHeightWidthRatio = "equal"
+            if data.shape[1] > data.shape[0]:
+                HeightWidthRatio = 1.0 * data.shape[1] / data.shape[0]
+                #axPlot = GetSubAx(ax, 0.5 - WidthHeightRatio / 2.0, 0.0, WidthHeightRatio, 1.0)
+            else:
+                HeightWidthRatio = 1.0 * data.shape[1] / data.shape[0]
+                #axPlot = GetSubAx(ax, 0.0, 0.5 - HeightWidthRatio / 2.0, 1.0, HeightWidthRatio)
+            PixelHeightWidthRatio = 1.0 # all pixels fit into the ax range.
+        axPlot = ax
+    else:
+        axPlot = ax
 
     if Ticks is not None:
         if isinstance(Ticks, dict):
-            ax.set_xticks(Ticks["XTicks"])
-            ax.set_xticklabels(Ticks["XTicksStr"])
-            ax.set_yticks(Ticks["YTicks"])
-            ax.set_yticklabels(Ticks["YTicksStr"])
+            axPlot.set_xticks(Ticks["XTicks"])
+            axPlot.set_xticklabels(Ticks["XTicksStr"])
+            axPlot.set_yticks(Ticks["YTicks"])
+            axPlot.set_yticklabels(Ticks["YTicksStr"])
         elif Ticks in ["int", "Int"]:
-            SetXTicksInt(ax, extent[0], extent[1])
-            SetYTicksInt(ax, extent[2], extent[3])
+            XTicks, XTicksStr = GetXTicksInt(round(Left), round(Right - 1.0))
+            axPlot.set_xticks(_OffsetTicks(XTicks, 0.5), labels=XTicksStr)
+            YTicks, YTicksStr = GetYTicksInt(round(Bottom), round(Top - 1.0))
+            axPlot.set_yticks(_OffsetTicks(YTicks, 0.5), labels=YTicksStr)
         elif Ticks in ["float", "Float",]:
-            SetXTicksFloat(ax, extent[0], extent[1])
-            SetYTicksFloat(ax, extent[2], extent[3])
+            SetXTicksFloat(axPlot, round(Left), round(Right))
+            SetYTicksFloat(axPlot, round(Bottom), round(Top))
+        elif Ticks in ["AccumulateOnX"]:
+            ColNum = data.shape[1]
+            XTicks, XTicksStr = GetXTicksInt(round(Left), round(Right - 1.0))
+            for Index, XTick in enumerate(XTicks):
+                XTicksStr[Index] = f"+{XTick}"
+            axPlot.set_xticks(_OffsetTicks(XTicks, 0.5), labels=XTicksStr)
+            YTicks, YTicksStr = GetYTicksInt(round(Bottom), round(Top - 1.0))
+            for Index, YTick in enumerate(YTicks):
+                YTicksStr[Index] = str(YTick * ColNum)
+            axPlot.set_yticks(_OffsetTicks(YTicks, 0.5), labels=YTicksStr)
         else:
             raise Exception(Ticks)
-    Interpolation = kw.get("Interpolation")
+        pass
+    else:
+        # SetTicks = Dict.Get("SetTicks", True)
+        # if SetTicks is True:
+        pass
+    Interpolation = Dict.setdefault("Interpolation", 'none')
     if Format in ["svg"]:
         Interpolation = 'none'
-
-    ax.imshow(data, extent=extent, aspect=PixelHeightWidthRatio, interpolation=Interpolation)    
-    SetMatplotlibParamToDefault() # ticks may disappear after imshow.
-
-    SetAxisLocationForAx(ax, kw.get("XAxisLocation"), kw.get("YAxisLocation"))
-    SetTitleAndLabelForAx(ax, XLabel, YLabel, Title)
+    if Origin in ["UpperLeft"]:
+        # if imshow receives origin='lower', this flip will be required
+            # regardless of whether bottom > top or bottom < top in extent.
+        if Coordinate in ["X1Y0", "Y0X1", "Fig"]:
+            data = data[::-1, :] 
+            dataInColor = dataInColor[::-1, :, :]
+        elif Coordinate in ["X0Y1", "Y1X0"]:
+            data = data[:, ::-1] 
+            dataInColor = dataInColor[:, ::-1, :]
+        else:
+            raise Exception()
+        
+    # important note
+    # imshow interprets dimension 0 as Y dimension, and dimension 1 as X dimension.
+    if Coordinate in ["X1Y0", "Y0X1", "Fig"]:
+        _DataInColor = dataInColor
+    elif Coordinate in ["X0Y1", "Y1X0"]:
+        _DataInColor = dataInColor.transpose(1, 0, 2)
+    else:
+        raise Exception()
+    axPlot.imshow(_DataInColor, extent=extent, origin='lower', aspect=PixelHeightWidthRatio, interpolation=Interpolation)    
+    # SetMatplotlibParamToDefault() # ticks may disappear after imshow.
+    SetAxisLocationForAx(axPlot, XAxisLocation, YAxisLocation)
+    SetTitleAndLabelForAx(axPlot, XLabel, YLabel, Title)
     SaveFigForPlt(Save, SavePath)
-    return ax
+    return axPlot
+
+def _OffsetTicks(Ticks, Offset):
+    for Index, Tick in enumerate(Ticks):
+        Ticks[Index] += Offset
+    return Ticks
 
 def PlotActivityAndDistributionAlongTime(
         axes, activity, activityPlot, 
@@ -650,14 +732,15 @@ def PlotActivityAndDistributionAlongTime(
         ax1 = GetAx(axes, 0)
         ax2 = GetAx(axes, 1)
 
-    dataForColorMap, dataMask = MaskOutInfOrNaN(activityPlot)
+    dataInColor, dataMask = MaskOutInfOrNaN(activityPlot)
     PlotMatrixWithColorBar(
-        ax1, activityPlot, dataForColorMap=dataForColorMap, 
+        ax1, activityPlot, dataInColor=dataInColor, 
         dataMask=dataMask, maskColor="Gray",
         XAxisLocation="top", PixelHeightWidthRatio="Auto",
         XLabel="Time Index", YLabel="Activity", Title="Visualization",
         Coordinate="Fig", Ticks="Int"
     )
+
     PlotMeanAndStdCurve(
         ax2, Xs=range(TimeNum), 
         #Mean=DLUtils.math.ReplaceNaNOrInfWithZero(np.nanmean(activity, axis=(0, 2))),
@@ -674,69 +757,85 @@ def PlotActivityAndDistributionAlongTime(
     SaveFigForPlt(Save, SavePath)
     return
 
-def PlotWeight(Name, Data, SavePath):
+def PlotData1D(Name, Data, SavePath, **Dict):
+    XLabel = Dict.setdefault("XLabel", "Dimension 0")
+    YLabel = Dict.setdefault("YLabel", "Dimension 0")
+    fig, ax = DLUtils.plot.CreateFigurePlt(1)
+    if isinstance(Data, float) or isinstance(Data, int):
+        Data = np.asarray([Data])
+    # turn 1D weight to 2D shape
+    DimentionNum = DLUtils.GetDimensionNum(Data)
+    if DimentionNum == 1:
+        dataReshape, MaskReshape = DLUtils.Line2Square(Data)
+    else:
+        MaskReshape = None
+    PlotMatrix(
+        ax=ax, data=dataReshape, dataMask=MaskReshape, XLabel=XLabel, YLabel=YLabel, 
+        Coordinate="X1Y0", Ticks="AccumulateOnX", Origin="UpperLeft"
+    )
+    SaveFigForPlt(True, SavePath)
+
+def PlotData2D(Name, Data, SavePath, **Dict):
+    XLabel = Dict.setdefault("XLabel", "Dimension 0")
+    YLabel = Dict.setdefault("YLabel", "Dimension 1")
     if isinstance(Data, float):
         Data = DLUtils.ToNpArray([[Data]])
-
+    Data = DLUtils.ToNpArray(Data)
+    assert len(Data.shape) == 2
     fig, ax = CreateFigurePlt(1)
-
-    _weightForColorMap, maskInfOrNaN = MaskOutInfOrNaN(Data)
     PlotMatrix(
-        ax=ax, data=_weightForColorMap, dataMask=maskInfOrNaN
+        ax=ax, data=Data, XLabel=XLabel, YLabel=YLabel, Ticks="int", Coordinate="Y0X1", Origin="UpperLeft"
     )
-
     SaveFigForPlt(True, SavePath)
-    # if SaveDir is None:
-    #     SaveDir = DLUtils.GetMainSaveDir() + "weights/"
-    # cache = self.cache
-    # if hasattr(self, "PlotSelfWeight"):
-    #     self.PlotSelfWeight(SaveDir)
-    # if hasattr(cache, "Modules"):
-    #     for ModuleName, Module in DLUtils.ListAttrsAndValues(cache.Modules):
-    #         if hasattr(Module,"PlotWeight"):
-    #             Module.PlotWeight(SaveDir)
-
 def PlotWeightChange(axes=None, weights=None):
     if axes is None:
         fig, axes = DLUtils.plot.CreateFigurePlt(3)
     return
 
-def PlotWeightAndDistribution(axes=None, Data=None, Name=None, Save=True, SavePath=None):
+def PlotDataAndDistribution1D(Data=None, axes=None, Name=None, Save=True, SavePath=None, **Dict):
+    XLabel = Dict.setdefault("XLabel", "Dimension 0")
+    YLabel = Dict.setdefault("YLabel", "Dimension 0")
+    
+    if isinstance(Data, float) or isinstance(Data, int):
+        Data = np.asarray([Data])
+    Data = DLUtils.ToNpArray(Data)
+    DataReshape, MaskReshape = DLUtils.Line2Square(Data)
+    PlotDataAndDistribution2D(axes=axes, Data=DataReshape, Name=Name, Save=Save, SavePath=SavePath, 
+        dataMask=MaskReshape, Ticks="AccumulateOnX", **Dict
+    )
+
+def PlotDataAndDistribution2D(Data=None, axes=None, Name=None, Save=True, SavePath=None, **Dict):
+    XLabel = Dict.setdefault("XLabel", "Dimension 0")
+    YLabel = Dict.setdefault("YLabel", "Dimension 1")
+    dataMask = Dict.setdefault("dataMask", None)
+    Ticks = Dict.setdefault("Ticks", "Int")
     if axes is None:
         fig, axes = DLUtils.plot.CreateFigurePlt(2)
         ax1, ax2 = axes[0], axes[1]
     else:
         ax1 = GetAx(axes, 0)
         ax2 = GetAx(axes, 1)
-
     plt.suptitle(Name)
-    weight = DLUtils.ToNpArray(Data)
-    _weight = weight
 
-    # weightForColorMap, MaskInfOrNaN = MaskOutInfOrNaN(_weight)
-
-    # turn 1D weight to 2D shape
-    DimentionNum = DLUtils.GetDimensionNum(weight)
-    if DimentionNum == 1:
-        weight, MaskReshape = DLUtils.Line2Square(weight)
-        XLabel, YLabel = "Dimension 0", "Dimension 0"
+    if isinstance(Data, float):
+        Data = np.array([[Data]])
     else:
-        MaskReshape = None
-        XLabel, YLabel = "Dimension 1", "Dimension 0"
-
-    WeightForColorMap, MaskInfOrNaN = MaskOutInfOrNaN(weight)
-    
-    dataMask = Merge2Mask(MaskReshape, MaskInfOrNaN)
+        Data = DLUtils.ToNpArray(Data)
 
     DLUtils.plot.PlotMatrixWithColorBar(
-        ax1, weight, dataForColorMap=WeightForColorMap, dataMask=dataMask,
+        ax1, data=Data,
         XAxisLocation="top", PixelHeightWidthRatio="Auto",
-        Coordinate="Fig", Ticks="Int",
-        Title="Visualization", XLabel=XLabel, YLabel=YLabel
+        Coordinate="X1Y0", 
+        Title="Visualization",
+        **Dict
     )
     SaveFigForPlt(Save, SavePath)
 
 def Merge2Mask(mask1, mask2):
+    if mask1 is None:
+        if mask2 is None:
+            raise Exception()
+
     if mask1 is not None and mask2 is not None:
         return mask1 * mask2
     elif mask1 is None and mask2 is not None:
@@ -746,15 +845,16 @@ def Merge2Mask(mask1, mask2):
     else:
         return None
 
-def GetInfOrNaNMask(data):
+def InfOrNaNMask(data):
     mask = np.isfinite(data)
-    if round(np.sum(mask)) == mask.size:
-        mask = None
-    else:
-        return mask
+    # if round(np.sum(mask)) == mask.size:
+    #     mask = None
+    # else:
+    #     return mask
+    return mask
 
-def MaskOutInfOrNaN(data, ReturnNoneIfNoInfOrNaN=True):
-    mask = GetInfOrNaNMask(data)
+def MaskOutInfOrNaN(data):
+    mask = InfOrNaNMask(data)
     if mask is None:
         return data, None
     else:
@@ -934,7 +1034,7 @@ def GetAx(axes, Index=None, RowIndex=None, ColIndex=None):
             if ColIndex is None:
                 raise Exception()
             return axes[RowIndex, ColIndex]
-    elif RowNum==1 and ColNum==1:
+    elif RowNum == 1 and ColNum == 1:
         if not (RowIndex is None or RowIndex==0):
             raise Exception()
         if not (RowIndex is None or RowIndex==0):
@@ -951,7 +1051,7 @@ def PlotLineChart(ax=None, Xs=None, Ys=None,
     ):
     if ax is None:
         fig, ax = CreateFigurePlt()
-    Color = ParseColorPlt(Color)
+    Color = (Color)
     ax.plot(Xs, Ys, color=Color, linewidth=LineWidth, label=Label)
 
     if PlotTicks and XTicks in ["Float"]:
@@ -1114,48 +1214,58 @@ def ParseColorBarLocation(Location, Orientation):
         pass
     return Location
 
-def PlotColorBarInAx(ax, ColorMap="jet", Method="MinMax", Orientation="Vertical", **kw):
+def PlotColorBarInAx(ax, ColorMap="jet", Method="MinMax", Orientation="Vertical", **Dict):
     Orientation = DLUtils.ToLowerStr(Orientation)
+
+    ColorForEqualValues = Dict.setdefault("ColorForEqualValues", ParseColor("LightGray"))
     if Orientation not in ["horizontal", "vertical"]:
         raise Exception(Orientation)
 
     if Method in ["MinMax", "GivenMinMax"]:
-        Min, Max = kw["Min"], kw["Max"]
+        Min, Max = Dict["Min"], Dict["Max"]
         if Min == Max or not np.isfinite(Min) or not np.isfinite(Max):
+            ax.axis("off")
             ax.set_xlim([0.0, 1.0])
             ax.set_ylim([0.0, 1.0])
             ax.text(
-                0.5, 0.5,"All values are %s"%DLUtils.Float2StrDisplay(Min), 
-                rotation=-90.0 if Orientation=="vertical" else 0.0,
-                ha='center', va='center',
+                0.5, 0.5, f"All values equal to {DLUtils.Float2StrDisplay(Min)}", 
+                rotation=-90.0 if Orientation == "vertical" else 0.0,
+                ha='center', va='center' #, transform = ax.transAxes
             )
-            ax.axis("off")
+            ax.add_patch(Rectangle((0.0, 0.0), 1.0, 1.0, color=ColorForEqualValues))
+            ax.set_xticks([])
+            ax.set_yticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
+            ax.set_yticklabels([DLUtils.Float2StrDisplay(Min) for _ in range(6)])
+            SetAxisLocationForAx(ax, "bottom", "right")
+            ax.axis('on')
             return
+
+        # if Min == Max:
+        #     a = 1
+        ColorMap = ParseColorMapPlt(ColorMap)
+        Norm = mpl.colors.Normalize(vmin=Min, vmax=Max)
+
+        ColorBar = ax.figure.colorbar(
+            mpl.cm.ScalarMappable(norm=Norm, cmap=ColorMap),
+            cax=ax,
+            #ticks=Ticks,
+            orientation=Orientation
+        )
+
+        Title = Dict.get("Title")
+        if Title is not None:
+            ColorBar.set_label(Title, loc="center")
+
+        Ticks = Dict.setdefault("Ticks", "auto")
+        SetColorBarTicks(ColorBar, Ticks, Orientation, Min=Min, Max=Max)
+
+        if Orientation in ["horizontal"]: # Avoid Label overlapping
+            plt.setp(
+                ColorBar.ax.get_xticklabels(), rotation=45, ha="right",
+                rotation_mode="anchor"
+            )
     else:
         raise Exception()
-
-    ColorMap = ParseColorMapPlt(ColorMap)
-    Norm = mpl.colors.Normalize(vmin=Min, vmax=Max)
-
-    ColorBar = ax.figure.colorbar(
-        mpl.cm.ScalarMappable(norm=Norm, cmap=ColorMap),
-        cax=ax,
-        #ticks=Ticks,
-        orientation=Orientation
-    )
-
-    Title = kw.get("Title")
-    if Title is not None:
-        ColorBar.set_label(Title, loc="center")
-
-    Ticks = kw.setdefault("Ticks", "auto")
-    SetColorBarTicks(ColorBar, Ticks, Orientation, Min=Min, Max=Max)
-
-    if Orientation in ["horizontal"]: # Avoid Label overlapping
-        plt.setp(
-            ColorBar.ax.get_xticklabels(), rotation=45, ha="right",
-            rotation_mode="anchor"
-        )
 
 def CalculateTickIntervalFloat(Min, Max):
     Range = Max - Min
@@ -1263,7 +1373,7 @@ def CalculateTicksFloat(Method="Auto", Min=None, Max=None, **kw):
         TicksStr = list(map(lambda tick:'%.2e'%tick, Ticks))
     return Ticks, TicksStr
 
-def CalculateTicksInt(Method="Auto", Min=None, Max=None, **kw):
+def CalculateTicksInt(Method="Auto", Min=None, Max=None, **Dict):
     assert isinstance(Min, int) and isinstance(Max, int)
     if Method in ["Auto", "auto"]:
         Range = Max - Min
@@ -1283,26 +1393,27 @@ def CalculateTicksInt(Method="Auto", Min=None, Max=None, **kw):
                 Ticks.append(Tick)
         Ticks.append(Max)
     elif Method in ["Linear"]:
-        Num = kw["Num"]
+        Num = Dict["Num"]
         Ticks = np.rint(np.linspace(Min, Max, num=Num))
     else:
         raise Exception()
 
     TicksStr = list(map(lambda tick:str(int(tick)), Ticks))
-    Ticks = list(map(lambda tick:tick - 0.5, Ticks))
+    Offset = Dict.setdefault("Offset", 0.0)
+    if Offset != 0.0:
+        Ticks = list(map(lambda tick:tick + Offset, Ticks))
     return Ticks, TicksStr
-
 
 def SetColorBarTicks(ColorBar, Ticks, Orientation, Min=None, Max=None, **kw):
     if not np.isfinite(Min) or not np.isfinite(Max):
         Min, Max = -5.0, 5.0
-    if Min==Max:
-        if Min == 0.0:
-            Min, Max = -1.0, 1.0
-        elif Min > 0.0:
-            Min, Max = 0.5 * Min, 1.5 * Max
-        else:  
-            Min, Max = - 0.5 * Min, - 1.5 * Max
+    # if Min == Max:
+    #     if Min == 0.0:
+    #         Min, Max = -1.0, 1.0
+    #     elif Min > 0.0:
+    #         Min, Max = 0.5 * Min, 1.5 * Max
+    #     else:  
+    #         Min, Max = - 0.5 * Min, - 1.5 * Max
     
     if Ticks in ["Auto", "auto"]:
         #Ticks = np.linspace(Min, Max, num=5)
@@ -1318,6 +1429,26 @@ def SetColorBarTicks(ColorBar, Ticks, Orientation, Min=None, Max=None, **kw):
         pass
     else:
         raise Exception(Ticks)
+
+def GetColorBarTicks(Ticks, Orientation, Min=None, Max=None, **kw):
+    if not np.isfinite(Min) or not np.isfinite(Max):
+        Min, Max = -5.0, 5.0
+    if Min == Max:
+        if Min == 0.0:
+            Min, Max = -1.0, 1.0
+        elif Min > 0.0:
+            Min, Max = 0.5 * Min, 1.5 * Max
+        else:  
+            Min, Max = - 0.5 * Min, - 1.5 * Max
+    
+    if Ticks in ["Auto", "auto"]:
+        Ticks, TicksStr = CalculateTicksFloat("Auto", Min, Max)
+        return Ticks, TicksStr
+    elif Ticks is None: # No Ticks
+        pass
+    else:
+        raise Exception(Ticks)
+
 
 def SetXTicksFloatFromData(ax, data, **kw):
     if isinstance(data, np.ndarray):
@@ -1360,7 +1491,7 @@ def SetYTicksFloatFromData(ax, data, **kw):
 def SetXTicksFloat(ax, Min, Max, Method="Auto", Rotate45=True):
     if not np.isfinite(Min) or not np.isfinite(Max):
         Min, Max = -5.0, 5.0
-    if Min==Max:
+    if Min == Max:
         if Min == 0.0:
             Min, Max = -1.0, 1.0
         elif Min > 0.0:
@@ -1393,22 +1524,36 @@ def SetYTicksFloat(ax, Min, Max, Method="Auto"):
     ax.set_yticklabels(TicksStr)
     return Ticks, TicksStr
 
-def SetXTicksInt(ax, Min, Max, Method="Auto"):
+def SetXTicksInt(ax, Min, Max, Method="Auto", **Dict):
     if Min > Max:
         Min, Max = Max, Min
-    Min, Max = round(Min) + 1, round(Max)
-    Ticks, TicksStr = CalculateTicksInt(Method, Min, Max)
-    ax.set_xticks(Ticks)
-    ax.set_xticklabels(TicksStr)
+    # Min, Max = round(Min) + 1, round(Max)
+    Ticks, TicksStr = CalculateTicksInt(Method, Min, Max, **Dict)
+    ax.set_xticks(Ticks, labels=TicksStr)
+    #ax.set_xticklabels(TicksStr)
     return Ticks, TicksStr
 
-def SetYTicksInt(ax, Min, Max, Method="Auto"):
+def GetXTicksInt(Min, Max, Method="Auto", **Dict):
     if Min > Max:
         Min, Max = Max, Min
-    Min, Max = round(Min) + 1, round(Max)
-    Ticks, TicksStr = CalculateTicksInt(Method, Min, Max)
-    ax.set_yticks(Ticks)
-    ax.set_yticklabels(TicksStr)
+    #Min, Max = round(Min) + 1, round(Max)
+    Ticks, TicksStr = CalculateTicksInt(Method, Min, Max, **Dict)
+    return Ticks, TicksStr
+
+def SetYTicksInt(ax, Min, Max, Method="Auto", **Dict):
+    if Min > Max:
+        Min, Max = Max, Min
+    #Min, Max = round(Min) + 1, round(Max)
+    Ticks, TicksStr = CalculateTicksInt(Method, Min, Max, **Dict)
+    ax.set_yticks(Ticks, labels=TicksStr)
+    #ax.set_yticklabels(TicksStr)
+    return Ticks, TicksStr
+
+def GetYTicksInt(Min, Max, Method="Auto", **Dict):
+    if Min > Max:
+        Min, Max = Max, Min
+    #Min, Max = round(Min) + 1, round(Max)
+    Ticks, TicksStr = CalculateTicksInt(Method, Min, Max, **Dict)
     return Ticks, TicksStr
 
 import imageio
@@ -1530,15 +1675,13 @@ def SetYRangeMinMax(ax, Min, Max, Pad=0.05):
     Right = Max + Pad * Range
     ax.set_ylim(Left, Right)
 
-def SetMatplotlibParamToDefault():
-    mpl.rcParams.update(mpl.rcParamsDefault)
 
 def SetAxisLocationForAx(ax, XAxisLocation=None, YAxisLocation=None):
     if XAxisLocation is not None:
         if XAxisLocation in ["top"]:
             ax.xaxis.tick_top()
         elif XAxisLocation in ["bottom"]:
-            pass
+            ax.xaxis.tick_bottom()
         else:
             raise Exception(XAxisLocation)
     if YAxisLocation is not None:
@@ -1600,7 +1743,7 @@ def PlotMeanAndStdCurve(
 
     Mean = DLUtils.ToNpArray(Mean)
     Std = DLUtils.ToNpArray(Std)
-    Color = ParseColorPlt(Color)
+    Color = (Color)
     Y1 = Mean - Std
     Y2 = Mean + Std
 
@@ -1631,7 +1774,7 @@ def SetXAxisLocationForAx(ax, XAXisLocation):
 # def PlotTrajectory(ax, XYs, Color="Black"):
 #     # XYs: [StepNum, (x, y)]
 #     StepNum = XYs.shape[0] - 1
-#     Color=ParseColorPlt(Color)
+#     Color=(Color)
 #     for StepIndex in range(StepNum):
 #         DLUtils.plot.PlotArrowFromVertexPairsPlt(
 #             ax, XYs[StepIndex, :], XYs[StepIndex+1, :],
@@ -1675,3 +1818,24 @@ def PlotExampleImage(Images, PlotNum=10, SaveDir=None, SaveName=None):
         Image = Images[ImageIndex]
         Image = Norm2Image(Image)
         NpArray2ImageFile(Image, SaveDir + SaveName + "-No.%d.png"%ImageIndex)
+
+# https://stackoverflow.com/questions/41597177/get-aspect-ratio-of-axes
+# answered on Feb 2, 2017 at 23:10 by Mad Physicist
+# till 2022.11 matplotlib does not have a method for this function
+from operator import sub
+def GetAspectOfAx(ax, Positive=True):
+    # Total figure size
+    figW, figH = ax.get_figure().get_size_inches()
+    # Axis size on figure
+    _, _, w, h = ax.get_position().bounds
+    # Ratio of display units
+    disp_ratio = (figH * h) / (figW * w)
+    # Ratio of data units
+    # Negative over negative because of the order of subtraction
+    data_ratio = sub(*ax.get_ylim()) / sub(*ax.get_xlim())
+    aspect = disp_ratio / data_ratio
+
+    if Positive:
+        if aspect < 0.0:
+            aspect = - aspect
+    return aspect

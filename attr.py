@@ -94,7 +94,7 @@ def SetAttr(Obj, Value):
         Obj.FromPyObj(Value)
         return
     elif isinstance(Value, dict):
-        Obj.FromDict(Value)
+        Obj.from_dict(Value)
         return
     if hasattr(Obj, "__value__"): # and Obj is not isinstance of DLUtils.PyObj
         Obj.__value__ = Value
@@ -185,7 +185,7 @@ def EnsureAttrs(Obj, attrs=[], *args, **kw):
 #                                 if hasattr(value, "__value__"):
 #                                     value.__value__ = default
 #                                 else:
-#                                     value.FromDict({
+#                                     value.from_dict({
 #                                         "__value__": default
 #                                     })                                   
 #                             else:

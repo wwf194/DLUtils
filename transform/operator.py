@@ -39,9 +39,9 @@ def Add(*Args):
     return sum(Args)
 ModuleList.append(["Add"])
 
-def FilterFromDict(Dict, Name):
+def Filterfrom_dict(Dict, Name):
     return Dict[Name]
-ModuleList.append(["FilterFromDict"])
+ModuleList.append(["Filterfrom_dict"])
 
 def Split(Args):
     if isinstance(Args, list):
