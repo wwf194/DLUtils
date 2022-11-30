@@ -224,15 +224,17 @@ def CalculatePearsonCoefficientMatrix(dataA, dataB):
     CorrelationMatrix = DLUtils.TorchTensor2NpArray(CorrelationMatrixGPU)
     return CorrelationMatrix
 
-def CalculateBinnedMeanStd(
-        Xs, Ys, BinNum=30, BinMethod="Overlap", ReturnType="PyObj",
-        Range="MinMax", **Dict
-    ):
+def CalculateBinnedMeanStd(Xs, Ys=None, BinNum=None, BinMethod="Overlap", Range="MinMax", **Dict):
+    if Ys is None:
+        Ys = Xs
     if Range in ["MinMax"]:
         XMin, XMax = np.nanmin(Xs), np.nanmax(Xs)
     else:
         raise Exception(Range)
-
+    
+    if BinNum is None:
+        BinNum = max(round(len(Xs) / 100.0), 5)
+    
     if BinMethod in ["Overlap"]:
         BinNumTotal = 2 * BinNum - 1
         BinCenters = np.linspace(XMin, XMax, BinNumTotal + 2)[1:-1]
@@ -270,13 +272,13 @@ def CalculateBinnedMeanStd(
         BinStds.append(BinStds1[BinNum - 1])
         BinCount.append(BinCount1[BinNum - 1])
 
-        BinStats = {
-            "Mean": DLUtils.List2NpArray(BinMeans),
-            "Std": DLUtils.List2NpArray(BinStds),
-            "Num": DLUtils.List2NpArray(BinCount),
-            "BinCenters": BinCenters,
-        }
-        return DLUtils.Dict2GivenType(BinStats, ReturnType)
+        BinStats = DLUtils.param({
+            "YMean": DLUtils.List2NpArray(BinMeans),
+            "YStd": DLUtils.List2NpArray(BinStds),
+            "YNum": DLUtils.List2NpArray(BinCount),
+            "Xs": BinCenters,
+        })
+        return BinStats
     else:
         raise Exception(BinMethod)
 

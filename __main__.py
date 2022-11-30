@@ -13,11 +13,6 @@ parser.add_argument(
     )
 args = parser.parse_args() # parser输入的命令行参数
 
-from DLUtils import *
-if __name__=="__main__":
-    obj = utils.EmptyObj()
-    print(obj.__dict__)
-
 def TestJsonUtils():
     FileName = "test/JsonTestFile.jsonc"
     FilePath = DLUtils.file.FolderPathOfFile(__file__) + FileName
@@ -25,10 +20,10 @@ def TestJsonUtils():
     # Obj = DLUtils.param.JsonStyleObj2Param(JsonDict)
     # Str = DLUtils.param.Param2JsonStr(Obj)
     # DLUtils.Str2File(Str, DLUtils.file.AddSuffixToFileWithFormat(FilePath, " - Reproduce"))
-    Param = DLUtils.param.JsonFile2Param(FilePath)
+    Param = DLUtils.utils.JsonFile2Param(FilePath)
     Param[0].A.B.I.J.K = 5
     print(Param.I.J.K)
-    Str = DLUtils.param.Param2JsonStr(Param)
+    Str = DLUtils.utils.Param2JsonStr(Param)
     DLUtils.Str2File(Str, DLUtils.file.AddSuffixToFileWithFormat(FilePath, " - Reproduce"))
     return
 

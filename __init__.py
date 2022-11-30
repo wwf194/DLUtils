@@ -5,8 +5,9 @@ SystemType = GetSystemType()
 from .utils.json import IsJsonObj, PyObj, EmptyPyObj, IsPyObj, IsDictLikePyObj, IsListLikePyObj, CheckIsLegalPyName
 import DLUtils.utils.json as json
 
-from .utils.param import Param, ToParam
-import DLUtils.utils.param as param
+from .utils import _1DTo2D
+from .utils.utils import Param, ToParam, param
+#import utils.utils as utils
 
 import DLUtils.attr as attrs
 import DLUtils.parse as parse
@@ -19,6 +20,7 @@ import DLUtils.transform as transform
 import DLUtils.train as train # module -> train
 import DLUtils.router as router
 import DLUtils.functions as functions
+import DLUtils.utils.math as math
 
 import DLUtils.optimize as optimize # module -> optimize
 import DLUtils.dataset as dataset
@@ -44,9 +46,3 @@ from DLUtils.NeuralNetwork.utils import \
     SampleFromUniformDistribution
 
 from DLUtils.parse import ParseSavePath
-
-def NewNetwork(Name, Param=None):
-    if Name in ["Transformer"]:
-        BuildTransformer()
-    else:
-        raise Exception(f"No such network: {Name}")

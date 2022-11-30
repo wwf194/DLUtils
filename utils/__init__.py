@@ -22,8 +22,9 @@ from matplotlib import pyplot as plt
 from DLUtils.attr import *
 from DLUtils.file import *
 
-import DLUtils.utils.param as param
+import utils.utils as utils
 import DLUtils.utils.json as json
+import DLUtils.utils.math as math
 
 import argparse
 import traceback
@@ -34,7 +35,7 @@ GenerateEmptyObj = EmptyObj
 
 def JsonFile2ParamObj(FilePath):
     JsonDict = JsonFile2JsonDict(FilePath)
-    Obj = param.JsonStyleObj2Param(JsonDict)
+    Obj = utils.JsonStyleObj2Param(JsonDict)
     return Obj
 
 def ParseCmdArgs():
@@ -650,7 +651,7 @@ def ToTorchTensorOrNum(data):
     else:
         return ToTorchTensor(data)
 
-def Line2Square(data):
+def _1DTo2D(data):
     # turn 1-D data to 2-D data for visualization
     DimensionNum = DLUtils.GetDimensionNum(data)
     assert DimensionNum == 1, DimensionNum

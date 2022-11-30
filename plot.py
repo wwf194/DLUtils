@@ -107,7 +107,6 @@ def print_notes(notes, y_line, y_interv):
         else:
             print("invalid notes type")
 
-
 def ParsePointTypePlt(Type):
     if isinstance(Type, str):
         if Type in ["Circ", "Circle", "EmptyCircle"]:
@@ -181,19 +180,28 @@ def SetTicksAndRangeForAx(ax, Xs, Ys, XRange, YRange):
     SetXTicksAndRange(ax, Xs, XRange)
     SetYTicksAndRange(ax, Ys, YRange)
 
-def SetXTicksAndRange(ax, Xs, Range=None):
+def SetXTicksAndRange(ax, Xs, Range=None, **Dict):
+    XMin = Dict.setdefault("XMin", None)
+    XMax = Dict.setdefault("XMax", None)
     if Range is None:
-        XMin, XMax = np.nanmin(Xs), np.nanmax(Xs)
+        if XMin is None:
+            XMin = np.nanmin(Xs)
+        if XMax is None:
+            XMax = np.nanmax(Xs)
     else:
         XMin, XMax = Range[0], Range[1]
     SetXTicksFloat(ax, XMin, XMax)
     SetXRangeMinMax(ax, XMin, XMax)
 
-def SetYTicksAndRange(ax, Ys, Range=None):
+def SetYTicksAndRange(ax, Ys, Range=None, **Dict):
+    YMin = Dict.setdefault("YMin", None)
+    YMax = Dict.setdefault("YMax", None)
     if Range is None:
-        YMin, YMax = np.nanmin(Ys), np.nanmax(Ys)    
-    else:
-        YMin, YMax = Range[0], Range[1]
+        if YMin is None:
+            YMin = np.nanmin(Ys)
+        if YMax is None:
+            YMax = np.nanmax(Ys)  
+        #YMin, YMax = Range[0], Range[1]
     SetYRangeMinMax(ax, YMin, YMax)
     SetYTicksFloat(ax, YMin, YMax)
 
@@ -526,9 +534,8 @@ def PlotMatrixWithColorBar(
             "Min": Min,
             "Max": Max,
         })
-
     #ax.axis("off")
-    PlotMatrix(
+    STATE0 = PlotMatrix(
         ax, data=data, dataInColor=dataInColor, ColorMap=ColorMap, XYRange=XYRange, Coordinate=Coordinate, 
         PixelHeightWidthRatio=PixelHeightWidthRatio, Ticks=Ticks,
         dataMask=dataMask, Save=False,
@@ -545,8 +552,7 @@ def PlotMatrixWithColorBar(
     axColorBar = GetSubAx(ax, 1.0 + 0.1 / aspect, 0.0, 0.1 / aspect, 1.0)
     ColorBarOrientation = "vertical"
 
-
-    PlotColorBarInAx(
+    STATE1 = PlotColorBarInAx(
         axColorBar, ColorMap=ColorMap, Method=ColorMethod, Orientation=ColorBarOrientation, 
         Location=ColorBarLocation, Title=ColorBarTitle,
         **Dict
@@ -555,6 +561,8 @@ def PlotMatrixWithColorBar(
     #SetTitleAndLabelForAx(ax, XLabel, YLabel, Title)
     plt.tight_layout()
     SaveFigForPlt(Save, SavePath)
+    return STATE0 | STATE1
+
 
 def PlotMatrix(
         ax, data=None, dataInColor=None, 
@@ -706,7 +714,7 @@ def PlotMatrix(
     SetAxisLocationForAx(axPlot, XAxisLocation, YAxisLocation)
     SetTitleAndLabelForAx(axPlot, XLabel, YLabel, Title)
     SaveFigForPlt(Save, SavePath)
-    return axPlot
+    return STATE.NORMAL
 
 def _OffsetTicks(Ticks, Offset):
     for Index, Tick in enumerate(Ticks):
@@ -766,7 +774,7 @@ def PlotData1D(Name, Data, SavePath, **Dict):
     # turn 1D weight to 2D shape
     DimentionNum = DLUtils.GetDimensionNum(Data)
     if DimentionNum == 1:
-        dataReshape, MaskReshape = DLUtils.Line2Square(Data)
+        dataReshape, MaskReshape = DLUtils._1DTo2D(Data)
     else:
         MaskReshape = None
     PlotMatrix(
@@ -799,16 +807,26 @@ def PlotDataAndDistribution1D(Data=None, axes=None, Name=None, Save=True, SavePa
     if isinstance(Data, float) or isinstance(Data, int):
         Data = np.asarray([Data])
     Data = DLUtils.ToNpArray(Data)
-    DataReshape, MaskReshape = DLUtils.Line2Square(Data)
+    DataReshape, MaskReshape = DLUtils._1DTo2D(Data)
     PlotDataAndDistribution2D(axes=axes, Data=DataReshape, Name=Name, Save=Save, SavePath=SavePath, 
         dataMask=MaskReshape, Ticks="AccumulateOnX", **Dict
     )
 
+
+from enum import Flag, auto
+class STATE(Flag):
+    NORMAL = 0
+    EQUAL_MIN_MAX = auto()
+    BLUE = auto()
+
 def PlotDataAndDistribution2D(Data=None, axes=None, Name=None, Save=True, SavePath=None, **Dict):
     XLabel = Dict.setdefault("XLabel", "Dimension 0")
     YLabel = Dict.setdefault("YLabel", "Dimension 1")
+    XLabelDistribution = Dict.setdefault("XLabelDistribution", "Data Value")
+    YLabelDistribution = Dict.setdefault("YLabelDistribution", "Data Num")
     dataMask = Dict.setdefault("dataMask", None)
     Ticks = Dict.setdefault("Ticks", "Int")
+    ColorForEqualValues = Dict.setdefault("ColorForEqualValues", ParseColor("LightGray"))
     if axes is None:
         fig, axes = DLUtils.plot.CreateFigurePlt(2)
         ax1, ax2 = axes[0], axes[1]
@@ -822,13 +840,32 @@ def PlotDataAndDistribution2D(Data=None, axes=None, Name=None, Save=True, SavePa
     else:
         Data = DLUtils.ToNpArray(Data)
 
-    DLUtils.plot.PlotMatrixWithColorBar(
+    State = DLUtils.plot.PlotMatrixWithColorBar(
         ax1, data=Data,
         XAxisLocation="top", PixelHeightWidthRatio="Auto",
         Coordinate="X1Y0", 
         Title="Visualization",
         **Dict
     )
+    if STATE.EQUAL_MIN_MAX in State:
+        ax2.set_xlim([0.0, 1.0])
+        ax2.set_ylim([0.0, 1.0])
+        ax2.text(
+            0.5, 0.5, f"All values equal to each other",
+            ha='center', va='center' #, transform = ax.transAxes
+        )
+        ax2.add_patch(Rectangle((0.0, 0.0), 1.0, 1.0, color=ColorForEqualValues))
+        ax2.axis('on')
+    else:
+        DataFlat = DLUtils.FlattenNpArray(Data)
+        BinStat = DLUtils.math.CalculateBinnedMeanStd(DataFlat)
+
+        DictDistribution = dict(Dict)
+
+        Dict["XLabel"] = Dict.pop("XLabelDistribution")
+        Dict["YLabel"] = Dict.pop("YLabelDistribution")
+        Dict["YMin"] = 0
+        PlotLineChart(ax2, BinStat.Xs, BinStat.YNum, **Dict)
     SaveFigForPlt(Save, SavePath)
 
 def Merge2Mask(mask1, mask2):
@@ -1044,11 +1081,14 @@ def GetAx(axes, Index=None, RowIndex=None, ColIndex=None):
         raise Exception()
 
 def PlotLineChart(ax=None, Xs=None, Ys=None,
-        XLabel=None, YLabel=None, Title="Undefined", Label=None,
+        Title="Undefined", Label=None,
         Color="Black", LineWidth=2.0, 
         PlotTicks=True, XTicks=None, YTicks=None,
-        Save=False, SavePath=None, **kw
+        Save=False, SavePath=None, **Dict
     ):
+    XLabel = Dict.setdefault("XLabel", "X")
+    YLabel = Dict.setdefault("YLabel", "Y")
+    
     if ax is None:
         fig, ax = CreateFigurePlt()
     Color = (Color)
@@ -1058,6 +1098,9 @@ def PlotLineChart(ax=None, Xs=None, Ys=None,
         SetXTicksFloat(ax, np.nanmin(Xs), np.nanmax(Xs))
     if PlotTicks and YTicks in ["Float"]:
         SetYTicksFloat(ax, np.nanmin(Ys), np.nanmax(Ys))
+
+    SetXTicksAndRange(ax, Xs, **Dict)
+    SetYTicksAndRange(ax, Ys, **Dict)
 
     SetXYLabelForAx(ax, XLabel, YLabel)
     SetTitleForAx(ax, Title)
@@ -1224,7 +1267,6 @@ def PlotColorBarInAx(ax, ColorMap="jet", Method="MinMax", Orientation="Vertical"
     if Method in ["MinMax", "GivenMinMax"]:
         Min, Max = Dict["Min"], Dict["Max"]
         if Min == Max or not np.isfinite(Min) or not np.isfinite(Max):
-            ax.axis("off")
             ax.set_xlim([0.0, 1.0])
             ax.set_ylim([0.0, 1.0])
             ax.text(
@@ -1238,7 +1280,7 @@ def PlotColorBarInAx(ax, ColorMap="jet", Method="MinMax", Orientation="Vertical"
             ax.set_yticklabels([DLUtils.Float2StrDisplay(Min) for _ in range(6)])
             SetAxisLocationForAx(ax, "bottom", "right")
             ax.axis('on')
-            return
+            return STATE.EQUAL_MIN_MAX
 
         # if Min == Max:
         #     a = 1
@@ -1264,6 +1306,7 @@ def PlotColorBarInAx(ax, ColorMap="jet", Method="MinMax", Orientation="Vertical"
                 ColorBar.ax.get_xticklabels(), rotation=45, ha="right",
                 rotation_mode="anchor"
             )
+        return STATE.NORMAL
     else:
         raise Exception()
 

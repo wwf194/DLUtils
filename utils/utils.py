@@ -52,8 +52,11 @@ class param():
                 self.from_dict(_DICT)
             else:
                 raise Exception()   
-
     def from_dict(self, Dict):
+        self.SetAttr("_SUBTYPE", NODE_SUBTYPE.DICT)
+        self.SetAttr("_DICT", {})
+        self.absorb_dict(Dict)
+    def absorb_dict(self, Dict):
         # assert isinstance(_DICT, dict)
         _DICT = self.GetAttr("_DICT")
         for key, item in Dict.items():
@@ -63,7 +66,6 @@ class param():
                 _DICT[key] = Dict(_SUBTYPE=NODE_SUBTYPE.LIST).from_list(item)
             else:
                 _DICT[key] = item
-    
     def from_list(self, List):
         _LIST = self.GetAttr("_LIST")
         for index, item in enumerate(List):
@@ -91,6 +93,11 @@ class param():
         self.__dict__.pop(Key)
     def hasattr(self, Key):
         return Key in self._DICT
+    def addattr(self, Key, Value):
+        self._DICT[Key] = Value
+    def setattr(self, Key, Value):
+        self.GetAttr("_DICT")[Key] = Value
+        return self
     def getattr(self, Key):
         return self._DICT[Key]
     def delattr(self, Key):
@@ -107,10 +114,9 @@ class param():
         self._DICT[Key] = Value
     def __getattr__(self, Key):
         return self._DICT[Key]
-    def __setattr__(self, Key, Value):
-        self._DICT[Key] = Value
     def __delattr__(self, Name):
         self._DICT.pop(Name)
+        return self
     # For Serialization
     def __getstate__(self):
         return self.__dict__
@@ -262,8 +268,7 @@ class Param(param):
         if self.Get("_IS_FALSE") is True:
             self.SubstantiateAlongSpine(NODE_TYPE.SPINE, NODE_SUBTYPE.DICT)
         return self
-    def addattr(self, Key, Value):
-        self._DICT[Key] = Value
+
 
 
 def _NewNode(
