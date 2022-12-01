@@ -20,3 +20,10 @@ def LogAccuracyForSingleClassPrediction(ClassIndexPredicted, ClassIndexTruth, lo
         }
     )
 
+class CrossEntropy(DLUtils.NN.AbstractModule):
+    def __init__(self):
+        super().__init__()
+        return
+    def Receive(self, Input, Output):
+        
+        return
