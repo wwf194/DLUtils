@@ -6,8 +6,7 @@ from .utils.json import IsJsonObj, PyObj, EmptyPyObj, IsPyObj, IsDictLikePyObj, 
 import DLUtils.utils.json as json
 
 from .utils import _1DTo2D
-from .utils.utils import Param, ToParam, param
-#import utils.utils as utils
+from .utils._param import Param, ToParam, param
 
 import DLUtils.attr as attrs
 import DLUtils.parse as parse
@@ -24,19 +23,20 @@ import DLUtils.utils.math as math
 
 import DLUtils.optimize as optimize # module -> optimize
 import DLUtils.dataset as dataset
-import DLUtils.loss as loss
+import DLUtils.module.loss as loss
 import DLUtils.evaluate as evaluate
 import DLUtils.system as system
 import DLUtils.analysis as analysis
 
 import DLUtils.module.NeuralNetwork as NN
+import DLUtils.module.norm as norm
 
 from .utils import *
 
 from .functions import *
 from .log import *
 
-from DLUtils.NeuralNetwork.utils import \
+from DLUtils.data.utils import \
     SampleFromKaimingNormal, \
     SampleFromKaimingUniform, \
     SampleFromXaiverNormal, \

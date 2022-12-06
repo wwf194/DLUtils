@@ -34,7 +34,7 @@ class SingleLayer(AbstractTransformWithTensor):
                 data.Bias = (torch.zeros(param.Bias.Size, requires_grad=True))
             else:
                 data.Bias = DLUtils.ToTorchTensor(data.Bias)
-            cache.Tensors.append([data, "Bias", data.Bias])
+            cache.TrainableParam.append([data, "Bias", data.Bias])
         else:
             data.Bias = 0.0
         self.GetBias = lambda:data.Bias
@@ -72,7 +72,7 @@ class SingleLayer(AbstractTransformWithTensor):
         else:
             data.Weight = DLUtils.ToTorchTensor(data.Weight)
 
-        cache.Tensors.append([data, "Weight", data.Weight])
+        cache.TrainableParam.append([data, "Weight", data.Weight])
         GetWeightFunction = [lambda :data.Weight]
 
         if param.IsExciInhi:
@@ -84,7 +84,7 @@ class SingleLayer(AbstractTransformWithTensor):
             GetWeightFunction.append(cache.WeightConstraintMethod)
             ExciInhiMask = DLUtils.transform.CreateExcitatoryInhibitoryMask(*param.Weight.Size, param.Weight.Excitatory.Num, param.Weight.Inhibitory.Num)
             cache.ExciInhiMask = DLUtils.NpArray2Tensor(ExciInhiMask)
-            cache.Tensors.append([cache, "ExciInhiMask", cache.ExciInhiMask])
+            cache.TrainableParam.append([cache, "ExciInhiMask", cache.ExciInhiMask])
             GetWeightFunction.append(lambda Weight:Weight * cache.ExciInhiMask)
         
         # Ban self-connection if required.
@@ -97,7 +97,7 @@ class SingleLayer(AbstractTransformWithTensor):
                 raise Exception("NoSelfConnection requires Weight to be square matrix.")
             SelfConnectionMask = DLUtils.transform.CreateSelfConnectionMask(param.Weight.Size[0])
             cache.SelfConnectionMask = DLUtils.NpArray2Tensor(SelfConnectionMask)
-            cache.Tensors.append([cache, "SelfConnectionMask", cache.SelfConnectionMask])
+            cache.TrainableParam.append([cache, "SelfConnectionMask", cache.SelfConnectionMask])
             GetWeightFunction.append(lambda Weight:Weight * cache.SelfConnectionMask)
         self.GetWeight = DLUtils.StackFunction(GetWeightFunction, InputNum=0)
         return

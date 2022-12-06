@@ -58,7 +58,7 @@ def ProcessOriginalDataDict(Dict, FileNameList):
     SetAttrs(DataObj, "Images.Num", value=ImageNum)
     return DataObj
 
-class DataManagerForEpochBatchTrain(DLUtils.module.AbstractModuleWithParam):
+class DataManagerForEpochBatchTrain(DLUtils.module.AbstractModule):
     def __init__(self):
         #DLUtils.transform.InitForNonModel(self, param, **kw)
         return

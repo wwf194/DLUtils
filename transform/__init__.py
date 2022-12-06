@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 import DLUtils
 
-from DLUtils.module import AbstractModule, AbstractModuleWithParam, AbstractModuleWithoutParam
+from DLUtils.module import AbstractModule
 from DLUtils.transform.AbstractTransform import AbstractTransform, AbstractTransformWithTensor
 
 import DLUtils.transform.operator as operator
@@ -366,7 +366,7 @@ def Init(self, param=None, data=None, ClassPath=None, **kw):
     cache.Dynamics = DLUtils.EmptyPyObj()
 
     if HasTensor:
-        cache.Tensors = []
+        cache.TrainableParam = []
 
     self.param = param
     self.data = data
@@ -402,7 +402,7 @@ def LoadFromFile(self, LoadDir, Name, **kw):
 
     HasTensor = kw.setdefault("HasTensor", True)
     if HasTensor:
-        cache.Tensors = []
+        cache.TrainableParam = []
 
     self.param = param
     self.data = data

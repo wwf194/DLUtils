@@ -1,3 +1,5 @@
+# type: ignore
+# makes pylance ignore this file.
 
 # for running scripts inside this package
 import sys
@@ -48,16 +50,20 @@ if __name__=="__main__":
         TestJsonUtils()
     elif args.task in ["BuildMLP", "mlp"]:
         import DLUtils
+        Log = DLUtils.log.SeriesLog()
         MLP = DLUtils.NN.ModuleSequence(
             [
                 DLUtils.NN.NonLinearLayer().SetWeight(
                     DLUtils.SampleFromKaimingUniform((10, 100), "ReLU")
                 ).SetMode("f(Wx+b)").SetBias(0.0).SetNonLinear("ReLU"),
+                DLUtils.norm.LayerNorm().SetFeatureNum(100),
                 DLUtils.NN.LinearLayer().SetWeight(
                     DLUtils.SampleFromXaiverUniform((100, 50))
                 ).SetMode("Wx+b").SetBias("zeros"),
             ]
-        ).Init()
+        ).SetLog(Log).Init()
+        Log.ToJsonFile("./test/log.txt")
+        Log.ToFile("./test/log.dat")
         data = DLUtils.SampleFromKaimingNormal((10, 10))
         from matplotlib import pyplot as plt
         fig, ax = DLUtils.plot.CreateFigurePlt()
@@ -71,13 +77,12 @@ if __name__=="__main__":
         MLP.ToJsonFile("./test/mlp - param - 2.json")
         MLP.PlotWeight("./test/")
         
-        MLP.FromFile(SavePath).Init()
+        MLP.SetLog(Log).FromFile(SavePath).Init()
         Input = DLUtils.SampleFromNormalDistribution((100, 10), 0.0, 1.0)
         Output = MLP.Receive(
             DLUtils.ToTorchTensor(Input)
         )
         DLUtils.plot.PlotDataAndDistribution2D(Input, SavePath="./test/Input.svg")
-        DLUtils.plot.PlotDataAndDistribution2D(Output, SavePath="./test/Output.svg")
-
+        DLUtils.plot.PlotBatchDataAndDistribution1D(Output, SavePath="./test/Output.svg")
     else:
         raise Exception()

@@ -1,9 +1,9 @@
 import DLUtils
 
-from .AbstractModule import AbstractNetwork
+from ..AbstractModule import AbstractNetwork
 class ModuleSequence(AbstractNetwork):
-    def __init__(self, ModuleList=None):
-        super().__init__()
+    def __init__(self, ModuleList=None, Log=None):
+        super().__init__(Log)
         if ModuleList is None:
             ModuleList = []
         assert isinstance(ModuleList, list)

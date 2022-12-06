@@ -1,6 +1,15 @@
 import DLUtils
 
-class AbstractLog(DLUtils.module.AbstractModuleWithParam):
+class SeriesLog():
+    def __init__(self):
+        self.Param = DLUtils.Param([])
+    def ToFile(self, FilePath):
+        self.Param.ToFile(FilePath)
+    def FromFile(self, FilePath):
+        self.Param = self.Param.FromFile(FilePath)
+    def ToJsonFile(self, FilePath):
+        self.Param.ToJsonFile(FilePath)
+class AbstractLog(DLUtils.module.AbstractModule):
     def __init__(self, **kw):
         #kw.setdefault("DataOnly", True) # Log class do not need param
         super().__init__(**kw)

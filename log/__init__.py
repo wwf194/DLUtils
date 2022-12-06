@@ -20,6 +20,8 @@ import DLUtils.log.AbstractLog as AbstractLog
 from DLUtils.log.AbstractLog import \
     AbstractLogAlongEpochBatchTrain, AbstractLogAlongBatch, AbstractModuleAlongEpochBatchTrain
 
+from DLUtils.log.AbstractLog import SeriesLog
+
 def SetMethodForLogClass(Class, **kw):
     SaveDataOnly = kw.setdefault("SaveDataOnly", False)
     MountLocation = kw.setdefault("MountLocation", "data")

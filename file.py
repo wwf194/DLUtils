@@ -443,12 +443,13 @@ def File2ObjPickle(FilePath):
         Obj = pickle.load(f, encoding='bytes')
     return Obj
 File2Obj = File2ObjPickle
-
+BinaryFile2Obj = File2ObjPickle
 def Obj2FilePickle(Obj, FilePath):
     DLUtils.EnsureFileDir(FilePath)
     with open(FilePath, "wb") as f:
         pickle.dump(Obj, f)
 Obj2File = Obj2FilePickle
+Obj2BinaryFile = Obj2FilePickle
 JsonObj2DataFile = Obj2File
 
 def Str2TextFile(Str, FilePath):

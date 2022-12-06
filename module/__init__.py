@@ -1,8 +1,11 @@
 
 
 import DLUtils
-import DLUtils.module.AbstractModules as AbstractModules
-from DLUtils.module.AbstractModules import AbstractModule, AbstractModuleWithParam, AbstractModuleWithoutParam
+# import DLUtils.module.AbstractModule as AbstractModule
+from .AbstractModule import AbstractModule
+from .AbstractModule import AbstractNetwork
+
+import DLUtils.module.loss as loss
 
 def BuildModuleFromType(Type):
     module = DLUtils.transform.BuildModuleIfIsLegalType(Type)
@@ -67,3 +70,6 @@ def BuildExternalModule(param, **kw):
         return ExternalModules[Type](**kw)
     else:
         return None
+    
+import torch
+

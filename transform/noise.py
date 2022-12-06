@@ -3,9 +3,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from DLUtils.attr import *
-from DLUtils.module.AbstractModules import AbstractModule
+from DLUtils.module.AbstractModule import AbstractModule
 
-class NoiseFromDistribution(DLUtils.module.AbstractModuleWithParam):
+class NoiseFromDistribution(DLUtils.module.AbstractModule):
     # def __init__(self, param=None, data=None, **kw):
     #     super(NoiseGenerator, self).__init__()
     #     self.InitModule(self, param, data, ClassPath="DLUtils.transform.NoiseGenerator", **kw)

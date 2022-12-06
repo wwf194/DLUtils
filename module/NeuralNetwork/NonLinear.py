@@ -1,7 +1,7 @@
 
 
 import DLUtils
-from .AbstractModule import AbstractNetwork
+from ..AbstractModule import AbstractNetwork
 import torch
 class ReLU(AbstractNetwork):
     def __init__(self):

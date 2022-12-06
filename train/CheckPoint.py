@@ -1,7 +1,7 @@
 import DLUtils
 from DLUtils.attr import *
 
-from DLUtils.module.AbstractModules import AbstractModule
+from DLUtils.module.AbstractModule import AbstractModule
 class CheckPointForEpochBatchTrain(DLUtils.log.AbstractLogAlongEpochBatchTrain):
     def __init__(self, **kw):
         #DLUtils.transform.InitForNonModel(self, param, ClassPath="DLUtils.Train.CheckPointForEpochBatchTrain", **kw)

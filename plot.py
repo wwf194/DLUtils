@@ -819,14 +819,27 @@ class STATE(Flag):
     EQUAL_MIN_MAX = auto()
     BLUE = auto()
 
+def PlotBatchDataAndDistribution1D(Data=None, axes=None, Name=None, Save=True, SavePath=None, **Dict):
+    # Data: [BatchIndex, FeatureIndex]
+    Coordinate = Dict.setdefault("Coordinate", "X1Y0")
+    XLabel = Dict.setdefault("Feature Index")
+    YLabel = Dict.setdefault("Batch Index")
+    PlotDataAndDistribution2D(Data=Data, axes=axes, Name=Name, Save=Save, SavePath=SavePath, **Dict)
+
 def PlotDataAndDistribution2D(Data=None, axes=None, Name=None, Save=True, SavePath=None, **Dict):
-    XLabel = Dict.setdefault("XLabel", "Dimension 0")
-    YLabel = Dict.setdefault("YLabel", "Dimension 1")
     XLabelDistribution = Dict.setdefault("XLabelDistribution", "Data Value")
     YLabelDistribution = Dict.setdefault("YLabelDistribution", "Data Num")
     dataMask = Dict.setdefault("dataMask", None)
     Ticks = Dict.setdefault("Ticks", "Int")
     ColorForEqualValues = Dict.setdefault("ColorForEqualValues", ParseColor("LightGray"))
+    Coordinate = Dict.setdefault("Coordinate", "X1Y0")
+    if Coordinate in ["X1Y0", "Y1X0"]:
+        XLabel = Dict.setdefault("XLabel", "Dimension 1")
+        YLabel = Dict.setdefault("YLabel", "Dimension 0")
+    else:
+        XLabel = Dict.setdefault("XLabel", "Dimension 0")
+        YLabel = Dict.setdefault("YLabel", "Dimension 1") 
+    
     if axes is None:
         fig, axes = DLUtils.plot.CreateFigurePlt(2)
         ax1, ax2 = axes[0], axes[1]
@@ -843,7 +856,6 @@ def PlotDataAndDistribution2D(Data=None, axes=None, Name=None, Save=True, SavePa
     State = DLUtils.plot.PlotMatrixWithColorBar(
         ax1, data=Data,
         XAxisLocation="top", PixelHeightWidthRatio="Auto",
-        Coordinate="X1Y0", 
         Title="Visualization",
         **Dict
     )

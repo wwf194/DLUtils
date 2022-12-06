@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 from DLUtils.attr import *
 
-class L2Loss(DLUtils.module.AbstractModuleWithParam):
+class L2Loss(DLUtils.module.AbstractModule):
     #def __init__(self, param=None, data=None, **kw):
     def __init__(self, **kw):
         super().__init__(**kw)

@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import DLUtils
 from DLUtils.transform.SingleLayer import SingleLayer
-from .AbstractModule import AbstractNetwork
+#from .AbstractModule import AbstractNetwork
 from .LinearLayer import LinearLayer
 class NonLinearLayer(LinearLayer):
     def __init__(self, InputNum=None, OutputNum=None):

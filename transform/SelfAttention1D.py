@@ -40,9 +40,9 @@ class SelfAttention1D(DLUtils.module.AbstractModule):
         
         cache.TensorDict["Input2Query"] = cache.Input
 
-        cache.Tensors.append([data, "Input2Query", data.Input2Query])
-        cache.Tensors.append([data, "Input2Key",   data.Input2Key])
-        cache.Tensors.append([data, "Input2Value", data.Input2Value])
+        cache.TrainableParam.append([data, "Input2Query", data.Input2Query])
+        cache.TrainableParam.append([data, "Input2Key",   data.Input2Key])
+        cache.TrainableParam.append([data, "Input2Value", data.Input2Value])
         cache.AttentionCoefficient = 1.0 / param.Attention.Feature.Num ** 0.5
 
         return self

@@ -27,7 +27,7 @@ def ParseOptimizeParamEpochBatch(param):
     EnsureAttrs(param, "Dampening", value=0.0)
     EnsureAttrs(param, "Momentum", value=0.0)
 
-class GradientDescend(DLUtils.module.AbstractModuleWithParam):
+class GradientDescend(DLUtils.module.AbstractModule):
     # def __init__(self, param=None, data=None, **kw):
     #     self.InitModule(self, param, data, ClassPath="DLUtils.optimize.GradientDescend")
     def __init__(self, **kw):

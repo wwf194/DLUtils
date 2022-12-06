@@ -5,12 +5,11 @@ import torch.nn.functional as F
 import DLUtils
 from DLUtils.attr import *
 from DLUtils.transform.SingleLayer import SingleLayer
-from .AbstractModule import AbstractNetwork
-class LinearLayer(AbstractNetwork):
+class LinearLayer(DLUtils.module.AbstractNetwork):
     def __init__(self, InputNum=None, OutputNum=None):
         super().__init__()
         Param = self.Param
-        Param.Tensors = ["Weight", "Bias"]
+        Param.TrainableParam = ["Weight", "Bias"]
         Param._CLASS = "DLUtils.NN.LinearLayer"
         if InputNum is not None:
             Param.Input.Num = InputNum

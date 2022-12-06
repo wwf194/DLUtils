@@ -36,7 +36,7 @@ class NODE_CHILD_TYPE(Enum):
     MULTI_SUBNODE_WITH_LEAF = 5
 
 class param():
-    def __init__(self, _DICT=None, Dict=None, _PATH_FROM_ROOT=["ROOT"], _TYPE=NODE_TYPE.SPINE, _SUBTYPE=NODE_SUBTYPE.DICT):    
+    def __init__(self, _DICT=None, Dict=None, _PATH_FROM_ROOT=["ROOT"], _TYPE=NODE_TYPE.SPINE, _SUBTYPE=NODE_SUBTYPE.DICT, IsSuper=False):  
         self.SetAttr("_LIST", [])
         self.SetAttr("_DICT", {})
         if Dict is not None:
@@ -47,11 +47,14 @@ class param():
             self.SetAttr("_SUBTYPE", _SUBTYPE)
             self.SetAttr("_PATH_FROM_ROOT", _PATH_FROM_ROOT)
         
-        if _DICT is not None:
-            if isinstance(_DICT, dict):
-                self.from_dict(_DICT)
-            else:
-                raise Exception()   
+        if not IsSuper:
+            if _DICT is not None:
+                if isinstance(_DICT, dict):
+                    self.from_dict(_DICT)
+                elif isinstance(_DICT, list):
+                    self.from_list(_DICT)
+                else:
+                    raise Exception()   
     def from_dict(self, Dict):
         self.SetAttr("_SUBTYPE", NODE_SUBTYPE.DICT)
         self.SetAttr("_DICT", {})
@@ -100,6 +103,14 @@ class param():
         return self
     def getattr(self, Key):
         return self._DICT[Key]
+    def get(self, Key):
+        if isinstance(Key, int):
+            if len(self._LIST) < Key:
+                return self._LIST[Key]
+            else:
+                return None
+        else:
+            return self._DICT.get(Key)
     def delattr(self, Key):
         self._DICT.pop(Key)
     def setdefault(self, Key, Value):
@@ -137,7 +148,7 @@ class Param(param):
     # method names with UpperCamelCase typically indicates functions to manipulate meta information
     # method names with   lowercases   typically indicates functions to manipulate content information.
     def __init__(self, _DICT=None, Dict=None, _PATH_FROM_ROOT=["ROOT"], _TYPE=NODE_TYPE.SPINE, _SUBTYPE=NODE_SUBTYPE.DICT):
-        super().__init__(_DICT=_DICT, Dict=Dict, _SUBTYPE=_SUBTYPE)
+        super().__init__(_DICT=_DICT, Dict=Dict, _SUBTYPE=_SUBTYPE, IsSuper=True)
         self.SetAttr("_DICT_TEMP", {})
         if Dict is not None:
             self.SetAttr("_TYPE", Dict["_TYPE"])
@@ -148,8 +159,10 @@ class Param(param):
         if _DICT is not None:
             if isinstance(_DICT, dict):
                 self.from_dict(_DICT)
+            elif isinstance(_DICT, list):
+                self.from_list(_DICT)
             else:
-                raise Exception()
+                raise Exception()   
     def FromParam(self, Node):
         for Key, Item in Node.__dict__.items():
             self.SetAttr(Key, Item)
@@ -232,9 +245,12 @@ class Param(param):
         Param2JsonFile(self, FilePath)
         return self
     def ToFile(self, FilePath):
-        return
+        DLUtils.file.Obj2BinaryFile(self, FilePath)
+        return self
     def FromFile(self, FilePath):
-        return
+        Obj = DLUtils.file.BinaryFile2Obj(FilePath)
+        self.FromParam(Obj)
+        return self
     def absorb_dict(self, Dict):
         TreeSelf = Param2Tree(self)
         PathsSelf = Tree2Paths(TreeSelf)
