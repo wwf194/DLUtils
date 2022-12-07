@@ -1,44 +1,35 @@
 import DLUtils
 
-class SeriesLog():
-    def __init__(self):
-        self.Param = DLUtils.Param([])
-    def ToFile(self, FilePath):
-        self.Param.ToFile(FilePath)
-    def FromFile(self, FilePath):
-        self.Param = self.Param.FromFile(FilePath)
-    def ToJsonFile(self, FilePath):
-        self.Param.ToJsonFile(FilePath)
-class AbstractLog(DLUtils.module.AbstractModule):
+class LogForEpochBatchTrain(DLUtils.module.AbstractModule):
     def __init__(self, **kw):
         #kw.setdefault("DataOnly", True) # Log class do not need param
         super().__init__(**kw)
     def SetEpochNum(self, EpochNum):
-        self.data.EpochNum = EpochNum
+        self.EpochNum = EpochNum
         return self
     def SetBatchNum(self, BatchNum):
-        self.data.BatchNum = BatchNum
+        self.BatchNum = BatchNum
         return self
     def SetEpochIndex(self, EpochIndex):
-        self.data.EpochIndex = EpochIndex
+        self.EpochIndex = EpochIndex
         return self
     def SetBatchIndex(self, BatchIndex):
-        self.data.BatchIndex = BatchIndex
+        self.BatchIndex = BatchIndex
         return self
     def GetEpochNum(self):
-        return self.data.EpochNum
+        return self.EpochNum
     def GetBatchNum(self):
-        return self.data.BatchNum
+        return self.BatchNum
     def GetEpochIndex(self):
-        return self.data.EpochIndex
+        return self.EpochIndex
     def GetBatchIndex(self):
-        return self.data.BatchIndex
+        return self.BatchIndex
     def SetEpochBatchIndex(self, EpochIndex, BatchIndex):
-        self.data.EpochIndex = EpochIndex
-        self.data.BatchIndex = BatchIndex
+        self.EpochIndex = EpochIndex
+        self.BatchIndex = BatchIndex
         return self
 
-class AbstractLogAlongEpochBatchTrain(AbstractLog):
+class AbstractLogAlongEpochBatchTrain(LogForEpochBatchTrain):
     def __init__(self, **kw):
         super().__init__(**kw)
         return

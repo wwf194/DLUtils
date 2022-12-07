@@ -456,6 +456,7 @@ def Str2TextFile(Str, FilePath):
     with open(FilePath, 'w') as f:
         f.write(Str)
 
+
 def File2Md5(FilePath):
     import hashlib
     Md5Calculator = hashlib.md5()
@@ -682,3 +683,10 @@ def Data2TextFile(data, Name=None, FilePath=None):
 
 from .utils.json import PyObj2DataFile, DataFile2PyObj, PyObj2JsonFile, \
     JsonFile2PyObj, JsonFile2JsonDict, JsonObj2JsonFile, DataFile2JsonObj
+
+from .utils._param import JsonDict2Str
+
+def JsonDict2JsonFile(JsonDict, FilePath):
+    JsonStr = JsonDict2Str(JsonDict)
+    Str2TextFile(JsonStr, FilePath)
+JsonDict2File = JsonDict2JsonFile

@@ -68,7 +68,6 @@ def AnalyzeStatAlongTrainEpochBatch(Logs, SaveDir, ContextObj):
             Mean=Log["Mean"], Std=Log["Std"], 
             Title="%s - Epoch"%Name, XLabel="Epoch", YLabel=Name,
         )
-        plt.tight_layout()
         DLUtils.plot.SaveFigForPlt(SavePath=SaveDir + "%s~Epoch.svg"%Name)
         DLUtils.file.Table2TextFileDict(Log, SavePath=SaveDir + "%s~Epoch.txt"%Name)
     return
@@ -92,7 +91,6 @@ def PlotAllLossEpochBatch(Logs, SaveDir, SaveName=None, ContextObj=None):
         XTicks="Float", YTicks="Float",
         Title="Loss - Epoch", XLabel="Epoch", YLabel="Loss",
     )
-    plt.tight_layout()
 
     if SaveName is None:
         SaveName = "Loss~Epoch"
@@ -133,7 +131,6 @@ def PlotTotalLossEpochBatch(LogTrain, LogTest=None, SaveDir=None, SaveName=None,
     DLUtils.plot.SetXTicksFloatFromData(ax, XsData)
     DLUtils.plot.SetYTicksFloatFromData(ax, YsData)
     ax.legend()
-    plt.tight_layout()
 
     DLUtils.plot.SaveFigForPlt(SavePath=SaveDir + SaveName + ".svg")
     return

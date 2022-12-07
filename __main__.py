@@ -62,21 +62,18 @@ if __name__=="__main__":
                 ).SetMode("Wx+b").SetBias("zeros"),
             ]
         ).SetLog(Log).Init()
-        Log.ToJsonFile("./test/log.txt")
+        Log.ToJsonFile("./test/log.json")
         Log.ToFile("./test/log.dat")
-        data = DLUtils.SampleFromKaimingNormal((10, 10))
-        from matplotlib import pyplot as plt
-        fig, ax = DLUtils.plot.CreateFigurePlt()
-        ax.imshow(data)
-        plt.savefig("./test/testfig.svg")
 
+        TrainableParam = MLP.ExtractTrainableParam()
+        DLUtils.file.JsonDict2File(TrainableParam, "./test/trainable_param.json")
+        
         SavePath = "./test/mlp - param.dat"
         MLP.ToFile(SavePath)
         MLP.ToJsonFile("./test/mlp - param.json")
         MLP = DLUtils.NN.ModuleSequence().FromFile("./test/mlp - param.dat")
         MLP.ToJsonFile("./test/mlp - param - 2.json")
         MLP.PlotWeight("./test/")
-        
         MLP.SetLog(Log).FromFile(SavePath).Init()
         Input = DLUtils.SampleFromNormalDistribution((100, 10), 0.0, 1.0)
         Output = MLP.Receive(
@@ -84,5 +81,24 @@ if __name__=="__main__":
         )
         DLUtils.plot.PlotDataAndDistribution2D(Input, SavePath="./test/Input.svg")
         DLUtils.plot.PlotBatchDataAndDistribution1D(Output, SavePath="./test/Output.svg")
+
+        Optimizer = DLUtils.Optimizer("GradientDescend")
+            .SetSubType("Adam")
+            .Enable("Momentum")
+            .SetParam(Alpha=0.1, Beta=0.1)
+
+        Evaluator = DLUtils.Evaluator("ImageClassification")
+            .SetLoss("CrossEntropy")
+
+        DLUtils.TrainProcess("Epoch-Batch") \
+            .SetLog(Log)
+            .SetParam(EpochNum=100, BatchNum=100)
+            .BindEvaluator(Evaluator)
+            .BindModel(MLP)
+            .BindTrainData(MNISTTrain)
+            .BindTestData(MNISTTest)
+            .BindOptimizer(Optimizer)
+            .Start()
+        
     else:
         raise Exception()

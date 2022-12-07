@@ -105,7 +105,6 @@ def SingleValueNpArray(Param):
     )
 
     plt.suptitle("%s Shape:%s"%(Name, weight.shape))
-    plt.tight_layout()
     if SavePath is None:
         SavePath = DLUtils.GetMainSaveDir + "weights/" + "%s.svg"%Name
     DLUtils.plot.SaveFigForPlt(SavePath=SavePath)

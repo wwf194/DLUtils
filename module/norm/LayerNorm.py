@@ -33,7 +33,7 @@ class LayerNorm(DLUtils.module.AbstractNetwork):
         else:
             if Param.AffineTransform.get("Enable") is True:
                 Param.AffineTransform.Trainable = False
-    def Init(self):
+    def Init(self, **Dict):
         Param = self.Param
         if not hasattr(Param, "eps"):
             self.SetEps(1.0e-6)

@@ -20,7 +20,7 @@ import DLUtils.log.AbstractLog as AbstractLog
 from DLUtils.log.AbstractLog import \
     AbstractLogAlongEpochBatchTrain, AbstractLogAlongBatch, AbstractModuleAlongEpochBatchTrain
 
-from DLUtils.log.AbstractLog import SeriesLog
+from .SeriesLog import SeriesLog
 
 def SetMethodForLogClass(Class, **kw):
     SaveDataOnly = kw.setdefault("SaveDataOnly", False)
@@ -257,7 +257,6 @@ class LogAlongEpochBatchTrain(AbstractLogAlongEpochBatchTrain):
             Ys = Log[Key]
             ax = DLUtils.plot.GetAx(axes, Index=index)
             DLUtils.plot.PlotLineChart(ax, Xs, Ys, Title="%s-Epoch"%Key, XLabel="Epoch", YLabel=Key)
-        plt.tight_layout()
         DLUtils.plot.SaveFigForPlt(SavePath=SaveDir + "%s.png"%Name)
         DLUtils.file.Table2TextFileDict(Log, SavePath=SaveDir + "%s-Epoch"%Name)
     def ListLog(self):
@@ -529,8 +528,6 @@ def GetAllSubSaveDirsEpochBatch(Name, SaveDir=None, GlobalParam=None):
         SaveDirs[Index] = DLUtils.GetMainSaveDir(GlobalParam) + Name + "/" + SaveDir # SaveDir already ends with "/"
     return SaveDirs
 
-
-
 def GetDataLog():
     return DLUtils.GlobalParam.log.Data
 
@@ -542,3 +539,12 @@ def GetLog(Name, CreateIfNone=True, **kw):
             raise Exception()
     return getattr(DLUtils.GlobalParam.log, Name)
 
+_GlobalLogIndex = 0
+def GlobalLogIndex():
+    Index = _GlobalLogIndex
+    _GlobalLogIndex += 1
+    return Index
+
+def ResetGlobalLogIndex():
+    _GlobalLogIndex = 0
+    return _GlobalLogIndex

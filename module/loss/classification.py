@@ -36,7 +36,7 @@ class SoftMaxAndCrossEntropy(DLUtils.module.AbstractModule):
         Param = self.Param
         Param._CLASS = "DLUtils.module.Loss.SoftMaxAndCrossEntropy"
     
-    def Init(self):
+    def Init(self, **Dict):
         self.AddSubModule(
             "CrossEntropy", CrossEntropy()
         )

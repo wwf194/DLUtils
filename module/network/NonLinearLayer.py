@@ -30,13 +30,17 @@ class NonLinearLayer(LinearLayer):
             self.Receive = self.ReceiveAddFMulWxb
         else:
             raise Exception(Mode)
+        self.AddLogWithSelfInfo(f"set mode as {Mode}", "initialization")
+        return self
     def SetNonLinear(self, NonLinearModule):
         if isinstance(NonLinearModule, str):
             NonLinearModule = DLUtils.NN.NonLinear.BuildNonLinearModule(NonLinearModule)
         self.AddSubModule("NonLinear", NonLinearModule)
+        self.AddLogWithSelfInfo(f"set nonlinear type: {NonLinearModule.ClassStr()}", "initialization")
+        self.SetNonLinearMethod()
         return self
     def SetNonLinearMethod(self):
-        self.NonLinear = self.SubModules["NonLinear"]
+        self.NonLinear = self.SubModules.NonLinear
         return self
     def ReceiveFAddMulWxb(self, Input):
         return self.NonLinear(torch.mm(Input + self.Bias, self.Weight))
@@ -46,9 +50,11 @@ class NonLinearLayer(LinearLayer):
         return self.NonLinear(torch.mm(Input, self.Weight)) + self.Bias
     # SetWeight(...) # inherit
     # SetBias(...) # inherit
-    def Init(self, IsSuper=False):
+    def Init(self, IsSuper=False, **Dict):
         if not IsSuper:
             self.SetReceiveMethod()
             self.SetNonLinearMethod()
-        super().Init(True)
+        super().Init(IsSuper=True, **Dict)
         return self
+    def ClassStr(self):
+        return "NonLinearLayer"

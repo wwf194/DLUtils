@@ -28,7 +28,7 @@ import DLUtils.evaluate as evaluate
 import DLUtils.system as system
 import DLUtils.analysis as analysis
 
-import DLUtils.module.NeuralNetwork as NN
+import DLUtils.module.network as NN
 import DLUtils.module.norm as norm
 
 from .utils import *
@@ -46,3 +46,7 @@ from DLUtils.data.utils import \
     SampleFromUniformDistribution
 
 from DLUtils.parse import ParseSavePath
+
+
+def SetGlobalCounter():
+    return n + 1

@@ -62,7 +62,6 @@ def PlotAccuracyEpochBatch(LogTrain, LogTest=None, SaveDir=None, SaveName=None, 
     DLUtils.plot.SetXTicksFloatFromData(ax, XsData)
     DLUtils.plot.SetYTicksFloatFromData(ax, YsData)
     ax.legend()
-    plt.tight_layout()
 
     if SaveName is None:
         SaveName = "Accuracy~Epoch"

@@ -36,7 +36,7 @@ class NODE_CHILD_TYPE(Enum):
     MULTI_SUBNODE_WITH_LEAF = 5
 
 class param():
-    def __init__(self, _DICT=None, Dict=None, _PATH_FROM_ROOT=["ROOT"], _TYPE=NODE_TYPE.SPINE, _SUBTYPE=NODE_SUBTYPE.DICT, IsSuper=False):  
+    def __init__(self, _CONTENT=None, Dict=None, _PATH_FROM_ROOT=["ROOT"], _TYPE=NODE_TYPE.SPINE, _SUBTYPE=NODE_SUBTYPE.DICT, IsSuper=False):  
         self.SetAttr("_LIST", [])
         self.SetAttr("_DICT", {})
         if Dict is not None:
@@ -48,11 +48,13 @@ class param():
             self.SetAttr("_PATH_FROM_ROOT", _PATH_FROM_ROOT)
         
         if not IsSuper:
-            if _DICT is not None:
-                if isinstance(_DICT, dict):
-                    self.from_dict(_DICT)
+            if _CONTENT is not None:
+                if isinstance(_CONTENT, dict):
+                    self.SetAttr("_SUBTYPE", NODE_SUBTYPE.DICT)
+                    self.from_dict(_CONTENT)
                 elif isinstance(_DICT, list):
-                    self.from_list(_DICT)
+                    self.SetAttr("_SUBTYPE", NODE_SUBTYPE.LIST)
+                    self.from_list(_CONTENT)
                 else:
                     raise Exception()   
     def from_dict(self, Dict):
@@ -119,12 +121,25 @@ class param():
         return self._DICT[Key]
     def items(self):
         return self.GetAttr("_DICT").items()
+    def append(self, Item):
+        self._LIST.append(Item)
     def __hasattr__(self, Key):
         return Key in self._DICT
     def __setattr__(self, Key, Value):
         self._DICT[Key] = Value
     def __getattr__(self, Key):
         return self._DICT[Key]
+    def __setitem__(self, Key, Value):
+        if isinstance(Key, int):
+            self._LIST[Key] = Value
+        else:
+            self._DICT[Key] = Value
+        return self    
+    def __getitem__(self, Key):
+        if isinstance(Key, int):
+            return self._LIST[Key]
+        else:
+            return self._DICT[Key]
     def __delattr__(self, Name):
         self._DICT.pop(Name)
         return self
@@ -147,8 +162,8 @@ class Param(param):
         # this is implemented using magic methods of python. 
     # method names with UpperCamelCase typically indicates functions to manipulate meta information
     # method names with   lowercases   typically indicates functions to manipulate content information.
-    def __init__(self, _DICT=None, Dict=None, _PATH_FROM_ROOT=["ROOT"], _TYPE=NODE_TYPE.SPINE, _SUBTYPE=NODE_SUBTYPE.DICT):
-        super().__init__(_DICT=_DICT, Dict=Dict, _SUBTYPE=_SUBTYPE, IsSuper=True)
+    def __init__(self, _CONTENT=None, Dict=None, _PATH_FROM_ROOT=["ROOT"], _TYPE=NODE_TYPE.SPINE, _SUBTYPE=NODE_SUBTYPE.DICT):
+        super().__init__(_CONTENT=_CONTENT, Dict=Dict, _SUBTYPE=_SUBTYPE, IsSuper=True)
         self.SetAttr("_DICT_TEMP", {})
         if Dict is not None:
             self.SetAttr("_TYPE", Dict["_TYPE"])
@@ -156,11 +171,13 @@ class Param(param):
         else:
             self.SetAttr("_TYPE", _TYPE)
             self.SetAttr("_PATH_FROM_ROOT", _PATH_FROM_ROOT)
-        if _DICT is not None:
-            if isinstance(_DICT, dict):
-                self.from_dict(_DICT)
-            elif isinstance(_DICT, list):
-                self.from_list(_DICT)
+        if _CONTENT is not None:
+            if isinstance(_CONTENT, dict):
+                self.SetAttr("_SUBTYPE", NODE_SUBTYPE.DICT)
+                self.from_dict(_CONTENT)
+            elif isinstance(_CONTENT, list):
+                self.SetAttr("_SUBTYPE", NODE_SUBTYPE.LIST)
+                self.from_list(_CONTENT)
             else:
                 raise Exception()   
     def FromParam(self, Node):
@@ -260,6 +277,16 @@ class Param(param):
         Node = _Tree2Param(Tree)
         self.FromParam(Node)
         return self    
+    def setattr(self, Key, Value):
+        self._DICT[Key] = Value
+        if self.Get("_IS_FALSE") is True:
+            self.SubstantiateAlongSpine(NODE_TYPE.SPINE, NODE_SUBTYPE.DICT)
+        return self
+    def append(self, Item):
+        self._LIST.append(Item)
+        if isinstance(Item, param):
+            pass
+        return self
     def __setattr__(self, Key, Value):
         self._DICT[Key] = Value
         if self.Get("_IS_FALSE") is True:
@@ -279,11 +306,7 @@ class Param(param):
                 self._DICT_TEMP[Key] = SubNode
                 SubNode.SetParent(self, Key)
                 return SubNode
-    def setattr(self, Key, Value):
-        self._DICT[Key] = Value
-        if self.Get("_IS_FALSE") is True:
-            self.SubstantiateAlongSpine(NODE_TYPE.SPINE, NODE_SUBTYPE.DICT)
-        return self
+
 
 
 
@@ -426,22 +449,35 @@ def _AppendWithIndent(StrList, IndentNum, Str):
         StrList.append("\t")
     StrList.append(Str)
 
+def JsonDict2Str(Dict):
+    StrList = []
+    _JsonDict2StrRecur(Dict, StrList, 0)
+    return "".join(StrList)
+
 def _JsonDict2StrRecur(Obj, StrList, IndentNum, ParentKey=None):
     if isinstance(Obj, list):
         _AppendWithIndent(StrList, IndentNum, "[\n")
-        for index, item in enumerate(Obj):
+        IndexMax = len(Obj) - 1
+        for Index, item in enumerate(Obj):
             _JsonDict2StrRecur(item, StrList, IndentNum + 1)
-            StrList.append(",")
+            if Index < IndexMax:
+                StrList.append(",\n")
+            else:
+                StrList.append("\n")
         _AppendWithIndent(StrList, IndentNum, "]\n")
-    
     elif isinstance(Obj, dict):
         _AppendWithIndent(StrList, IndentNum, "{\n")
-        for key, item in Obj.items():
-            _AppendWithIndent(StrList, IndentNum + 1, "\"%s\":"%key)
-            _JsonDict2StrRecur(item, StrList, IndentNum + 1, key)
-            StrList.append("\n")
+        IndexMax = len(list(Obj.keys())) - 1
+        Index = 0
+        for Key, Item in Obj.items():
+            _AppendWithIndent(StrList, IndentNum + 1, "\"%s\":"%Key)
+            _JsonDict2StrRecur(Item, StrList, IndentNum + 1, Key)
+            if Index < IndexMax:
+                StrList.append(",\n")
+            else:
+                StrList.append("\n")
+            Index += 1
         _AppendWithIndent(StrList, IndentNum, "}\n")
-    
     else:
         Content = ToJsonStr(Obj)
         if isinstance(ParentKey, str):
@@ -453,15 +489,15 @@ def _JsonDict2StrRecur(Obj, StrList, IndentNum, ParentKey=None):
 
 def _AddComment(Node, StrList, _TYPE=None):
     # Add Comment
-    Comments = Node.get("_COMMENT")
-    if Comments is not None:
-        assert isinstance(Comments, list)
+    CommentList = Node.get("_COMMENT")
+    if CommentList is not None:
+        assert isinstance(CommentList, list)
         if _TYPE is None:
-            for Comment in Comments:
+            for Comment in CommentList:
                 StrList.append("\t")
                 StrList += Comment[0]
         else:
-            for Comment in Comments:
+            for Comment in CommentList:
                 if Comment[1] == _TYPE:
                     StrList.append("\t")
                     StrList += Comment[0]
@@ -610,7 +646,7 @@ def _CompressTreeRecur(Node, SupNode, SupKey, SupKeyIndex=None):
         Node["_LEAF"] = None
         
     if Node.get("_MERGE_SUBNODE") is True:
-        if SupKey=="B":
+        if SupKey == "B":
             a = 1
         assert _ChildNum(Node) == 1
         assert isinstance(SupKey, str)
@@ -669,10 +705,7 @@ def Param2JsonStr(Obj):
     Str = Tree2JsonStr(Tree)
     return Str
 
-def JsonDict2Str(Dict):
-    StrList = []
-    _JsonDict2StrRecur(Dict, [], 0)
-    return "".join(StrList)
+
 
 def _GetOnlyChild(Node):
     Dict = Node["_DICT"]
@@ -738,12 +771,12 @@ def _Tree2JsonDictRecur(Node):
     return
 
 def Param2Tree(Obj):
-    assert isinstance(Obj, Param)
+    assert isinstance(Obj, param)
     Tree = Param2TreeRecur(Obj, None, None)
     return Tree
 
 def Param2TreeRecur(Obj, SupNode, SupNodeKey):
-    if isinstance(Obj, Param):
+    if isinstance(Obj, param):
         _TYPE = Obj.GetAttr("_TYPE")
         _SUBTYPE = Obj.GetAttr("_SUBTYPE")
         _PATH_FROM_ROOT = Obj.GetAttr("_PATH_FROM_ROOT")

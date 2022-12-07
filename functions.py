@@ -28,7 +28,7 @@ def StackFunctions(FunctionList, *Functions, Inverse=False, InputNum=1):
         return functools.reduce(lambda f, g: lambda x: f(g(x)), Functions)
 StackFunction = StackFunctions
 
-def EmptyFunction(*Args, **KwArgs):
+def EmptyFunction(*List, **Dict):
     return
 NullFunction = EmptyFunction
 

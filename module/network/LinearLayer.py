@@ -6,6 +6,7 @@ import DLUtils
 from DLUtils.attr import *
 from DLUtils.transform.SingleLayer import SingleLayer
 class LinearLayer(DLUtils.module.AbstractNetwork):
+    ClassStr = "LinearLayer"
     def __init__(self, InputNum=None, OutputNum=None):
         super().__init__()
         Param = self.Param
@@ -15,15 +16,6 @@ class LinearLayer(DLUtils.module.AbstractNetwork):
             Param.Input.Num = InputNum
         if OutputNum is not None:
             Param.Output.Num = OutputNum
-    def Init(self):
-        Param = self.Param
-        assert Param.Data.HasAttr("Weight")
-        if Param.Mode != "Wx":
-            if not Param.Data.HasAttr("Bias"):
-                Param.Data.Bias = 0.0
-        if not hasattr(Param, "Mode"):
-            self.SetMode("Wx + b")
-        return self
     def LoadParam(self, Param):
         super().LoadParam(Param)
         return self
@@ -84,10 +76,16 @@ class LinearLayer(DLUtils.module.AbstractNetwork):
             Bias = DLUtils.ToNpArrayOrNum(Bias)
         Param.Data.Bias = Bias
         return self
-    def Init(self, IsSuper=False):
+    def Init(self, IsSuper=True, **Dict):
         Param = self.Param
+        assert Param.Data.hasattr("Weight")
+        assert Param.hasattr("Mode")
         if not IsSuper:
             self.SetReceiveMethod()
-        assert Param.hasattr("Mode")
-        super().Init(True)
+        if Param.Mode != "Wx":
+            if not Param.Data.HasAttr("Bias"):
+                Param.Data.Bias = 0.0
+        if not hasattr(Param, "Mode"):
+            self.SetMode("Wx + b")
+        super().Init(IsSuper=True, **Dict)
         return self

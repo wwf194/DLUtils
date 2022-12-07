@@ -559,7 +559,6 @@ def PlotMatrixWithColorBar(
     )
 
     #SetTitleAndLabelForAx(ax, XLabel, YLabel, Title)
-    plt.tight_layout()
     SaveFigForPlt(Save, SavePath)
     return STATE0 | STATE1
 
@@ -761,7 +760,6 @@ def PlotActivityAndDistributionAlongTime(
     if Title is not None:
         plt.suptitle(Title)
     
-    plt.tight_layout()
     SaveFigForPlt(Save, SavePath)
     return
 
@@ -1760,6 +1758,7 @@ def SaveFigForPlt(Save=True, SavePath=None):
         Save = True
     if Save:
         DLUtils.EnsureFileDir(SavePath)
+        plt.tight_layout()
         plt.savefig(SavePath, format="svg")
         plt.close()
 

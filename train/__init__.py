@@ -17,6 +17,66 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+def TrainProcess(Type):
+    if Type in ["EpochBatchTraining"]:
+        return EpochBatchTrainProcess
+
+class EpochBatchTrainProcess(DLUtils.module.AbstractModule):
+    def __init__(self, Log=None):
+        self.Param = DLUtils.Param()
+        if Log is not None:
+            self.Log = Log
+    def BindTrainData(self, TrainData):
+        self.TrainData = TrainData
+        return self
+    def BindTestData(self, TestData):
+        self.TestData = TestData
+        return self
+    def SetParam(self, **Dict):
+        Param = self.Param
+        EpochNum = Dict.get("EpochNum")
+        if EpochNum is not None:
+            Param.Epoch.Num = EpochNum
+        EpochNum = Dict.get("BatchNum")
+        if EpochNum is not None:
+            Param.Batch.Num = BatchNum
+    def Start(self):
+        Model = self.Model
+        Evaluator = self.Evaluator
+        TrainData, TestData = self.TrainData, self.TestData
+        Optimizer = self.Optimizer
+        self.BeforeTrain()
+        for EpochIndex in range(self.EpochNum):
+            self.BeforeEpoch(EpochIndex)
+            for BatchIndex in range(self.BatchNum):
+                self.BeforeBatch(EpochIndex, BatchIndex)
+                Input, OutputTarget = TrainData.Get(BatchIndex)
+                Evaluation = Evaluator.Evaluate(
+                    Input, OutputTarget, Model
+                )
+                Optimizer.Optimize(
+                    Input=Input, OutputTarget=OutputTarget,
+                    Model=Model, Evaluation=Evaluation
+                )
+                self.AfterBatch(EpochIndex, BatchIndex)
+            self.AfterEpoch(EpochIndex)
+        self.AfterTrain()
+        return self
+    def Init(self):
+        if len(self.BeforeTrainList) == 0:
+            self.BeforeTrain = DLUtils.EmptyFunction
+        if len(self.AfterTrainList) == 0:
+            self.AfterTrain = DLUtils.EmptyFunction
+        if len(self.BeforeEpochList) == 0:
+            self.BeforeEpoch = DLUtils.EmptyFunction
+        if len(self.AfterEpochList) == 0:
+            self.AfterEpoch = DLUtils.EmptyFunction
+        if len(self.BeforeBatchList) == 0:
+            self.BeforeBatch = DLUtils.EmptyFunction
+        if len(self.AfterBatchList) == 0:
+            self.AfterBatch = DLUtils.EmptyFunction
+        return
+
 def NotifyEpochIndex(ObjList, EpochIndex):
     for Obj in ObjList:
         Obj.NotifyEpochIndex(EpochIndex)
@@ -43,12 +103,6 @@ def ParseRoutersFromOptimizeParam(param, **kw):
 def SetSaveDirForSavedModel(EpochIndex, BatchIndex):
     SaveDirForSavedModel = DLUtils.GetMainSaveDir() + "SavedModel/" + "Epoch%d-Batch%d/"%(EpochIndex, BatchIndex)
     DLUtils.SetSubSaveDir(SaveDirForSavedModel, Type="Obj")
-
-# def CallGraphEpochBatch(router, InList, logger, EpochIndex, BatchIndex):
-#     logger.SetLocal("EpochIndex", EpochIndex)
-#     logger.SetLocal("BatchIndex", BatchIndex)
-#     DLUtils.AddLog("Epoch%d-Batch%d"%(EpochIndex, BatchIndex))
-#     DLUtils.CallGraph(router, InList=InList) 
 
 def ParseEpochBatchFromStr(Str):
     MatchResult = re.match(r"^.*Epoch(-?\d*)-Batch(\d*).*$", Str)

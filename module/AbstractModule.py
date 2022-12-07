@@ -5,29 +5,34 @@ import torch.nn.functional as F
 import DLUtils
 # from DLUtils.attr import *
 import DLUtils
+
 class AbstractModule:
     def __init__(self, Log=None):
         self.Name = "NullName"
-        self.SubModules = {}
+        self.SubModules = DLUtils.param()
         Param = self.Param = DLUtils.Param()
-        
         Param._CLASS = "DLUtils.NN.AbstractModule"
         Param._PATH = "Root"
         if Log is not None:
             self.Log = Log
-            
     def __call__(self, *List, **Dict):
         return self.Receive(*List, **Dict)
-    def SetLog(self, Log):
+    def SetLog(self, Log, SetForSubModules=True):
         self.Log = Log
         Param = self.Param
         if hasattr(self, "LogCache"):
             for log in self.LogCache:
                 self.Log.Add(log)
+        if SetForSubModules:
+            self.SetLogRecur()
+        return self
+    def SetLogRecur(self, Log=None):
+        if Log is None:
+            Log = self.Log
         for Name, SubModule in self.SubModules.items():
             SubModule.SetLog(Log)
         return self
-    def NewLog(self, Content, Type="Unknown"):
+    def AddLog(self, Content, Type="Unknown"):
         Param = self.Param
         log = DLUtils.param({
                 "Logger": Param._PATH,
@@ -38,7 +43,8 @@ class AbstractModule:
             if not hasattr(self, "LogCache"):
                 self.LogCache = []
             self.LogCache.append(log)
-        self.Log.Add(log)
+        else:
+            self.Log.Add(log)
         return self
     def ExtractParam(self, RetainSelf=True):
         Param = self.Param
@@ -50,6 +56,10 @@ class AbstractModule:
         return self.Param
     def LoadParam(self, Param):
         self.Param = Param
+        if Param.hasattr("Tensors"):
+            self.UpdateTensorfrom_dict()
+        else:
+            Param.Tensors = []
         self.LoadParamRecur(Param)
         return self
     def LoadParamRecur(self, Param):
@@ -93,10 +103,30 @@ class AbstractModule:
     def ToJsonFile(self, FilePath):
         self.ExtractParam(RetainSelf=True).ToJsonFile(FilePath)
         return self
-    def Init(self, IsSuper=False):
+    def PathStr(self):
+        Param =self.Param
+        if not hasattr(self, "_PathStr"):
+            if isinstance(Param._PATH, str):
+                self._PathStr = Param._PATH
+            elif isinstance(Param._PATH, list):
+                self._PathStr = ".".join(Param._PATH)
+            else:
+                raise Exception()
+        return self._PathStr
+    def ClassStr(self):
+        if hasattr(self, "ClassStr"):    
+            return self.ClassStr
+        else:
+            return str(self.__class__)
+    def Init(self, IsSuper=False, IsRoot=True):
         # Check whether this object is correctly configured.
         for Name, SubModule in self.SubModules.items():
-            SubModule.Init()
+            SubModule.Init(IsSuper=False, IsRoot=False)
+        if hasattr(self, "Log"):
+            self.SetLogRecur()
+        return self
+    def AddLogWithSelfInfo(self, Content, Type="Unknown"):
+        self.AddLog(f"{self.PathStr()}({self.ClassStr()}): {Content}", Type=Type)
         return self
 
 class AbstractOperator(AbstractModule):
@@ -105,6 +135,7 @@ class AbstractOperator(AbstractModule):
         super().__init__(Log=Log)
     def AddSubModule(self, Name, Module):
         raise Exception("AbstractOperator module.")
+
 class AbstractNetwork(AbstractModule):
     # network with trainable weights.
     def __init__(self, Log=None):
@@ -112,6 +143,24 @@ class AbstractNetwork(AbstractModule):
         Param = self.Param
         Param.Tensors = []
         Param.TrainableParam = []
+    def ExtractTrainableParam(self, ParamDict={}, PathStrPrefix=True, Recur=True):
+        self.UpdateDictFromTensor()
+        Param = self.Param
+        TrainableParamName = self.Param.get("TrainableParam")
+        if PathStrPrefix:
+            Prefix = self.PathStr() + "."
+        else:
+            Prefix = ""
+        if TrainableParamName is not None:
+            for Name in TrainableParamName:
+                ParamDict[Prefix + Name] = Param.Data.getattr(Name)
+        if Recur:
+            self.ExtractTrainableParamRecur(ParamDict=ParamDict, PathStrPrefix=PathStrPrefix)
+        return ParamDict
+    def ExtractTrainableParamRecur(self, ParamDict={}, PathStrPrefix=True):
+        for Name, SubModule in self.SubModules.items():
+            SubModule.ExtractTrainableParam(ParamDict=ParamDict, PathStrPrefix=PathStrPrefix, Recur=True) 
+        return ParamDict
     def PlotWeight(self, SaveDir=None, SaveName=None):
         Param = self.Param
         Param = self.ExtractParam()
@@ -174,8 +223,11 @@ class AbstractNetwork(AbstractModule):
             if hasattr(SubModule, "PlotWeight"):
                 SubModule.PlotWeight(SaveDir, SaveName)
         return self
-    def Init(self, IsSuper=False):
-        super().Init(True)
+    def Init(self, IsSuper=False, IsRoot=True):
+        Param = self.Param
+        super().Init(True, IsRoot=IsRoot)
         self.UpdateTensorFromDict()
         assert hasattr(self, "Receive")
+        if IsRoot:
+            self.AddLog(f"{Param._CLASS}: initialization finished.", Type="initialization")
         return self
