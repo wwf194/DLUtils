@@ -123,7 +123,7 @@ class DataManagerForEpochBatchTrain(DLUtils.module.AbstractModule):
                 cache.Data,
                 SavePath
             )
-            Md5 = DLUtils.File2Md5(SavePath)
+            Md5 = DLUtils.File2MD5(SavePath)
             DLUtils.AddLog("Saved transformed data. Md5:%s"%Md5)
             SetAttrs(param, "Data.Transform.Md5")
     def Labels2ClassNames(self, Labels):

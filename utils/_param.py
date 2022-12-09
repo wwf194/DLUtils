@@ -113,8 +113,19 @@ class param():
                 return None
         else:
             return self._DICT.get(Key)
-    def delattr(self, Key):
-        self._DICT.pop(Key)
+    def delattr(self, Key, AllowNonExist=True):
+        if not Key in self._DICT:
+            if AllowNonExist:
+                return None
+            else:
+                raise Exception()
+        else:
+            return self._DICT.pop(Key) 
+    def delattrifexists(self, Key):
+        if not Key in self._DICT:
+            return None
+        else:
+            return self._DICT.pop(Key) 
     def setdefault(self, Key, Value):
         if not Key in self._DICT:
             self._DICT[Key] = Value
@@ -152,6 +163,12 @@ class param():
             self.SetAttr(Key, Item)
     def __getitem__(self, Index):
         return self._LIST[Index]
+    def ToJsonFile(self, FilePath):
+        Param2JsonFile(self, FilePath)
+        return self
+    def ToFile(self, FilePath):
+        DLUtils.file.Obj2BinaryFile(self, FilePath)
+        return self
 
 class Param(param):
     # tree node class for representing json-like structure.
@@ -258,19 +275,14 @@ class Param(param):
             return self.GetAttr(Key)
         else:
             return self.SetAttr(Key, DefaultValue)
-    def ToJsonFile(self, FilePath):
-        Param2JsonFile(self, FilePath)
-        return self
-    def ToFile(self, FilePath):
-        DLUtils.file.Obj2BinaryFile(self, FilePath)
-        return self
+
     def FromFile(self, FilePath):
         Obj = DLUtils.file.BinaryFile2Obj(FilePath)
         self.FromParam(Obj)
         return self
     def absorb_dict(self, Dict):
         TreeSelf = Param2Tree(self)
-        PathsSelf = Tree2Paths(TreeSelf)
+        PathsSelf = Tree2Paths(TreeSelf, SplitKeyByDot=True)
         Paths = _JsonLike2Paths(Dict)
         Tree = _Paths2Tree(PathsSelf + Paths)
         
@@ -846,15 +858,16 @@ def _JsonLike2Paths(Obj):
     _JsonLike2PathsRecur(Obj, PathTable, ["ROOT"])
     return PathTable
 
-def Tree2Paths(Root):
+def Tree2Paths(Root, SplitKeyByDot=True):
     PathTable = []
-    _Tree2PathsRecur(Root, PathTable, ["ROOT"])
+    _Tree2PathsRecur(Root, PathTable, ["ROOT"], SplitKeyByDot=SplitKeyByDot)
     return PathTable
 
 class PATH_TYPE(Enum):
     LEAF, COMMENT = range(2)
 
-def _Tree2PathsRecur(Node, PathTable, PathCurrent):
+def _Tree2PathsRecur(Node, PathTable, PathCurrent, **Dict):
+    SplitKeyByDot = Dict.setdefault("SplitKeyByDot", True)
     _TYPE = Node["_TYPE"]
     _SUBTYPE = Node["_SUBTYPE"]
 
@@ -865,14 +878,17 @@ def _Tree2PathsRecur(Node, PathTable, PathCurrent):
             PathTable.append([PathCurrent, Comment, PATH_TYPE.COMMENT])
     if _TYPE == NODE_TYPE.SPINE:
         if _SUBTYPE == NODE_SUBTYPE.DICT:
-            Dict = Node["_DICT"]
-            if len(Dict.keys()) == 0:
+            _DICT = Node["_DICT"]
+            if len(_DICT.keys()) == 0:
                 PathTable.append(
                     [PathCurrent, _SymbolEmptyDict(), PATH_TYPE.LEAF]
                 )
                 return
-            for Keys, SubNodes in Dict.items():
-                KeyList = Keys.split(".")
+            for Keys, SubNodes in _DICT.items():
+                if SplitKeyByDot:
+                    KeyList = Keys.split(".")
+                else:
+                    KeyList = [Keys]
                 if isinstance(SubNodes, dict):
                     SubNodes = [SubNodes]
                 for Index, SubNode in enumerate(SubNodes):
@@ -880,18 +896,19 @@ def _Tree2PathsRecur(Node, PathTable, PathCurrent):
                     _Tree2PathsRecur(
                         SubNode,
                         PathTable,
-                        PathCurrent = PathCurrent + KeyList
+                        PathCurrent = PathCurrent + KeyList,
+                        **Dict
                     )
         elif _SUBTYPE == NODE_SUBTYPE.LIST:
-            List = Node["_LIST"]
-            if len(List) == 0:
+            _LIST = Node["_LIST"]
+            if len(_LIST) == 0:
                 PathTable.append(
                     [PathCurrent, _SymbolEmptyList(), PATH_TYPE.LEAF]
                 )
                 return
-            for Index, SubNode in enumerate(List):
+            for Index, SubNode in enumerate(_LIST):
                 _Tree2PathsRecur(
-                    SubNode, PathTable, PathCurrent + [Index]
+                    SubNode, PathTable, PathCurrent + [Index], **Dict
                 )
         else:
             raise Exception()
@@ -1161,7 +1178,6 @@ def _Tree2ParamRecur(Node):
     else:
         raise Exception()
 
-
 def _AnalyzeTree(Root):
     Root["_PATH_FROM_ROOT"] = ["ROOT"]
     _AnalyzeTreeRecur(Root)
@@ -1206,12 +1222,10 @@ def JsonFile2Tree(FilePath):
     _AnalyzeTree(Tree)    
     return Tree
 
-def JsonFile2Param(FilePath):
+def JsonFile2Param(FilePath, SplitKeyByDot=True):
     Tree = JsonFile2Tree(FilePath)
-    
     assert Tree["_TYPE"] == NODE_TYPE.SPINE
-
-    PathTable = Tree2Paths(Tree)
+    PathTable = Tree2Paths(Tree, SplitKeyByDot=SplitKeyByDot)
 
     if Tree["_SUBTYPE"] == NODE_SUBTYPE.DICT:
         RootNode = _NewNode(

@@ -1,0 +1,21 @@
+{
+	"Files": {
+		"t10k-images-idx3-ubyte.gz": {
+			"MD5": "9fb629c4189551a2d022fa330f9573f3",
+			"Volume": "1.57 MB"
+		},
+		"train-images-idx3-ubyte.gz": {
+			"MD5": "f68b3c2dcbeaaa9fbdd348bbdeb94873",
+			"Volume": "9.45 MB"
+		},
+		"t10k-labels-idx1-ubyte.gz": {
+			"MD5": "ec29112dd5afa0611ce80d1b7f02629c",
+			"Volume": "4.44 MB"
+		},
+		"train-labels-idx1-ubyte.gz": {
+			"MD5": "d53e105ee54ea40749a09fcbcd1e9432",
+			"Volume": "28.20 MB"
+		}
+	},
+	"Folders": {}
+}

@@ -1,45 +1,51 @@
-import matplotlib.pyplot as plt
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
 import pandas as pd
 import numpy as np
-import pickle
-import time
-import os
 import re
 
+import matplotlib.pyplot as plt
+
 import DLUtils
-from DLUtils.attr import *
-
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
+#from DLUtils.attr import *
+import DLUtils.train.algorithm as algorithm
+import DLUtils.train.evaluate as evaluate
+import DLUtils.train.loss as loss
 
 def TrainProcess(Type):
-    if Type in ["EpochBatchTraining"]:
-        return EpochBatchTrainProcess
-
+    if Type in ["EpochBatchTrain", "Epoch-Batch"]:
+        return EpochBatchTrainProcess()
+    else:
+        raise Exception()
 class EpochBatchTrainProcess(DLUtils.module.AbstractModule):
     def __init__(self, Log=None):
-        self.Param = DLUtils.Param()
-        if Log is not None:
-            self.Log = Log
+        super().__init__(Log=Log)
     def BindTrainData(self, TrainData):
         self.TrainData = TrainData
         return self
     def BindTestData(self, TestData):
         self.TestData = TestData
         return self
+    def BindEvaluator(self, Evaluator):
+        self.AddSubModule("Evaluator", Evaluator)
+        return self
+    def BindModel(self, Model):
+        self.AddSubModule("Model", Model)
+        return self
+    def BindOptimizer(self, Optimizer):
+        self.AddSubModule("Optimizer", Optimizer)
+        return self
     def SetParam(self, **Dict):
         Param = self.Param
         EpochNum = Dict.get("EpochNum")
         if EpochNum is not None:
             Param.Epoch.Num = EpochNum
-        EpochNum = Dict.get("BatchNum")
+        BatchNum = Dict.get("BatchNum")
         if EpochNum is not None:
             Param.Batch.Num = BatchNum
+        return self
     def Start(self):
         Model = self.Model
         Evaluator = self.Evaluator
@@ -112,14 +118,14 @@ def ParseEpochBatchFromStr(Str):
     BatchIndex = int(MatchResult.group(2))
     return EpochIndex, BatchIndex
 
+def ClearGrad(TensorDict):
+    #for Name, Tensor in TensorDict.items():
+    for Tensor in TensorDict.values():
+        if Tensor.grad is not None:
+                Tensor.grad.detach_()
+                Tensor.grad.zero_()
 
-def ClearGrad(weights):
-    for name, weight in weights.items():
-        if weight.grad is not None:
-                weight.grad.detach_()
-                weight.grad.zero_()
-
-def GetEpochFloat(EpochIndex, BatchIndex, BatchNum):
+def EpochBatchInFloat(EpochIndex, BatchIndex, BatchNum):
     return EpochIndex + BatchIndex / BatchNum * 1.0
 
 def EpochBatchIndices2EpochsFloat(EpochIndices, BatchIndices, **kw):
@@ -139,7 +145,6 @@ def Labels2OneHotVectors(Labels, VectorSize=None):
     OneHotVectors = np.zeros((SampleNum, VectorSize), dtype=np.float32)
     OneHotVectors[range(SampleNum), Labels] = 1
     return OneHotVectors
-
 
 # def Probability2MaxIndex(Probability):
 #     # Probability: [BatchSize, ClassNum]

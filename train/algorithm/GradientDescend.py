@@ -1,10 +1,5 @@
 import DLUtils
 import torch
-def Evaluator(Type):
-    if Type in ["ImageClassification"]:
-        return XFixedSizeYFixedSizeProb()
-    else:
-        raise Exception()
 
 
 def GradientDescendOptimizer(Type, **Dict):
@@ -175,15 +170,6 @@ class Adam(GradientDescend):
         else:
             raise Exception()
         return self
-    def _UpdateParam():
+    def _UpdateParam(self):
         return self
 
-class XFixedSizeYFixedSizeProb:
-    def BeforeTrain(self):
-        Model = self.Model
-        TrainableParam = Model.ExtractTrainableParam()
-    def Optimize(self, Input=None, OutputTarget=None, Model=None, Evaluation=None):
-        Model.ClearGrad()
-        Evaluation.Loss.backward()
-        self.optimizer.UpdateParam()
-        Model

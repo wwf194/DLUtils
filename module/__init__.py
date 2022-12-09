@@ -5,8 +5,6 @@ import DLUtils
 from .AbstractModule import AbstractModule
 from .AbstractModule import AbstractNetwork
 
-import DLUtils.module.loss as loss
-
 def BuildModuleFromType(Type):
     module = DLUtils.transform.BuildModuleIfIsLegalType(Type)
     if module is not None:

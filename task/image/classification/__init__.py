@@ -1,7 +1,38 @@
 import DLUtils
-import DLUtils.dataset.cifar10 as cifar10
-import DLUtils.dataset.mnist as mnist
+import DLUtils.task.image.classification.cifar10 as cifar10
+import DLUtils.task.image.classification.mnist as mnist
 
+class ImageClassificationTask:
+    def __init__(self, Type=None):
+        self.Param = DLUtils.Param()
+        if Type is not None:
+            self.SetType(Type)
+    def SetType(self, Type):
+        if Type in ["MNIST", "mnist"]:
+            self.__class__ = MNIST
+            self._INIT()
+        else:
+            raise Exception()
+        return self
+class MNIST(ImageClassificationTask):
+    def __init__(self):
+        super().__init__()
+        self._INIT()
+    def _INIT(self):
+        Param = self.Param
+        Param._CLASS = "DLUtils.task.image.classification.MNIST"
+        return self
+    def SetDataPath(self, DataPath, CheckIntegrity=True):
+        DLUtils.file.EnsureDir(DataPath)
+        Param = self.Param
+        Param.DataPath = DataPath
+        ConfigFile = DLUtils.file.ParentFolderPath(__file__) + "mnist-folder-structure.jsonc"
+        Config = DLUtils.file.JsonFile2Param(ConfigFile, SplitKeyByDot=False)
+        if CheckIntegrity:
+            assert DLUtils.file.CheckIntegrity(DataPath, Config)
+        return self
+    def SetParam():
+        return self
 ModuleList = [
     "CIFAR10",
     "MNIST",

@@ -50,6 +50,8 @@ if __name__=="__main__":
         TestJsonUtils()
     elif args.task in ["BuildMLP", "mlp"]:
         import DLUtils
+        DLUtils.file.FolderDesciprtion("~/Data/mnist").ToJsonFile("test/mnist-folder-description.jsonc")
+
         Log = DLUtils.log.SeriesLog()
         MLP = DLUtils.NN.ModuleSequence(
             [
@@ -82,22 +84,28 @@ if __name__=="__main__":
         DLUtils.plot.PlotDataAndDistribution2D(Input, SavePath="./test/Input.svg")
         DLUtils.plot.PlotBatchDataAndDistribution1D(Output, SavePath="./test/Output.svg")
 
-        Optimizer = DLUtils.Optimizer("GradientDescend")
-            .SetSubType("Adam")
-            .Enable("Momentum")
+        Optimizer = DLUtils.Optimizer("GradientDescend") \
+            .SetSubType("Adam") \
+            .Enable("Momentum") \
             .SetParam(Alpha=0.1, Beta=0.1)
 
-        Evaluator = DLUtils.Evaluator("ImageClassification")
-            .SetLoss("CrossEntropy")
+        Loss = DLUtils.Loss("CrossEntropy")
+
+        Evaluator = DLUtils.Evaluator("ImageClassification") \
+            .SetLoss(Loss)
+
+        Task = DLUtils.Task("ImageClassification").SetType("MNIST").SetDataPath("~/Data/mnist")
+        TrainData = Task.TrainData()
+        TestData = Task.TestData()
 
         DLUtils.TrainProcess("Epoch-Batch") \
-            .SetLog(Log)
-            .SetParam(EpochNum=100, BatchNum=100)
-            .BindEvaluator(Evaluator)
-            .BindModel(MLP)
-            .BindTrainData(MNISTTrain)
-            .BindTestData(MNISTTest)
-            .BindOptimizer(Optimizer)
+            .SetLog(Log) \
+            .SetParam(EpochNum=100, BatchNum=100) \
+            .BindEvaluator(Evaluator) \
+            .BindModel(MLP) \
+            .BindTrainData(MNISTTrain) \
+            .BindTestData(MNISTTest) \
+            .BindOptimizer(Optimizer) \
             .Start()
         
     else:

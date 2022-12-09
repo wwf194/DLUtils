@@ -71,9 +71,12 @@ class AbstractModule:
         return self
     def AddSubModule(self, Name, Module):
         Param = self.Param
-        Param.SubModules.setattr(Name, Module.Param)
+        if hasattr(Module, "Param"):
+            Param.SubModules.setattr(Name, Module.Param)
+        else:
+            Param.SubModules.setattr(Name, "_THIS_MODULE_HAS_NO_PARAM_")
         self.SubModules[Name] = Module
-        #setattr(self, Name, Module)
+        setattr(self, Name, Module)
         return self
     def DelSubModule(self, Name):
         Param = self.Param

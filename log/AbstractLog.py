@@ -38,7 +38,7 @@ class AbstractLogAlongEpochBatchTrain(LogForEpochBatchTrain):
 
 AbstractModuleAlongEpochBatchTrain = AbstractLogAlongEpochBatchTrain
 
-class AbstractLogAlongBatch(AbstractLog):
+class AbstractLogAlongBatch(LogForEpochBatchTrain):
     def __init__(self, **kw):
         super().__init__(**kw)
         return

@@ -4,11 +4,14 @@ import re
 import pandas as pd
 import shutil # sh_utils
 import DLUtils
-from DLUtils.attr import *
+#from DLUtils.attr import *
 import warnings
 
-def FolderPathOfFile(FilePath):
+from DLUtils.utils._param import JsonFile2Param
+
+def ParentFolderPath(FilePath):
     return os.path.dirname(os.path.realpath(FilePath)) + "/"
+FolderPathOfFile = ParentFolderPath
 
 def RemoveFiles(FilesPath):
     for FilePath in FilesPath:
@@ -82,11 +85,11 @@ GetAllFilesAndDirs = ListAllFilesAndDirs
 def ListFiles(DirPath):
     assert os.path.exists(DirPath), "Non-existing DirPath: %s"%DirPath
     assert os.path.isdir(DirPath), "Not a Dir: %s"%DirPath
-    items = os.listdir(DirPath)
+    Items = os.listdir(DirPath)
     Files = []
-    for item in items:
-        if os.path.isfile(os.path.join(DirPath, item)):
-            Files.append(item)
+    for Item in Items:
+        if os.path.isfile(os.path.join(DirPath, Item)):
+            Files.append(Item)
     return Files
 
 ListAllFiles = GetAllFiles = ListFiles
@@ -104,13 +107,15 @@ def ListDirs(DirPath):
             Dirs.append(Dir)
     return Dirs
 ListAllDirs = GetAllDirs = ListDirs
+ListAllFolders = ListDirs
 
-def ExistsFile(FilePath):
+def FileExists(FilePath):
     return os.path.isfile(FilePath)
-FileExists = ExistsFile
+ExistsFile = FileExists
 
-def ExistsDir(DirPath):
+def DirExists(DirPath):
     return os.path.isdir(DirPath)
+ExistsDir = DirExists
 
 def CheckFileExists(FilePath):
     if not DLUtils.ExistsFile(FilePath):
@@ -438,6 +443,35 @@ from pathlib import Path
 def File2Str(FilePath):
     return Path(FilePath).read_text()
 
+def FileSizeInBytes(FilePath): 
+    return os.path.getsize(FilePath)
+FileSize = FileSizeInBytes
+
+KB = 1024.0
+MB = 1024.0 * 1024.0
+GB = 1024.0 * 1024.0 * 1024.0
+
+def Size2Str(SizeB, Base=1024):
+    if Base == 1024 or Base == 1024.0:
+        pass
+    if SizeB > Base:
+        SizeKB = SizeB * 1.0 / KB
+    else:
+        return "%.2f B"%(SizeB)
+    if SizeKB > Base:
+        SizeMB = SizeB * 1.0 / MB
+    else:
+        return "%.2f MB"%(SizeKB)
+    if SizeMB > Base:
+        SizeGB = "%.2f GB"%(SizeB * 1.0 / GB)
+    else:
+        return "%.2f MB"%(SizeMB)
+    return "%.2f MB"%(SizeGB)
+
+def FileSizeStr(FilePath):
+    Bytes = FileSizeInBytes(FilePath)
+    return Size2Str(Bytes)
+
 def File2ObjPickle(FilePath):
     with open(FilePath, 'rb') as f:
         Obj = pickle.load(f, encoding='bytes')
@@ -457,7 +491,7 @@ def Str2TextFile(Str, FilePath):
         f.write(Str)
 
 
-def File2Md5(FilePath):
+def File2MD5(FilePath):
     import hashlib
     Md5Calculator = hashlib.md5()
     assert DLUtils.ExistsFile(FilePath), FilePath
@@ -470,7 +504,7 @@ def File2Md5(FilePath):
 def FileList2Md5(FilePathList):
     Md5List = []
     for FilePath in FilePathList:
-        Md5 = File2Md5(FilePath)
+        Md5 = File2MD5(FilePath)
         Md5List.append(Md5)
     return Md5List
 
@@ -479,11 +513,11 @@ def ListFilesAndCalculateMd5(DirPath, Md5InKeys=False):
     Dict = {}
     if Md5InKeys:
         for FileName in Files:
-            Md5 = DLUtils.file.File2Md5(DirPath + FileName)
+            Md5 = DLUtils.file.File2MD5(DirPath + FileName)
             Dict[Md5] = FileName      
     else:
         for FileName in Files:
-            Md5 = DLUtils.file.File2Md5(DirPath + FileName)
+            Md5 = DLUtils.file.File2MD5(DirPath + FileName)
             Dict[FileName] = Md5
     return Dict
 
@@ -552,7 +586,12 @@ ListFilesAndMd5 = ListFilesAndCalculateMd5
 #         return None
 
 def ToAbsPath(Path):
-    return os.path.abspath(Path)
+    if "~" in Path:
+        Path = os.path.expanduser(Path)
+    AbsPath = os.path.abspath(Path)
+    if IsDir(AbsPath) and not AbsPath.endswith("/"):
+        AbsPath += "/"
+    return AbsPath
 
 def GetRelativePath(PathTarget, PathRef):
     PathTarget = ToAbsPath(PathTarget)
@@ -560,7 +599,6 @@ def GetRelativePath(PathTarget, PathRef):
     PathRef2Target = PathTarget.replace(PathRef, ".")
     # To be implemented: support forms such as '../../a/b/c'
     return PathRef2Target
-
 
 def CheckDir(DirPath):
     if not DirPath.endswith("/"):
@@ -685,6 +723,76 @@ from .utils.json import PyObj2DataFile, DataFile2PyObj, PyObj2JsonFile, \
     JsonFile2PyObj, JsonFile2JsonDict, JsonObj2JsonFile, DataFile2JsonObj
 
 from .utils._param import JsonDict2Str
+
+def FolderDesciprtion(FolderPath):
+    FolderPath = ToAbsPath(FolderPath)
+
+    if not FolderPath.endswith("/"):
+        FolderPath += "/"
+    Tree = DLUtils.param({})
+    NodeList = [
+        DLUtils.param({
+            "FolderPath": FolderPath,
+            "ParamNode": Tree
+        })
+    ]
+    while len(NodeList) > 0:
+        Node = NodeList.pop() # represents a folder
+        ParamNode = Node.ParamNode
+        FolderPath = Node.FolderPath
+        ParamNode.setattr("Files", DLUtils.param({}))
+        ParamNode.setattr("Folders", DLUtils.param({}))
+
+        Files = ParamNode.Files
+        for FileName in ListAllFiles(FolderPath):
+            FilePath = FolderPath + FileName
+            Files.setattr(
+                FileName,
+                DLUtils.param({
+                    "MD5": File2MD5(FolderPath + FileName),
+                    "Volume": FileSizeStr(FilePath)
+                })
+            )
+        Folders = ParamNode.Folders
+        for FolderName in ListAllDirs(FolderPath):
+            
+            Folders.setattr(
+                FolderName, DLUtils.param({})
+            )
+            NodeList.append(
+                DLUtils.param({
+                    "FolderPath": FolderPath + FolderName, # already ends with /
+                    "ParamNode": Folders.getattr(FolderName)
+                })
+            )
+    return Tree
+
+def CheckIntegrity(FolderPath, Config):
+    FolderPath = ToAbsPath(FolderPath)
+    FolderNodeList = []
+    ConfigNodeList = []
+    FolderNodeList.append(FolderPath)   
+    ConfigNodeList.append(Config)
+
+    while len(ConfigNodeList) > 0:
+        ConfigNode = ConfigNodeList.pop()
+        FolderPath = FolderNodeList.pop()
+        FilesNode = ConfigNode.Files
+        Files = ListAllFiles(FolderPath)
+        for FileName, FileInfo in FilesNode.items():
+            SubFilePath = FolderPath + FileName
+            if not FileExists(SubFilePath):
+                return False
+            if not FileInfo.MD5 == File2MD5(SubFilePath):
+                return False
+        FoldersNode = ConfigNode.Folders
+        for FolderName, FolderInfo in FoldersNode.items():
+            SubFolderPath = FolderPath + FolderName
+            if not ExistsDir(SubFolderPath):
+                return False
+            ConfigNodeList.append(FolderInfo)
+            FolderNodeList.append(SubFolderPath)
+    return True
 
 def JsonDict2JsonFile(JsonDict, FilePath):
     JsonStr = JsonDict2Str(JsonDict)
