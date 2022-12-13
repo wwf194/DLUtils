@@ -22,6 +22,12 @@ def TrainProcess(Type):
 class EpochBatchTrainProcess(DLUtils.module.AbstractModule):
     def __init__(self, Log=None):
         super().__init__(Log=Log)
+        self.BeforeTrainList = []
+        self.BeforeEpochList = []
+        self.BeforeBatchList = []
+        self.AfterBatchList = []
+        self.AfterEpochList = []
+        self.AfterTrainList = []
     def BindTrainData(self, TrainData):
         self.TrainData = TrainData
         return self
@@ -37,14 +43,42 @@ class EpochBatchTrainProcess(DLUtils.module.AbstractModule):
     def BindOptimizer(self, Optimizer):
         self.AddSubModule("Optimizer", Optimizer)
         return self
+
+    def BeforeTrain(self, *List, **Dict):
+        for Event in self.BeforeTrainList:
+            Event(*List, **Dict)
+        return self
+    def BeforeEpoch(self, *List, **Dict):
+        for Event in self.BeforeEpochList:
+            Event(*List, **Dict)
+        return self
+    def BeforeBatch(self, *List, **Dict):
+        for Event in self.BeforeBatchList:
+            Event(*List, **Dict)
+        return self
+    def AfterBatch(self, *List, **Dict):
+        for Event in self.AfterBatchList:
+            Event(*List, **Dict)
+        return self
+    def AfterEpoch(self, *List, **Dict):
+        for Event in self.AfterEpochList:
+            Event(*List, **Dict)
+        return self
+    def AfterTrain(self, *List, **Dict):
+        for Event in self.AfterTrainList:
+            Event(*List, **Dict)
+        return self
     def SetParam(self, **Dict):
         Param = self.Param
-        EpochNum = Dict.get("EpochNum")
-        if EpochNum is not None:
-            Param.Epoch.Num = EpochNum
-        BatchNum = Dict.get("BatchNum")
-        if EpochNum is not None:
-            Param.Batch.Num = BatchNum
+        for Key, Value in Dict.items():
+            if Key in ["EpochNum"]:
+                Param.Epoch.Num = Value
+                self.EpochNum = Value
+            elif Key in ["BatchNum"]:
+                Param.Batch.Num = Value
+                self.BatchNum = Value
+            else:
+                Param.setattr(Key, Value)
         return self
     def Start(self):
         Model = self.Model
@@ -53,7 +87,7 @@ class EpochBatchTrainProcess(DLUtils.module.AbstractModule):
         Optimizer = self.Optimizer
         self.BeforeTrain()
         for EpochIndex in range(self.EpochNum):
-            self.BeforeEpoch(EpochIndex)
+            self.BeforeEpoch(EpochIndex = EpochIndex)
             for BatchIndex in range(self.BatchNum):
                 self.BeforeBatch(EpochIndex, BatchIndex)
                 Input, OutputTarget = TrainData.Get(BatchIndex)

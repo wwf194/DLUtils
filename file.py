@@ -49,6 +49,7 @@ def IsDir(DirPath):
     return os.path.isdir(DirPath)
 
 def IsFile(FilePath):
+    FilePath = ToAbsPath(FilePath)
     return os.path.isfile(FilePath)
 
 def RemoveMatchedFiles(DirPath, Patterns):
@@ -113,9 +114,10 @@ def FileExists(FilePath):
     return os.path.isfile(FilePath)
 ExistsFile = FileExists
 
-def DirExists(DirPath):
+def FolderExists(DirPath):
     return os.path.isdir(DirPath)
-ExistsDir = DirExists
+ExistsDir = DirExists = FolderExists
+ExistsFolder = FolderExists
 
 def CheckFileExists(FilePath):
     if not DLUtils.ExistsFile(FilePath):
@@ -490,7 +492,6 @@ def Str2TextFile(Str, FilePath):
     with open(FilePath, 'w') as f:
         f.write(Str)
 
-
 def File2MD5(FilePath):
     import hashlib
     Md5Calculator = hashlib.md5()
@@ -608,7 +609,7 @@ def CheckDir(DirPath):
 
 CheckDirPath = CheckDir
 
-def VisitDirAndApplyMethodOnFiles(DirPath=None, Method=None, Recur=False, **kw):
+def VisitDirAndApplyMethodOnFiles(DirPath=None, Method=None, Recur=False, **Dict):
     DirPath = CheckDirPath(DirPath)
     
     if Method is None:
@@ -626,9 +627,9 @@ def VisitDirAndApplyMethodOnFiles(DirPath=None, Method=None, Recur=False, **kw):
 
     if Recur:
         for DirName in DirList:
-            VisitDirAndApplyMethodOnFiles(DirPath + DirName + "/", Method, Recur, **kw)
+            VisitDirAndApplyMethodOnFiles(DirPath + DirName + "/", Method, Recur, **Dict)
 
-def VisitDirAndApplyMethodOnDirs(DirPath=None, Method=None, Recur=False, **kw):
+def VisitDirAndApplyMethodOnDirs(DirPath=None, Method=None, Recur=False, **Dict):
     DirPath = CheckDirPath(DirPath)
     
     if Method is None:
@@ -648,7 +649,7 @@ def VisitDirAndApplyMethodOnDirs(DirPath=None, Method=None, Recur=False, **kw):
 
     if Recur:
         for DirName in DirList:
-            VisitDirAndApplyMethodOnFiles(DirPath + DirName + "/", Method, Recur, **kw)
+            VisitDirAndApplyMethodOnFiles(DirPath + DirName + "/", Method, Recur, **Dict)
 
 def CopyFiles2DestDir(FileNameList, SourceDir, DestDir):
     for FileName in FileNameList:
@@ -793,6 +794,62 @@ def CheckIntegrity(FolderPath, Config):
             ConfigNodeList.append(FolderInfo)
             FolderNodeList.append(SubFolderPath)
     return True
+
+import gzip
+import shutil
+def ExtractGzFile(FilePath, SavePath=None):
+    if SavePath is None:
+        SavePath = DLUtils.RemoveSuffix(FilePath, ".gz")
+        if SavePath is None:
+            raise Exception(SavePath)
+    with gzip.open(FilePath, 'rb') as FileIn:
+        with open(SavePath, 'wb') as FileOut:
+            shutil.copyfileobj(FileIn, FileOut)
+
+def IsGzFile(FilePath):
+    with open(FilePath, 'rb') as test_f:
+        return test_f.read(2) == b'\x1f\x8b'
+
+def UncompressGzFile(FilePath, SavePath=None):
+    if SavePath is None:
+        SavePath = DLUtils.RemoveSuffix(FilePath, "tar.gz")
+        if SavePath is None:
+            raise Exception(SavePath)
+    with gzip.open(FilePath, 'rb') as FileIn:
+        with open(SavePath, 'wb') as FileOut:
+            shutil.copyfileobj(FileIn, FileIn)
+import tarfile
+# Input: Zip File
+# Output: Extracted Folder
+def ExtractTarFile(FolderPath):
+    # importing the "tarfile" module
+
+    # open file
+    File = tarfile.open(FolderPath)
+    # extracting file
+    File.extractall('./Destination_FolderName')
+    File.close()
+
+UncompressTarGzFile = ExtractTarFile
+
+def IsTarFile(FilePath):
+    return tarfile.is_tarfile(FilePath)
+
+import zipfile
+# Input: Zip File
+# Output: Extracted Folder
+def UnzipFile(ZipFilePath, SavePath):
+    SavePath = EnsureDirFormat(SavePath)
+    with zipfile.ZipFile(ZipFilePath, 'r') as zip_ref:
+        zip_ref.extractall(SavePath)
+ZipFile2Folder = UnzipFile
+ExtractZipFile = UnzipFile
+
+def IsZipFile(FilePath):
+    return zipfile.is_zipfile(FilePath)
+
+def ZipFolder(ZipPathList, ZipFilePath):
+    return
 
 def JsonDict2JsonFile(JsonDict, FilePath):
     JsonStr = JsonDict2Str(JsonDict)

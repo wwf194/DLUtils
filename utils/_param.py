@@ -52,7 +52,7 @@ class param():
                 if isinstance(_CONTENT, dict):
                     self.SetAttr("_SUBTYPE", NODE_SUBTYPE.DICT)
                     self.from_dict(_CONTENT)
-                elif isinstance(_DICT, list):
+                elif isinstance(_CONTENT, list):
                     self.SetAttr("_SUBTYPE", NODE_SUBTYPE.LIST)
                     self.from_list(_CONTENT)
                 else:
@@ -61,16 +61,18 @@ class param():
         self.SetAttr("_SUBTYPE", NODE_SUBTYPE.DICT)
         self.SetAttr("_DICT", {})
         self.absorb_dict(Dict)
+        return self
     def absorb_dict(self, Dict):
         # assert isinstance(_DICT, dict)
         _DICT = self.GetAttr("_DICT")
         for key, item in Dict.items():
             if isinstance(item, dict):
-                _DICT[key] = Dict(_SUBTYPE=NODE_SUBTYPE.DICT).from_dict(item)
+                _DICT[key] = param(_SUBTYPE=NODE_SUBTYPE.DICT).from_dict(item)
             elif isinstance(item, list):
-                _DICT[key] = Dict(_SUBTYPE=NODE_SUBTYPE.LIST).from_list(item)
+                _DICT[key] = param(_SUBTYPE=NODE_SUBTYPE.LIST).from_list(item)
             else:
                 _DICT[key] = item
+        return self
     def from_list(self, List):
         _LIST = self.GetAttr("_LIST")
         for index, item in enumerate(List):
@@ -80,6 +82,7 @@ class param():
                 _LIST[index].append(param(_SUBTYPE=NODE_SUBTYPE.LIST).from_list(item))
             else:
                 _LIST[index].append(item)
+        return self
     def Get(self, Key):
         if Key in self.__dict__:
             return self.__dict__[Key]
@@ -130,6 +133,8 @@ class param():
         if not Key in self._DICT:
             self._DICT[Key] = Value
         return self._DICT[Key]
+    def getdefault(self, Key, DefaultValue):
+        return self._DICT.get(Key)
     def items(self):
         return self.GetAttr("_DICT").items()
     def append(self, Item):

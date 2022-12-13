@@ -1863,6 +1863,7 @@ def NpArray2ImageFile(image, SavePath=None):
     imagePIL = Im.fromarray(image)
     DLUtils.EnsureFileDir(SavePath)
     imagePIL.save(SavePath)
+UInt8NpArray2ImageFile = NpArray2ImageFile
 
 def PlotExampleImage(Images, PlotNum=10, SaveDir=None, SaveName=None):
     PlotIndices = DLUtils.RandomSelect(range(Images.shape[0]), PlotNum)

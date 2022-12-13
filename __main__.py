@@ -50,7 +50,7 @@ if __name__=="__main__":
         TestJsonUtils()
     elif args.task in ["BuildMLP", "mlp"]:
         import DLUtils
-        DLUtils.file.FolderDesciprtion("~/Data/mnist").ToJsonFile("test/mnist-folder-description.jsonc")
+        #DLUtils.file.FolderDesciprtion("~/Data/mnist").ToJsonFile("task/image/classification/mnist-folder-config.jsonc")
 
         Log = DLUtils.log.SeriesLog()
         MLP = DLUtils.NN.ModuleSequence(
@@ -94,17 +94,17 @@ if __name__=="__main__":
         Evaluator = DLUtils.Evaluator("ImageClassification") \
             .SetLoss(Loss)
 
-        Task = DLUtils.Task("ImageClassification").SetType("MNIST").SetDataPath("~/Data/mnist")
-        TrainData = Task.TrainData()
-        TestData = Task.TestData()
+        Task = DLUtils.Task("ImageClassification").SetType("MNIST").SetDataPath("~/Data/mnist.zip")
 
+        BatchSize = 64
         DLUtils.TrainProcess("Epoch-Batch") \
             .SetLog(Log) \
-            .SetParam(EpochNum=100, BatchNum=100) \
+            .SetParam(EpochNum=100) \
+            .SetParam(BatchNum=Task.TrainBatchNum(BatchSize)) \
             .BindEvaluator(Evaluator) \
             .BindModel(MLP) \
-            .BindTrainData(MNISTTrain) \
-            .BindTestData(MNISTTest) \
+            .BindTrainData(Task.TrainData(BatchSize=BatchSize)) \
+            .BindTestData(Task.TestData()) \
             .BindOptimizer(Optimizer) \
             .Start()
         

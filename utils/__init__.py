@@ -1101,16 +1101,22 @@ def check_suffix(name, suffix=None, is_path=True):
             warnings.warn('check_suffix: no suffix found in %s. adding suffix %s.'%(name, suffix))            
             return name + '.' + suf_
 
-def remove_suffix(name, suffix='.py', must_match=False):
-    pattern = re.compile(r'(.*)%s'%suffix)
-    result = pattern.match(name)
-    if result is None:
-        if must_match:
-            raise Exception('%s does not have suffix %s'%(name, suffix))
+def HasSuffix(Str, Suffix):
+    MatchPattern = re.compile(r'(.*)%s'%Suffix)
+    MatchResult = MatchPattern.match(Str)
+    return MatchResult is None
+
+def RemoveSuffix(Str, Suffix, MustMatch=True):
+    MatchPattern = re.compile(r'(.*)%s'%Suffix)
+    MatchResult = MatchPattern.match(Str)
+    if MatchResult is None:
+        if MustMatch:
+            #raise Exception('%s does not have suffix %s'%(Str, Suffix))
+            return None
         else:
-            return name
+            return Str
     else:
-        return result.group(1)
+        return MatchResult.group(1)
 
 def scan_files(path, pattern, ignore_folder=True, raise_not_found_error=False):
     if not path.endswith('/'):
@@ -1206,11 +1212,16 @@ def RandomSelect(List, SelectNum):
     else:
         return List
 
-def RandomIntInRange(Left, Right, IncludeRight=True):
+def RandomIntInRange(Left, Right, IncludeRight=False):
     if not IncludeRight:
         Right -= 1
     #assert Left <= Right 
     return random.randint(Left, Right)
+
+def MultipleRandomIntInRange(Left, Right, Num, IncludeRight=False):
+    if not IncludeRight:
+        Right += 1
+    return RandomSelect(range(Left, Right), Num)
 
 def RandomOrder(List):
     if isinstance(List, range):

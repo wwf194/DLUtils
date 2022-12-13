@@ -1,6 +1,4 @@
 import DLUtils
-import DLUtils.task.image.classification.cifar10 as cifar10
-import DLUtils.task.image.classification.mnist as mnist
 
 class ImageClassificationTask:
     def __init__(self, Type=None):
@@ -14,25 +12,29 @@ class ImageClassificationTask:
         else:
             raise Exception()
         return self
-class MNIST(ImageClassificationTask):
+    def NewFlow(Name):
+        return
+    def PreprocessData(self, Items:DLUtils.param):
+        for Item in Items:
+            Type = Item.Type
+            if Type in ["Norm"]:
+                Item.Subtype = Item.setdefault("SubType", "MinMax2FixedValue")
+                
+            else:
+                raise Exception()
+        return
+
+def MinMax2FixedValue(BatchSize):
+    return
+class Flow():
     def __init__(self):
-        super().__init__()
-        self._INIT()
-    def _INIT(self):
-        Param = self.Param
-        Param._CLASS = "DLUtils.task.image.classification.MNIST"
-        return self
-    def SetDataPath(self, DataPath, CheckIntegrity=True):
-        DLUtils.file.EnsureDir(DataPath)
-        Param = self.Param
-        Param.DataPath = DataPath
-        ConfigFile = DLUtils.file.ParentFolderPath(__file__) + "mnist-folder-structure.jsonc"
-        Config = DLUtils.file.JsonFile2Param(ConfigFile, SplitKeyByDot=False)
-        if CheckIntegrity:
-            assert DLUtils.file.CheckIntegrity(DataPath, Config)
-        return self
-    def SetParam():
-        return self
+        pass
+    def SetDataPath(self, DataPath):
+        self.DataPath = DataPath
+    def Get():
+        return 
+from .mnist import MNIST
+
 ModuleList = [
     "CIFAR10",
     "MNIST",
