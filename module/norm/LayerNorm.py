@@ -47,7 +47,7 @@ class LayerNorm(DLUtils.module.AbstractNetwork):
                 Param.Data.B = np.zeros((Param.FeatureNum))
                 self.Log("LayerNorm.Init: initing B in affine transform to all zeros")
             if Param.AffineTransform.setdefault("Trainable", True) is True:
-                Param.TrainableParam = ["A", "B"]
+                Param.TrainParam = ["A", "B"]
         else:
             self.A = 1.0
             self.B = 0.0

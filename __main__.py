@@ -53,43 +53,58 @@ if __name__=="__main__":
         #DLUtils.file.FolderDesciprtion("~/Data/mnist").ToJsonFile("task/image/classification/mnist-folder-config.jsonc")
 
         Log = DLUtils.log.SeriesLog()
-        MLP = DLUtils.NN.ModuleSequence(
+        Model = DLUtils.NN.ModuleSequence(
             [
+                DLUtils.transform.Reshape(-1, 28 * 28),
                 DLUtils.NN.NonLinearLayer().SetWeight(
-                    DLUtils.SampleFromKaimingUniform((10, 100), "ReLU")
+                    DLUtils.SampleFromKaimingUniform((28 * 28, 100), "ReLU")
                 ).SetMode("f(Wx+b)").SetBias(0.0).SetNonLinear("ReLU"),
                 DLUtils.norm.LayerNorm().SetFeatureNum(100),
                 DLUtils.NN.LinearLayer().SetWeight(
-                    DLUtils.SampleFromXaiverUniform((100, 50))
+                    DLUtils.SampleFromXaiverUniform((100, 10))
                 ).SetMode("Wx+b").SetBias("zeros"),
             ]
         ).SetLog(Log).Init()
         Log.ToJsonFile("./test/log.json")
         Log.ToFile("./test/log.dat")
 
-        TrainableParam = MLP.ExtractTrainableParam()
-        DLUtils.file.JsonDict2File(TrainableParam, "./test/trainable_param.json")
+        TrainParam = MLP.ExtractTrainParam()
+        DLUtils.file.JsonDict2File(TrainParam, "./test/trainable_param.json")
         
         SavePath = "./test/mlp - param.dat"
-        MLP.ToFile(SavePath)
-        MLP.ToJsonFile("./test/mlp - param.json")
-        MLP = DLUtils.NN.ModuleSequence().FromFile("./test/mlp - param.dat")
-        MLP.ToJsonFile("./test/mlp - param - 2.json")
-        MLP.PlotWeight("./test/")
-        MLP.SetLog(Log).FromFile(SavePath).Init()
-        Input = DLUtils.SampleFromNormalDistribution((100, 10), 0.0, 1.0)
+        Model.ToFile(SavePath).ToJsonFile("./test/mlp - param.json")
+        Model = DLUtils.NN.ModuleSequence().FromFile("./test/mlp - param.dat")
+        Model.ToJsonFile("./test/mlp - param - 2.json")
+        Model.PlotWeight("./test/")
+        Model.SetLog(Log).FromFile(SavePath).Init()
+        Input = DLUtils.SampleFromNormalDistribution((64, 28, 28), 0.0, 1.0)
         Output = MLP.Receive(
             DLUtils.ToTorchTensor(Input)
         )
-        DLUtils.plot.PlotDataAndDistribution2D(Input, SavePath="./test/Input.svg")
+        DLUtils.plot.PlotDataAndDistribution2D(Input[0], SavePath="./test/Input.svg")
         DLUtils.plot.PlotBatchDataAndDistribution1D(Output, SavePath="./test/Output.svg")
 
         Optimizer = DLUtils.Optimizer("GradientDescend") \
             .SetSubType("Adam") \
             .Enable("Momentum") \
-            .SetParam(Alpha=0.1, Beta=0.1)
+            .SetTrainParam(Model.ExtractTrainParam()) \
+            .SetParam(LearningRate=0.01, Alpha=0.1, Beta=0.1) \
+            .Init()
 
-        Loss = DLUtils.Loss("CrossEntropy")
+        Loss = DLUtils.NN.ModuleGraph() \
+            .AddSubModule(
+                "ClassIndex2OneHot", DLUtils.transform.Index2OneHot(10)
+            )\
+            .AddSubModule(
+                "Loss", DLUtils.Loss("SoftMaxAndCrossEntropy")
+            )\
+            .AddRoute(
+                "ClassIndex2OneHot", ["OutputTarget"], "OutputTargetProb"
+            )\
+            .AddRoute(
+                "Loss", ["Output", "OutputTargetProb"], "Loss"
+            )\
+            .SetOutput("Loss").Init()
 
         Evaluator = DLUtils.Evaluator("ImageClassification") \
             .SetLoss(Loss)
@@ -107,6 +122,5 @@ if __name__=="__main__":
             .BindTestData(Task.TestData()) \
             .BindOptimizer(Optimizer) \
             .Start()
-        
     else:
         raise Exception()

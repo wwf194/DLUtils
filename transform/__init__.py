@@ -366,7 +366,7 @@ def Init(self, param=None, data=None, ClassPath=None, **kw):
     cache.Dynamics = DLUtils.EmptyPyObj()
 
     if HasTensor:
-        cache.TrainableParam = []
+        cache.TrainParam = []
 
     self.param = param
     self.data = data
@@ -402,7 +402,7 @@ def LoadFromFile(self, LoadDir, Name, **kw):
 
     HasTensor = kw.setdefault("HasTensor", True)
     if HasTensor:
-        cache.TrainableParam = []
+        cache.TrainParam = []
 
     self.param = param
     self.data = data

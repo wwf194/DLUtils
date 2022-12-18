@@ -21,7 +21,7 @@ class Bias(AbstractTransformWithTensor):
             data.Bias = torch.nn.Parameter(torch.zeros(param.Size))
         else:
             data.Bias = DLUtils.ToTorchTensor(data.Bias)
-        cache.TrainableParam.append([data, "Bias", data.Bias])
+        cache.TrainParam.append([data, "Bias", data.Bias])
 
         return self
     def forward(self):

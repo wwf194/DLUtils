@@ -15,10 +15,15 @@ class GradientDescend():
     def SetSubType(self, SubType, **Dict):
         if SubType in ["SGD", "sgd"]:
             self.__class__ = SGD #
+            return self
         elif SubType in ["Adam", "adam"]:
             self.__class__ = Adam
+            return self
         else:
             raise Exception()
+        return self
+    def SetTrainParam(self, TrainParam):
+        self.TrainParam = TrainParam
         return self
     
 class SGD(GradientDescend):
@@ -43,6 +48,7 @@ class SGD(GradientDescend):
         else:
             raise Exception()
         return self
+    
     def SetParam(self, **Dict):
         Param = self.Param
         Momentum = Dict.setdefault("Momentum", False)
@@ -62,18 +68,16 @@ class SGD(GradientDescend):
         EnableMomentum = Param.Momentum.Enable
         if EnableMomentum:
             if Nesterov:
-                self.UpdateParam = self._UpdateParamMomentumNesterov
+                self.Optimize = self._UpdateParamMomentumNesterov
         else:
             if Nesterov:
-                self.UpdateParam = self._UpdateParamNesterov
+                #self.Optimize = self._UpdateParamNesterov
+                raise Exception("Nesterov can only be enabled when momentum is on.")
             else:
-                self.UpdateParam = self._UpdateParam
+                self.Optimize = self._UpdateParam
         self.Nesterov = Nesterov
         return self
-    def BeforeBatchNesterov(self):
-        
-        return
-    def _UpdateParamMomentum(self):
+    def _UpdateParamMomentum(self, *List, **Dict):
         # for p in group['params']:
         #     if p.grad is None:
         #         continue
@@ -123,7 +127,7 @@ class SGD(GradientDescend):
                 GradWithMomentum = H
             Param.add_(GradWithMomentum, alpha=-LearningRate)
         return self
-    def _UpdateParamMomentumNesterov(self):
+    def _UpdateParamMomentumNesterov(self, *List, **Dict):
         for Param in self.TrainParam:
             alpha = self.alpha # momentum coefficient
             # applying nesterov usually requires damp = 0.0
@@ -141,6 +145,9 @@ class SGD(GradientDescend):
 class Adam(GradientDescend):
     def SetParam(self, **Dict):
         Param = self.Param
+        LearningRate = Dict.setdefault("LearningRate", None)
+        Param.LearningRate = LearningRate
+
         Alpha = Dict.setdefault("Alpha", 0.0) # momentum
             # exponential average on historical step vector
         Beta = Dict.setdefault("Beta", 0.0) # gradient element-wise nomalization
@@ -170,6 +177,28 @@ class Adam(GradientDescend):
         else:
             raise Exception()
         return self
-    def _UpdateParam(self):
+    def _UpdateParam(self, *List, **Dict):
+        self.Optimizer.step()
+        self.Optimizer.zero_grad()
+    def Init(self):
+        Param = self.Param
+        if Param.Momentum.Enable:
+            self.Alpha = Param.Momentum.Value
+        else:
+            self.Alpha = 0.0
+        if Param.GradientNorm.Enable:
+            self.Beta = Param.GradientNorm.Value
+        else:
+            self.Beta = 0.0
+        self.LearningRate = Param.LearningRate
+        self.Optimizer = torch.optim.Adam(
+            self.TrainParam.values(),
+            lr=self.LearningRate,
+            betas=[
+                self.Alpha, # Momentum
+                self.Beta   # GradientNorm
+            ]
+        )
+        self.Optimize = self._UpdateParam
         return self
 

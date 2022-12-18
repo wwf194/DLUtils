@@ -328,7 +328,7 @@ class LogAlongEpochBatchTrain(AbstractLogAlongEpochBatchTrain):
 #DLUtils.transform.SetEpochBatchMethodForModule(LogForEpochBatchTrain)
 LogAlongEpochBatchTrain.AddLogCache = LogAlongEpochBatchTrain.LogCache
 
-class Log:
+class _Log:
     def __init__(self, Name, **kw):
         self.log = _CreateLog(Name, **kw)
     def AddLog(self, log, TimeStamp=True, FilePath=True, RelativeFilePath=True, LineNum=True, StackIndex=1, **kw):
@@ -387,37 +387,31 @@ def AddLog2GlobalParam(Name, **kw):
 def CreateLog(Name, **kw):
     return Log(Name, **kw)
 
-def _CreateLog(Name, SaveDir=None, **kw):
-    if SaveDir is None:
-        SaveDir = DLUtils.GetMainSaveDir()
-    DLUtils.EnsureDir(SaveDir)
-    HandlerList = ["File", "Console"]
-    if kw.get("FileOnly"):
-        HandlerList = ["File"]
+def NewLog(Name=None, OutputList=["Console"], **Dict):
+    # Output to file
+    if Name is None:
+        log = logging.Logger()
+    else:
+        Log = logging.Logger(Name)
 
-    # 输出到file
-    log = logging.Logger(Name)
-    log.setLevel(logging.DEBUG)
-    log.HandlerList = HandlerList
-
-    for HandlerType in HandlerList:
-        if HandlerType in ["Console"]:
-            # 输出到console
+    assert len(OutputList) > 0
+    Log.setLevel(logging.DEBUG)
+    Log.OutputList = OutputList
+    for Output in OutputList:
+        if isinstance(Output, str) and Output in ["Console"]: # 输出到console
             ConsoleHandler = logging.StreamHandler()
             ConsoleHandler.setLevel(logging.DEBUG) # 指定被处理的信息级别为最低级DEBUG，低于level级别的信息将被忽略
-            log.addHandler(ConsoleHandler)
-        elif HandlerType in ["File"]:
-            FileHandler = logging.FileHandler(SaveDir + "%s.txt"%(Name), mode='w', encoding='utf-8')  # 不拆分日志文件，a指追加模式,w为覆盖模式
-            FileHandler.setLevel(logging.DEBUG)     
-            log.addHandler(FileHandler)
+            Log.addHandler(ConsoleHandler)
+        elif isinstance(Output, list) and Output[0] in ["File"]:
+            SaveDir = Output[1]
+            FileHandler = logging.FileHandler(
+                SaveDir + "%s.txt"%(Name), mode='w', encoding='utf-8'
+            )  # 不拆分日志文件，a指追加模式,w为覆盖模式
+            FileHandler.setLevel(logging.DEBUG)
+            Log.addHandler(FileHandler)
         else:
-            raise Exception(HandlerType)
-
-    HandlerNum = len(HandlerList)
-    if len(HandlerList)==0:
-        raise Exception(HandlerNum)
-
-    return log
+            raise Exception()
+    return Log
 
 def SetLogGlobal(GlobalParam):
     GlobalParam.log.Global = CreateLog('Global')

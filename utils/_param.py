@@ -280,7 +280,6 @@ class Param(param):
             return self.GetAttr(Key)
         else:
             return self.SetAttr(Key, DefaultValue)
-
     def FromFile(self, FilePath):
         Obj = DLUtils.file.BinaryFile2Obj(FilePath)
         self.FromParam(Obj)

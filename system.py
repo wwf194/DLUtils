@@ -26,15 +26,17 @@ def GetSystemType():
 
 import platform
  
+def Time():
+    return 
+
 def GetSystemType2():
     SystemType = platform.system().lower()
-    if SystemType == 'windows':
-        return "windows"
-    elif SystemType == 'linux':
-        return "linux"
+    if SystemType in ['windows']:
+        return "Windows"
+    elif SystemType in ['linux']:
+        return "Linux"
     else:
         raise Exception(SystemType)
-    return SystemType
 
 def GetBytesInMemory(Obj):
     return sys.getsizeof(Obj)

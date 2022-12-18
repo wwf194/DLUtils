@@ -20,29 +20,5 @@ def LogAccuracyForSingleClassPrediction(ClassIndexPredicted, ClassIndexTruth, lo
         }
     )
 
-class SoftMax(DLUtils.module.AbstractModule):
-    def __init__(self):
-        Param = self.Param
-        Param._CLASS = "DLUtils.module.Loss.SoftMax"
-    def Receive(self, Input):
-        # Input: [BatchNum, FeatureNum]
-        return torch.softmax(Input, dim=1)
 
-SoftMax1D = SoftMax
-
-class SoftMaxAndCrossEntropy(DLUtils.module.AbstractModule):
-    def __init__(self):
-        super().__init__()
-        Param = self.Param
-        Param._CLASS = "DLUtils.module.Loss.SoftMaxAndCrossEntropy"
-    
-    def Init(self, **Dict):
-        self.AddSubModule(
-            "CrossEntropy", CrossEntropy()
-        )
-        self.AddSubModule(
-            "SoftMax", SoftMax()
-        )
-        super().__init__()
-        return self
 

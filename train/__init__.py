@@ -43,7 +43,6 @@ class EpochBatchTrainProcess(DLUtils.module.AbstractModule):
     def BindOptimizer(self, Optimizer):
         self.AddSubModule("Optimizer", Optimizer)
         return self
-
     def BeforeTrain(self, *List, **Dict):
         for Event in self.BeforeTrainList:
             Event(*List, **Dict)
@@ -87,12 +86,14 @@ class EpochBatchTrainProcess(DLUtils.module.AbstractModule):
         Optimizer = self.Optimizer
         self.BeforeTrain()
         for EpochIndex in range(self.EpochNum):
+            self.AddLog(f"EpochIndex: {EpochIndex}", "TrainProcess")
             self.BeforeEpoch(EpochIndex = EpochIndex)
             for BatchIndex in range(self.BatchNum):
                 self.BeforeBatch(EpochIndex, BatchIndex)
                 Input, OutputTarget = TrainData.Get(BatchIndex)
+                Output = Model(Input)
                 Evaluation = Evaluator.Evaluate(
-                    Input, OutputTarget, Model
+                    Input, Output, OutputTarget, Model
                 )
                 Optimizer.Optimize(
                     Input=Input, OutputTarget=OutputTarget,

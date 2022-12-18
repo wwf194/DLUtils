@@ -118,7 +118,7 @@ def Tensor2Statistics2File(data, Name, FilePath=None):
     if FilePath is None:
         FilePath = DLUtils.GetMainSaveDir() + Name + "-statistics" + ".txt"
         FilePath = DLUtils.RenameIfFileExists(FilePath)
-    statistics = DLUtils.math.TorchTrainableParamtat(data)
+    statistics = DLUtils.math.TorchTrainParamtat(data)
     DLUtils.Data2TextFile(statistics, FilePath=FilePath)
 
 ModuleList.append("Data2TextFile")

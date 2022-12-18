@@ -73,7 +73,7 @@ def LayerNorm(X:torch.Tensor):
     # X: [BatchSize, ]
     pass
 
-from .AbstractModule import AbstractNetwork
+from ..AbstractModule import AbstractNetwork
 class Transformer(AbstractNetwork):
     def __init__(param):
         return

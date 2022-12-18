@@ -11,7 +11,7 @@ class AbstractModule:
         self.Name = "NullName"
         self.SubModules = DLUtils.param()
         Param = self.Param = DLUtils.Param()
-        Param._CLASS = "DLUtils.NN.AbstractModule"
+        Param._CLASS = "DLUtils.module.AbstractModule"
         Param._PATH = "Root"
         if Log is not None:
             self.Log = Log
@@ -48,7 +48,7 @@ class AbstractModule:
         return self
     def ExtractParam(self, RetainSelf=True):
         Param = self.Param
-        self.ExtractParamRecur(self, Param, RetainSelf)
+        self.ExtractParamRecur(Param, RetainSelf)
         return Param
     def ExtractParamRecur(self, Param, RetainSelf):
         for Name, SubModule in self.SubModules.items():
@@ -78,6 +78,8 @@ class AbstractModule:
         self.SubModules[Name] = Module
         setattr(self, Name, Module)
         return self
+    def GetSubModule(self, Name):
+        return self.SubModules.getattr(Name)
     def DelSubModule(self, Name):
         Param = self.Param
         Param.SubModules.delattr(Name)
@@ -86,13 +88,11 @@ class AbstractModule:
         return self
     def UpdateTensorFromDict(self):
         Param = self.Param
-        if isinstance(self, DLUtils.NN.NonLinearLayer):
-            a = 1
-        for Name in Param.TrainableParam:
+        for Name in Param.Tensor:
             setattr(self, Name, DLUtils.ToTorchTensorOrNum(getattr(Param.Data, Name)))
     def UpdateDictFromTensor(self):
         Param = self.Param
-        for Name in Param.TrainableParam:
+        for Name in Param.TrainParam:
             setattr(Param.Data, Name, DLUtils.ToNpArrayOrNum(getattr(self, Name)))
     def ToFile(self, FilePath):
         Param = self.ExtractParam(RetainSelf=False)
@@ -107,14 +107,16 @@ class AbstractModule:
         self.ExtractParam(RetainSelf=True).ToJsonFile(FilePath)
         return self
     def PathStr(self):
-        Param =self.Param
-        if not hasattr(self, "_PathStr"):
-            if isinstance(Param._PATH, str):
-                self._PathStr = Param._PATH
-            elif isinstance(Param._PATH, list):
-                self._PathStr = ".".join(Param._PATH)
-            else:
-                raise Exception()
+        Param = self.Param
+        if isinstance(self, DLUtils.NN.NonLinearLayer):
+            a = 1
+        #if not hasattr(self, "_PathStr"):
+        if isinstance(Param._PATH, str):
+            self._PathStr = Param._PATH
+        elif isinstance(Param._PATH, list):
+            self._PathStr = ".".join(Param._PATH)
+        else:
+            raise Exception()
         return self._PathStr
     def ClassStr(self):
         if hasattr(self, "ClassStr"):    
@@ -144,31 +146,38 @@ class AbstractNetwork(AbstractModule):
     def __init__(self, Log=None):
         super().__init__(Log=Log)
         Param = self.Param
-        Param.Tensors = []
-        Param.TrainableParam = []
-    def ExtractTrainableParam(self, ParamDict={}, PathStrPrefix=True, Recur=True):
+        Param.Tensor = set()
+        Param.TrainParam = set()
+    def ExtractTrainParam(self, ParamDict={}, PathStrPrefix=True, Recur=True):
         self.UpdateDictFromTensor()
+        self.UpdateTensorFromDict()
         Param = self.Param
-        TrainableParamName = self.Param.get("TrainableParam")
+        TrainParamName = self.Param.get("TrainParam")
         if PathStrPrefix:
             Prefix = self.PathStr() + "."
         else:
             Prefix = ""
-        if TrainableParamName is not None:
-            for Name in TrainableParamName:
-                ParamDict[Prefix + Name] = Param.Data.getattr(Name)
+        if isinstance(self, DLUtils.NN.LinearLayer):
+            a = 1
+        if TrainParamName is not None:
+            for Name in TrainParamName:
+                if isinstance(getattr(self, Name), float):
+                    a = 1
+                #ParamDict[Prefix + Name] = Param.Data.getattr(Name)
+                ParamDict[Prefix + Name] = getattr(self, Name)
         if Recur:
-            self.ExtractTrainableParamRecur(ParamDict=ParamDict, PathStrPrefix=PathStrPrefix)
+            self.ExtractTrainParamRecur(ParamDict=ParamDict, PathStrPrefix=PathStrPrefix)
         return ParamDict
-    def ExtractTrainableParamRecur(self, ParamDict={}, PathStrPrefix=True):
+    def ExtractTrainParamRecur(self, ParamDict={}, PathStrPrefix=True):
         for Name, SubModule in self.SubModules.items():
-            SubModule.ExtractTrainableParam(ParamDict=ParamDict, PathStrPrefix=PathStrPrefix, Recur=True) 
+            if hasattr(SubModule, "ExtractTrainParam"):
+                SubModule.ExtractTrainParam(ParamDict=ParamDict, PathStrPrefix=PathStrPrefix, Recur=True) 
         return ParamDict
     def PlotWeight(self, SaveDir=None, SaveName=None):
         Param = self.Param
         Param = self.ExtractParam()
         SavePath = DLUtils.ParseSavePath(SaveDir, SaveName, SaveNameDefault=Param._PATH)
-        for WeightName in Param.TrainableParam:
+        for WeightName in Param.TrainParam:
             Data = Param.Data.getattr(WeightName)
             if hasattr(Data, "shape"):
                 DimNum = len(Data.shape)
@@ -206,8 +215,8 @@ class AbstractNetwork(AbstractModule):
         Param = self.Param
         if not RetainSelf:
             # prune some empty nodes for readability and storage space saving.
-            if Param.hasattr("TrainableParam") and len(Param.TrainableParam) == 0:
-                Param.delattr("TrainableParam")
+            if Param.hasattr("TrainParam") and len(Param.TrainParam) == 0:
+                Param.delattr("TrainParam")
                 if isinstance(self, DLUtils.NN.LinearLayer):
                     a = 1
         self.UpdateDictFromTensor()
@@ -215,10 +224,10 @@ class AbstractNetwork(AbstractModule):
         return Param
     def LoadParam(self, Param):
         self.Param = Param
-        if Param.hasattr("TrainableParam"):
+        if Param.hasattr("TrainParam"):
             self.UpdateTensorFromDict()
         else:
-            Param.TrainableParam = []
+            Param.TrainParam = []
         self.LoadParamRecur(Param)
         return self
     def PlotWeightRecur(self, SaveDir, SaveName):

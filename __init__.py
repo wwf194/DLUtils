@@ -30,6 +30,7 @@ import DLUtils.analysis as analysis
 
 import DLUtils.module.network as NN
 import DLUtils.module.norm as norm
+import DLUtils.module.transform as transform
 
 from .utils import *
 

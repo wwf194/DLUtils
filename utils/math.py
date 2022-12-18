@@ -31,7 +31,7 @@ def RemoveNaNOrInf(data):
     # data: 1D np.ndarray.
     return data[np.isfinite(data)]
 
-def TorchTrainableParamtat(tensor, verbose=False, ReturnType="PyObj"):
+def TorchTrainParamtat(tensor, verbose=False, ReturnType="PyObj"):
     statistics = {
         "Min": torch.min(tensor).item(),
         "Max": torch.max(tensor).item(),

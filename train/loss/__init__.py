@@ -6,11 +6,13 @@ from DLUtils.attr import *
 # import DLUtils.loss.classification as classification
 # from DLUtils.loss.L2Loss import L2Loss
 # from DLUtils.loss.classification import Probability2MostProbableIndex, LogAccuracyForSingleClassPrediction
-from .entropy import CrossEntropy
+from .entropy import CrossEntropy, SoftMax, SoftMaxAndCrossEntropy
 
 def Loss(Type):
     if Type in ["CrossEntropy"]:
         return CrossEntropy()
+    elif Type in ["SoftMaxAndCrossEntropy"]:
+        return SoftMaxAndCrossEntropy()
     else:
         raise Exception(Type)
 

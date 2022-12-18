@@ -63,7 +63,7 @@ class AbstractTransform(DLUtils.module.AbstractModule):
         #log = DLUtils.ParseLog(log)
         param = self.param
         for Name, Weight in WeightDict.items():
-            WeightStat = DLUtils.math.TorchTrainableParamtat(Weight, ReturnType="Dict")
+            WeightStat = DLUtils.math.TorchTrainParamtat(Weight, ReturnType="Dict")
             log.AddLogDict(Name + "-Stat", WeightStat, Type)
     def LogActivityAlongTime(self, Name, data, Type="ActivityAlongTime", log="Data"):
         log = DLUtils.ParseLog(log)
@@ -134,7 +134,7 @@ class AbstractTransformWithTensor(AbstractTransform):
     def BeforeBuild(self, IsLoad=False):
         super().BeforeBuild(IsLoad=IsLoad)
         cache = self.cache
-        cache.TrainableParam = DLUtils.PyObj([])
+        cache.TrainParam = DLUtils.PyObj([])
     def ClearTrainWeight(self):
         DLUtils.RemoveAttrIfExists(self.cache, "TrainWeight")
     def SetTrainWeight(self):
