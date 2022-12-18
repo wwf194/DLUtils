@@ -1,6 +1,6 @@
 import DLUtils
 
-class ImageClassificationTask:
+class ImageClassificationTask(DLUtils.module.LogComponent):
     def __init__(self, Type=None):
         self.Param = DLUtils.Param()
         if Type is not None:
@@ -22,7 +22,7 @@ class ImageClassificationTask:
                 
             else:
                 raise Exception()
-        return
+        return self
 
 def MinMax2FixedValue(BatchSize):
     return

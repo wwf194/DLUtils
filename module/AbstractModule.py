@@ -6,17 +6,8 @@ import DLUtils
 # from DLUtils.attr import *
 import DLUtils
 
-class AbstractModule:
-    def __init__(self, Log=None):
-        self.Name = "NullName"
-        self.SubModules = DLUtils.param()
-        Param = self.Param = DLUtils.Param()
-        Param._CLASS = "DLUtils.module.AbstractModule"
-        Param._PATH = "Root"
-        if Log is not None:
-            self.Log = Log
-    def __call__(self, *List, **Dict):
-        return self.Receive(*List, **Dict)
+class LogComponent:
+    # method for class
     def SetLog(self, Log, SetForSubModules=True):
         self.Log = Log
         Param = self.Param
@@ -46,6 +37,18 @@ class AbstractModule:
         else:
             self.Log.Add(log)
         return self
+
+class AbstractModule(LogComponent):
+    def __init__(self, Log=None):
+        self.Name = "NullName"
+        self.SubModules = DLUtils.param()
+        Param = self.Param = DLUtils.Param()
+        Param._CLASS = "DLUtils.module.AbstractModule"
+        Param._PATH = "Root"
+        if Log is not None:
+            self.Log = Log
+    def __call__(self, *List, **Dict):
+        return self.Receive(*List, **Dict)
     def ExtractParam(self, RetainSelf=True):
         Param = self.Param
         self.ExtractParamRecur(Param, RetainSelf)
@@ -56,10 +59,10 @@ class AbstractModule:
         return self.Param
     def LoadParam(self, Param):
         self.Param = Param
-        if Param.hasattr("Tensors"):
-            self.UpdateTensorfrom_dict()
+        if Param.hasattr("Tensor"):
+            self.UpdateTensorFromDict()
         else:
-            Param.Tensors = []
+            Param.Tensor = []
         self.LoadParamRecur(Param)
         return self
     def LoadParamRecur(self, Param):
@@ -69,14 +72,15 @@ class AbstractModule:
             self.SubModules[Name] = ModuleClass().LoadParam(SubModule)
             #setattr(self, Name, SubModule)
         return self
-    def AddSubModule(self, Name, Module):
+    def AddSubModule(self, Name, SubModule):
         Param = self.Param
-        if hasattr(Module, "Param"):
-            Param.SubModules.setattr(Name, Module.Param)
+        if hasattr(SubModule, "Param"):
+            Param.SubModules.setattr(Name, SubModule.Param)
         else:
             Param.SubModules.setattr(Name, "_THIS_MODULE_HAS_NO_PARAM_")
-        self.SubModules[Name] = Module
-        setattr(self, Name, Module)
+        self.SubModules[Name] = SubModule
+        SubModule.Param._PATH = Param._PATH + "." + Name
+        setattr(self, Name, SubModule)
         return self
     def GetSubModule(self, Name):
         return self.SubModules.getattr(Name)
@@ -86,14 +90,7 @@ class AbstractModule:
     def SetAsRoot(self):
         self.Param._IS_ROOT = True
         return self
-    def UpdateTensorFromDict(self):
-        Param = self.Param
-        for Name in Param.Tensor:
-            setattr(self, Name, DLUtils.ToTorchTensorOrNum(getattr(Param.Data, Name)))
-    def UpdateDictFromTensor(self):
-        Param = self.Param
-        for Name in Param.TrainParam:
-            setattr(Param.Data, Name, DLUtils.ToNpArrayOrNum(getattr(self, Name)))
+
     def ToFile(self, FilePath):
         Param = self.ExtractParam(RetainSelf=False)
         DLUtils.file.Obj2File(Param, FilePath)
@@ -148,6 +145,36 @@ class AbstractNetwork(AbstractModule):
         Param = self.Param
         Param.Tensor = set()
         Param.TrainParam = set()
+    def UpdateTensorFromDict(self, Recur=False):
+        Param = self.Param
+        for Name in Param.Tensor:
+            Tensor = DLUtils.ToTorchTensorOrNum(getattr(Param.Data, Name))
+            if hasattr(self, "Device"):
+                TensorNew = Tensor.to(self.Device).detach()
+                TensorNew.requires_grad = Tensor.requires_grad
+            else:
+                TensorNew = Tensor
+            setattr(self, Name, TensorNew)
+        if Param.hasattr("TrainParam"):
+            for Name in Param.TrainParam:
+                Tensor = getattr(self, Name)
+                Tensor.requires_grad = True
+        if Recur:
+            for Name, SubModule in self.SubModules.items():
+                if hasattr(SubModule, "UpdateTensorFromDict"):
+                    SubModule.UpdateTensorFromDict()
+        return self
+    def UpdateDictFromTensor(self, Recur=False):
+        Param = self.Param
+        for Name in Param.TrainParam:
+            if hasattr(self, Name):
+                Tensor = getattr(self, Name)
+                setattr(Param.Data, Name, DLUtils.ToNpArrayOrNum(Tensor))
+        if Recur:
+            for Name, SubModule in self.SubModules.items():
+                if hasattr(SubModule, "UpdateDictFromTensor"):
+                    SubModule.UpdateDictFromTensor()
+        return self
     def ExtractTrainParam(self, ParamDict={}, PathStrPrefix=True, Recur=True):
         self.UpdateDictFromTensor()
         self.UpdateTensorFromDict()
@@ -157,13 +184,8 @@ class AbstractNetwork(AbstractModule):
             Prefix = self.PathStr() + "."
         else:
             Prefix = ""
-        if isinstance(self, DLUtils.NN.LinearLayer):
-            a = 1
         if TrainParamName is not None:
             for Name in TrainParamName:
-                if isinstance(getattr(self, Name), float):
-                    a = 1
-                #ParamDict[Prefix + Name] = Param.Data.getattr(Name)
                 ParamDict[Prefix + Name] = getattr(self, Name)
         if Recur:
             self.ExtractTrainParamRecur(ParamDict=ParamDict, PathStrPrefix=PathStrPrefix)
@@ -229,6 +251,27 @@ class AbstractNetwork(AbstractModule):
         else:
             Param.TrainParam = []
         self.LoadParamRecur(Param)
+        return self
+    def Move2Device(self, Device):
+        self.Device = Device
+        Param = self.Param
+        for TensorName in Param.Tensor:
+            if hasattr(self, TensorName):
+                Tensor = getattr(self, TensorName)
+                TensorNew = Tensor.to(Device).detach() # requires_grad remains same.
+                TensorNew.requires_grad = Tensor.requires_grad
+                setattr(self, TensorName, TensorNew)
+            else:
+                Tensor = Param.Data.getattr(TensorName)
+                TensorNew = DLUtils.ToTorchTensor(Tensor).to(Device).detach()
+                TensorNew.requires_grad = Tensor.requires_grad
+                setattr(self, TensorName, TensorNew)
+        self.Move2DeviceRecur(Device)
+        return self
+    def Move2DeviceRecur(self, Device):
+        for Name, SubModule in self.SubModules.items():
+            if hasattr(SubModule, "Move2Device"):
+                SubModule.Move2Device(Device)
         return self
     def PlotWeightRecur(self, SaveDir, SaveName):
         for Name, SubModule in self.SubModules.items():

@@ -38,12 +38,13 @@ class MNIST(ImageClassificationTask):
     def PreprocessData(self, Preprocess, BatchSize=1000):
         assert self.IsDataPathBind
         Data = LoadMNIST(self.DataPath)
+        return self
     def TestData(self, BatchSize=64):
         if not hasattr(self, "Data"):
             self.Data = LoadMNIST(self.DataPath)
         Data = self.Data
         return DataLoader(
-            DataFetcher(Data.Test.Image, Data.Test.Label),
+            DataFetcher(Data.Test.Image, Data.Test.Label).SetLog(self),
             BatchSize=BatchSize
         )
     def TrainData(self, BatchSize=64):
@@ -51,7 +52,7 @@ class MNIST(ImageClassificationTask):
             self.Data = LoadMNIST(self.DataPath)
         Data = self.Data
         return DataLoader(
-            DataFetcher(Data.Train.Image, Data.Train.Label),
+            DataFetcher(Data.Train.Image, Data.Train.Label).SetLog(self),
             BatchSize=BatchSize
         )
     def TrainBatchNum(self, BatchSize):
@@ -181,14 +182,34 @@ class DataFetcher(torch.utils.data.Dataset):
         self.Image = Image
         self.Label = Label
         self.BatchSize = BatchSize
+    def SetDevice(self, Device):
+        self.Device = Device
+        self.AddLog(f"change device to {Device}")
+        return self
     def __getitem__(self, Index):
-        return self.Image[Index], self.Label[Index]
+        #Image = torch.from_numpy(self.Image[Index]).to(self.Device)
+        #Label = torch.from_numpy(self.Label[Index]).to(self.Device)
+        Image = self.Image[Index]
+        Label = self.Label[Index]
+        return Image, Label
     def __len__(self):
         return self.Image.shape[0]
+    def SetLog(self, Log):
+        self.Log = Log
+        return self
+    def AddLog(self, Content):
+        self.Log.AddLog(Content)
+        return self
 
 class DataLoader(torch.utils.data.DataLoader):
-    def __init__(self, DataSet, BatchSize):
-        super().__init__(dataset=DataSet, batch_size=BatchSize, num_workers=2)
+    def __init__(self, DataFetcher, BatchSize):
+        self.DataFetcher = DataFetcher
+        super().__init__(dataset=DataFetcher, batch_size=BatchSize, num_workers=2)
     def Get(self, BatchIndex):
-        return next(iter(self))
+        Image, Label = next(iter(self))
+        return Image.to(self.Device), Label.to(self.Device)
+    def SetDevice(self, Device):
+        self.DataFetcher.SetDevice(Device)
+        self.Device = Device
+        return self
     

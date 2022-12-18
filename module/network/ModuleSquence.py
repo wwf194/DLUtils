@@ -8,7 +8,8 @@ class ModuleSequence(AbstractNetwork):
         if ModuleList is None:
             ModuleList = []
         assert isinstance(ModuleList, list)
-        self.SetModuleList(ModuleList)
+        if ModuleList is not None:
+            self.SetModuleList(ModuleList)
         self.Param.absorb_dict({
             "_CLASS": "DLUtils.NN.ModuleSequence",
             "Module.Num": len(self.ModuleList)
@@ -22,15 +23,23 @@ class ModuleSequence(AbstractNetwork):
         for Name, SubModuleParam in Param.SubModules.items():
             self.ModuleList.append(self.SubModules[Name])
         self.ModuleNum = len(self.ModuleList)
-        
         return self
     def SetModuleList(self, ModuleList):
         Param = self.Param
-        for Index, SubModule in enumerate(ModuleList):
-            Key = str(Index)
-            self.SubModules[Key] = SubModule
-            setattr(Param.SubModules, Key, SubModule.Param)
-            SubModule.Param._PATH = Param._PATH + "." + Key
+        if isinstance(ModuleList, list):
+            for Index, SubModule in enumerate(ModuleList):
+                self.AddSubModule(
+                    f"L{Index}", SubModule
+                )
+                # Key = str(Index)
+                # self.SubModules[Key] = SubModule
+                # setattr(Param.SubModules, Key, SubModule.Param)
+                # SubModule.Param._PATH = Param._PATH + "." + Key
+        if isinstance(ModuleList, dict):
+            for Name, SubModule in ModuleList.items():
+                self.AddSubModule(
+                    Name, SubModule
+                )
         self.ModuleNum = len(ModuleList)
         self.ModuleList = ModuleList
         return self

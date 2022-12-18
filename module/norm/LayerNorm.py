@@ -39,7 +39,7 @@ class LayerNorm(DLUtils.module.AbstractNetwork):
             self.SetEps(1.0e-6)
         assert hasattr(Param, "FeatureNum")
         if Param.AffineTransform.get("Enable") is True:
-            Param.Tensors = ["A", "B"]
+            Param.Tensor = ["A", "B"]
             if Param.Data.get("A") is None:
                 Param.Data.A = np.ones((Param.FeatureNum))
                 self.Log("LayerNorm.Init: initing A in affine transform to all ones")

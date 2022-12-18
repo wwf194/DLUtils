@@ -16,6 +16,6 @@ def ResetAccuracy(Accuracy):
     return Accuracy
 
 def CalculateAccuracy(Accuracy):
-    Accuracy.RatioCorrect = 1.0 * Accuracy.NumCorrect / Accuracy.Num
+    Accuracy.RateCorrect = 1.0 * Accuracy.NumCorrect / Accuracy.Num
     return Accuracy
 

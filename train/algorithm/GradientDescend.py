@@ -1,7 +1,6 @@
 import DLUtils
 import torch
 
-
 def GradientDescendOptimizer(Type, **Dict):
     assert Type in ["GradientDescend"]
     SubType = Dict.get("SubType")
@@ -15,15 +14,22 @@ class GradientDescend():
     def SetSubType(self, SubType, **Dict):
         if SubType in ["SGD", "sgd"]:
             self.__class__ = SGD #
+            assert isinstance(self, SGD)
             return self
         elif SubType in ["Adam", "adam"]:
             self.__class__ = Adam
+            assert isinstance(self, Adam)
             return self
         else:
             raise Exception()
-        return self
     def SetTrainParam(self, TrainParam):
         self.TrainParam = TrainParam
+        return self
+    def BindEvaluator(self, Evaluator):
+        self.Evaluator = Evaluator
+        return self
+    def BindModel(self, Model):
+        self.Model = Model
         return self
     
 class SGD(GradientDescend):
@@ -48,7 +54,7 @@ class SGD(GradientDescend):
         else:
             raise Exception()
         return self
-    
+
     def SetParam(self, **Dict):
         Param = self.Param
         Momentum = Dict.setdefault("Momentum", False)
@@ -178,8 +184,11 @@ class Adam(GradientDescend):
             raise Exception()
         return self
     def _UpdateParam(self, *List, **Dict):
-        self.Optimizer.step()
         self.Optimizer.zero_grad()
+        self.Evaluator.Loss.backward()
+        print("%.3e"%(self.Model.SubModules["2"].Weight.grad[0][0].item()))
+        self.Optimizer.step()
+        return self
     def Init(self):
         Param = self.Param
         if Param.Momentum.Enable:
@@ -191,6 +200,10 @@ class Adam(GradientDescend):
         else:
             self.Beta = 0.0
         self.LearningRate = Param.LearningRate
+        self.ResetOptimizer()
+        self.Optimize = self._UpdateParam
+        return self
+    def ResetOptimizer(self):
         self.Optimizer = torch.optim.Adam(
             self.TrainParam.values(),
             lr=self.LearningRate,
@@ -199,6 +212,10 @@ class Adam(GradientDescend):
                 self.Beta   # GradientNorm
             ]
         )
-        self.Optimize = self._UpdateParam
+    def SetDevice(self, Device):
+        self.SetTrainParam(
+            self.Model.ExtractTrainParam()
+        )
+        self.ResetOptimizer()
         return self
 

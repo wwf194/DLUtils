@@ -2,8 +2,11 @@
 
 import DLUtils
 # import DLUtils.module.AbstractModule as AbstractModule
-from .AbstractModule import AbstractModule
-from .AbstractModule import AbstractNetwork
+from .AbstractModule import \
+    AbstractModule, \
+    LogComponent, \
+    AbstractNetwork, \
+    AbstractOperator
 
 def BuildModuleFromType(Type):
     module = DLUtils.transform.BuildModuleIfIsLegalType(Type)

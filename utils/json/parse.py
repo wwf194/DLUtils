@@ -479,7 +479,7 @@ def YaccTest():
     # returns p[0] in method p_root(p)
     Tree = parser.parse(JsonStr, lexer=lexer)
 
-def _JsonStr2Tree(JsonStr, Verbose=True, Debug=True):
+def _JsonStr2Tree(JsonStr, Verbose=False, Debug=True):
     lexer = lex.lex()
     lexer.input(JsonStr)
     if Verbose:

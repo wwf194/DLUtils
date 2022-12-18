@@ -643,6 +643,7 @@ def ToTorchTensor(data):
         return data
     else:
         raise Exception(type(data))
+
 def ToTorchTensorOrNum(data):
     if isinstance(data, float):
         return data

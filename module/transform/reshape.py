@@ -31,3 +31,4 @@ class Index2OneHot(AbstractOperator):
         Param = self.Param
         self.FeatureNum = Param.FeatureNum
         return super().Init(IsSuper, IsRoot)
+

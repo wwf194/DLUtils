@@ -19,6 +19,7 @@ def TrainProcess(Type):
         return EpochBatchTrainProcess()
     else:
         raise Exception()
+
 class EpochBatchTrainProcess(DLUtils.module.AbstractModule):
     def __init__(self, Log=None):
         super().__init__(Log=Log)
@@ -36,6 +37,8 @@ class EpochBatchTrainProcess(DLUtils.module.AbstractModule):
         return self
     def BindEvaluator(self, Evaluator):
         self.AddSubModule("Evaluator", Evaluator)
+        if hasattr(Evaluator, "BindTrainProcess"):
+            Evaluator.BindTrainProcess(self)
         return self
     def BindModel(self, Model):
         self.AddSubModule("Model", Model)
@@ -66,6 +69,29 @@ class EpochBatchTrainProcess(DLUtils.module.AbstractModule):
     def AfterTrain(self, *List, **Dict):
         for Event in self.AfterTrainList:
             Event(*List, **Dict)
+        return self
+    def AddBeforeTrainEvent(self, Event):
+        self.BeforeTrainList.append(Event)
+    def AddBeforeEpochEvent(self, Event):
+        self.BeforeEpochList.append(Event)
+    def AddBeforeBatchEvent(self, Event):
+        self.BeforeBatchList.append(Event)
+    def AddAfterBatchEvent(self, Event):
+        self.AfterBatchList.append(Event)
+    def AddAfterEpochEvent(self, Event):
+        self.AfterEpochList.append(Event)
+    def AddAfterTrainEvent(self, Event):
+        self.AfterTrainList.append(Event)
+    def SetDevice(self, Device):
+        self.Device = Device
+        Model = self.Model
+        Model.Move2Device("cuda:0")
+        self.Optimizer.SetDevice(Device)
+        self.TrainData.SetDevice(Device)
+        self.TestData.SetDevice(Device)
+        self.AddLog(
+            f"Set device to {Device}", "SystemConfigChange"
+        )
         return self
     def SetParam(self, **Dict):
         Param = self.Param

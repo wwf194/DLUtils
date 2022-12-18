@@ -10,7 +10,9 @@ class CrossEntropy(DLUtils.module.AbstractModule):
     def Receive(self, Output, OutputTarget):
         # Input: [BatchSize, OutuptNum, Probability]
         # Output: [BatchSize, OutputNum, Probability]
-        return OutputTarget * torch.log(Output)
+        Loss = - OutputTarget * torch.log(Output) # [BatchSize, OutputNum]
+        Loss = torch.sum(Loss, dim=1) # [BatchSize]
+        return torch.mean(Loss)
 
 class SoftMax(DLUtils.module.AbstractModule):
     def __init__(self):

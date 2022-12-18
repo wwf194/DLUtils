@@ -1,7 +1,3 @@
-
-
-
-
 import torch
 import math
 def Attention(Q, K, V):
