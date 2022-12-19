@@ -130,6 +130,8 @@ class param():
         else:
             return self._DICT.pop(Key) 
     def setdefault(self, Key, Value):
+        if self.Get("_IS_FALSE") is True:
+            self.SubstantiateAlongSpine(NODE_TYPE.SPINE, NODE_SUBTYPE.DICT) 
         if not Key in self._DICT:
             self._DICT[Key] = Value
         return self._DICT[Key]
@@ -434,6 +436,9 @@ def Tree2JsonStr(RootNode):
 
 import json
 def ToJsonStr(Obj):
+    if isinstance(Obj, set):
+        Obj = list(Obj)
+
     if isinstance(Obj, str):
         Content = "\"%s\""%Obj
     elif isinstance(Obj, bool):
@@ -720,8 +725,6 @@ def Param2JsonStr(Obj):
     #JsonDict = _Tree2JsonDict(Tree)
     Str = Tree2JsonStr(Tree)
     return Str
-
-
 
 def _GetOnlyChild(Node):
     Dict = Node["_DICT"]

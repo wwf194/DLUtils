@@ -2,7 +2,6 @@ import torch
 import numpy as np
 
 import DLUtils
-import DLUtils.utils as utils
 class LayerNorm(DLUtils.module.AbstractNetwork):
     "Construct a layernorm module (See citation for details)."
     def __init__(self, FeatureNum=None, eps=None):
@@ -54,6 +53,6 @@ class LayerNorm(DLUtils.module.AbstractNetwork):
         self.eps = Param.Data.setdefault("eps", 1.0e-9)
     def Receive(self, X):
         # X: [BatchSize, FeatureNum]
-        XMean = X.mean(1, keepdim=True)
-        XStd  = X.std(1, keepdim=True)
+        XMean = X.mean(dim=1, keepdim=True)
+        XStd  = X.std(dim=11, keepdim=True)
         return self.A * (X - XMean) / (XStd + self.eps) + self.B

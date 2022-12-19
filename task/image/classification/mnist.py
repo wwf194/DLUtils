@@ -204,7 +204,11 @@ class DataFetcher(torch.utils.data.Dataset):
 class DataLoader(torch.utils.data.DataLoader):
     def __init__(self, DataFetcher, BatchSize):
         self.DataFetcher = DataFetcher
-        super().__init__(dataset=DataFetcher, batch_size=BatchSize, num_workers=2)
+        super().__init__(
+            dataset=DataFetcher, 
+            batch_size=BatchSize, 
+            # num_workers=2 # Setting num_workers > 1 might severely slow down speed.
+        )
     def Get(self, BatchIndex):
         Image, Label = next(iter(self))
         return Image.to(self.Device), Label.to(self.Device)

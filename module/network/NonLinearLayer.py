@@ -34,7 +34,7 @@ class NonLinearLayer(LinearLayer):
         return self
     def SetNonLinear(self, NonLinearModule):
         if isinstance(NonLinearModule, str):
-            NonLinearModule = DLUtils.NN.NonLinear.BuildNonLinearModule(NonLinearModule)
+            NonLinearModule = DLUtils.NN.NonLinear.NonLinearModule(NonLinearModule)
         self.AddSubModule("NonLinear", NonLinearModule)
         self.AddLogWithSelfInfo(f"set nonlinear type: {NonLinearModule.ClassStr()}", "initialization")
         self.SetNonLinearMethod()

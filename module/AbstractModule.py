@@ -145,6 +145,17 @@ class AbstractNetwork(AbstractModule):
         Param = self.Param
         Param.Tensor = set()
         Param.TrainParam = set()
+    def AddTrainParam(self, Name, TrainParam):
+        Param = self.Param
+        Param.Data.setattr(Name, TrainParam)
+        Param.TrainParam.add(Name)
+        Param.Param.add(Name)
+        return self
+    def AddTensor(self, Name, Tensor):
+        Param = self.Param
+        Param.Data.setattr(Name, Tensor)
+        Param.Tensor.add(Name)
+        return self
     def UpdateTensorFromDict(self, Recur=False):
         Param = self.Param
         for Name in Param.Tensor:

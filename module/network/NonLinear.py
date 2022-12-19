@@ -3,6 +3,13 @@
 import DLUtils
 from ..AbstractModule import AbstractNetwork
 import torch
+
+def NonLinearModule(Str):
+    if Str in ["relu", "ReLU"]:
+        return ReLU()
+    else:
+        raise Exception()
+
 class ReLU(AbstractNetwork):
     def __init__(self):
         super().__init__()
@@ -11,9 +18,3 @@ class ReLU(AbstractNetwork):
         })
     def Receive(self, Input):
         return torch.relu(Input)
-
-def BuildNonLinearModule(Str):
-    if Str in ["relu", "ReLU"]:
-        return ReLU()
-    else:
-        raise Exception()

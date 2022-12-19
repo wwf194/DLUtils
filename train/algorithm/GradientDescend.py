@@ -186,7 +186,7 @@ class Adam(GradientDescend):
     def _UpdateParam(self, *List, **Dict):
         self.Optimizer.zero_grad()
         self.Evaluator.Loss.backward()
-        print("%.3e"%(self.Model.SubModules["2"].Weight.grad[0][0].item()))
+        # print("%.3e"%(self.Model.SubModules["2"].Weight.grad[0][0].item()))
         self.Optimizer.step()
         return self
     def Init(self):

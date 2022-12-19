@@ -1,5 +1,76 @@
 import torch
 import math
+
+import DLUtils
+class SelfAttention(DLUtils.module.AbstractNetwork):
+    def __init__(self, SubModule=None):
+        super().__init__()
+        Param = self.Param
+        Param._CLASS = "DLUtils.NN.ResLayer"
+        if SubModule is None:
+            self.AddSubModule("SubModule", SubModule)
+    def SetParam(self, **Dict):
+        Param = self.Param
+        InputNum = Dict.get("InputNum")
+        if InputNum is None:
+            Param.Input.Num = InputNum
+        QKSize = Dict.get("QKSize")
+        if QKSize is not None:
+            Param.QK.Size = QKSize
+
+        VSize = Dict.get("VSize")
+        if VSize is not None:
+            Param.V.Size = VSize
+
+    def SetWeight(self, **Dict):
+        Param = self.Param
+        Q = Dict.get("Q")
+        if Q is not None:
+            self.AddTrainParam("Q", Q)
+        
+        K = Dict.get("K")
+        if K is not None:
+            self.AddTrainParam("K", K)
+        
+        V = Dict.get("V")
+        if V is not None:
+            self.AddTrainParam("V", V)
+
+        return self
+    def Receive(self, X:torch.Tensor):
+        QKSize = self.QKSize
+        HeadNum = self.HeadNum
+        QKHeadSize = self.QKHeadSize
+        VHeadSize = self.VHeadSize
+        # X: [BatchSize, TokenNum, FeatureNum]
+        BatchSize = X.size(0)
+        TokenNum = X.size(1)
+        FeatureNum = X.size(2)
+        X = X.reshape(BatchSize* TokenNum, FeatureNum)
+
+        V = torch.bmm(X, self.V) # [BatchSize * TokenNum, TokenNum * VSize]
+        K = torch.bmm(X, self.K) # [BatchSize * TokenNum, QKSize]
+        Q = torch.bmm(X, self.Q) # [BatchSize * TokenNum, QKSize]
+
+        VAttention = MultiHeadAttention(Q, K, V, BatchSize, TokenNum, HeadNum, VHeadSize, QKHeadSize)
+
+        return VAttention
+
+    def Init(self, IsSuper=False, IsRoot=True):
+        Param = self.Param
+        self.InputNum = Param.Input.Num
+        if not Param.QK.Head.hasattr("Num"):
+            Param.Head.Num = 1
+            Param.QK.Head.Size = Param.QK.Size // Param.QK.Head.Num
+        self.HeadNum = Param.Head.Num
+        self.QKHeadSize = Param.QK.Head.Size
+        self.QKSize = Param.QK.Size
+        self.OutputNum = Param.V.Size
+        self.VSize = Param.V.Size
+        assert self.QKSize % self.HeadNum == 0
+        assert self.VSize % self.HeadNum == 0
+        return super().Init(IsSuper, IsRoot)
+
 def Attention(Q, K, V):
     # Q: [BatchSize, TokenNum,  QKSize]
     # K: [BatchSize, TokenNum,  QKSize]
@@ -14,56 +85,31 @@ def Attention(Q, K, V):
     VWeighedByAttention  = torch.bmm(QKSoftmax, V) # [BatchSize, TokenNum, VSize]
     return VWeighedByAttention
 
-AttentionSingleHead = Attention
+SingleHeadAttention = Attention
 
-def AttentionWithHead(Q:torch.Tensor, K:torch.Tensor, V:torch.Tensor):
-    # Q: [BatchSize, HeadNum, TokenNum,  QKHeadSize]
-    # K: [BatchSize, HeadNum, TokenNum,  QKHeadSize]
-    # V: [BatchSize, HeadNum, TokenNum,  VHeadSize ]
-    BatchSize = Q.size(0)
-    TokenNum = Q.size(1)
-    HeadNum = Q.size(2)
-    QKHeadSize = Q.size(3)
-    VHeadSize = V.size(3)
-    
+def MultiHeadAttention(Q, K, V, BatchSize, TokenNum, HeadNum, VHeadSize, QKHeadSize):
+    # V: [BatchSize, HeadNum, TokenNum, VHeadSize]
+    V = V.reshape(BatchSize, TokenNum, HeadNum, VHeadSize).permute(0, 2, 1, 3)
+    # K: [BatchSize, HeadNum, TokenNum, QKHeadSize]
+    K = K.reshape(BatchSize, TokenNum, HeadNum, QKHeadSize).permute(0, 2, 1, 3)
+    # Q: [BatchSize, HeadNum, TokenNum, QKHeadSize]
+    Q = Q.reshape(BatchSize, TokenNum, HeadNum, QKHeadSize).permute(0, 2, 1, 3)
+
     QK = torch.bmm(
-        Q.reshape(BatchSize * HeadNum, TokenNum, QKHeadSize),
-        K.reshape(BatchSize * HeadNum, TokenNum, QKHeadSize).permute(0, 2, 1)
+        Q.reshape(BatchSize * HeadNum, TokenNum, QKHeadSize), # [BatchSize * HeadNum, TokenNum, QKHeadSize]
+        K.reshape(BatchSize * HeadNum, TokenNum, QKHeadSize).permute(0, 2, 1) # [BatchSize * HeadNum, QKHeadSize, TokenNum]
     ).reshape(BatchSize, HeadNum, TokenNum, TokenNum) # [BatchSize * HeadNum, TokenNum, TokenNum]
+    
     QK = QK / math.sqrt(QKHeadSize)
-    QKSoftmax = torch.softmax(QK, dim=-1) # [BatchSize * HeadNum, TokenNum, TokenNum]
+    QKSoftmax = torch.softmax(QK, dim=2) # [BatchSize * HeadNum, TokenNum, TokenNum]
+    
     VAttention  = torch.bmm(
-        QKSoftmax, 
+        QKSoftmax, # [BatchSize * HeadNum, TokenNum, TokenNum]
         V.reshape(BatchSize * HeadNum, TokenNum, VHeadSize)
     ).reshape(BatchSize, HeadNum, TokenNum, VHeadSize) # [BatchSize, HeadNum, TokenNum, VHeadSize]
-    VAttention = VAttention \
-        .permute(0, 2, 1, 3) \
-        .reshape(BatchSize, TokenNum, HeadNum, VHeadSize) 
-    return VAttention.reshape(BatchSize, TokenNum, HeadNum * VHeadSize)
-
-def MultiHeadAttention(Q, K, V, WQ: torch.tensor, WK, WV, WO, HeadNum):
-    # Q: [BatchSize, TokenNum,  QKSize   ]
-    # K: [BatchSize, TokenNum,  QKSize   ]
-    # V: [BatchSize, TokenNum,  ValueSize]
-    # WQ: [HeadNum, QKSize, QKHeadSize]
-    # WK: [HeadNum, QKSize, QKHeadSize]
-    # WV: [HeadNum, VSize,  VHeadSize ]
-
-    # WV: [BatchSize, TokenNum, HeadNum, QKSizeHead]
-    
-    Q = Q[:, None, :, :] # [BatchSize, 1, TokenNum, QKSize]
-    K = K[:, None, :, :] # [BatchSize, 1, TokenNum, QKSize]
-    V = V[:, None, :, :] # [BatchSize, 1, TokenNum, VSize ]
-
-    WQ = WQ[None, :, :, :] # [1, HeadNum, QKSize, QKHeadSize]
-    WK = WK[None, :, :, :] # [1, HeadNum, QKSize, QKHeadSize]
-    WV = WK[None, :, :, :] # [1, HeadNum, VSize,  VHeadSize ]
-
-    QHeads = torch.matmul(Q, WQ) # [BatchSize, HeadNum, TokenNum, QKHeadSize]
-    KHeads = torch.matmul(K, WK) # [BatchSize, HeadNum, TokenNum, QKHeadSize]
-    VHeads = torch.matmul(V, WV) # [BatchSize, HeadNum, TokenNum, VHeadSize ]
-    
-    VHeadsAttention = AttentionWithHead(QHeads, KHeads, VHeads)
+    VAttention = VAttention.permute(0, 2, 1, 3) # [BatchSize, TokenNum, HeadNum, VHeadSize]
+    #VAttention = VAttention.reshape(BatchSize, TokenNum, HeadNum, VHeadSize) 
+    VAttention = VAttention.reshape(BatchSize, TokenNum, HeadNum * VHeadSize)
 
 def LayerNorm(X:torch.Tensor):
     # X: [BatchSize, ]
