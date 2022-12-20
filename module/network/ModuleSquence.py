@@ -106,4 +106,4 @@ class ModuleGraph(AbstractNetwork):
                 self.Output = list(Param.Output)
         else:
             raise Exception()
-        return super().Init(IsSuper, IsRoot)
+        return super().Init(IsSuper=True, IsRoot=IsRoot)

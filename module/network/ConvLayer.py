@@ -46,7 +46,13 @@ class ConvLayer2D(DLUtils.module.AbstractNetwork):
             dilation=self.Dilation,
             groups=self.GroupNum
         )
+        Output = self.NonLinear(Output)
         return Output
+    def SetNonLinear(self, NonLinearModule):
+        if isinstance(NonLinearModule, str):
+            NonLinearModule = DLUtils.GetNonLinearMethodModule(NonLinear)
+        self.AddSubModule("NonLinear", NonLinearModule)
+        return self
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         if not Param.Data.hasattr("Bias"):
@@ -61,10 +67,17 @@ class ConvLayer2D(DLUtils.module.AbstractNetwork):
             raise Exception()
         self.Dilation = Param.Conv.setdefault("Dilation", 1)
         self.GroupNum = Param.Conv.Group.setdefault("Num", 1)
-        super().Init(IsSuper, IsRoot)
+        
+        Param.NonLinear.setdefault("Enable", False)
+        if Param.NonLinear.Enable:
+            assert Param.SubModules.hasattr("NonLinear")
+        else:
+            self.NonLinear = lambda x:x
+        super().Init(IsSuper=True, IsRoot=IsRoot)
         if hasattr(self, "Bias"):
             if isinstance(self.Bias, float):
                 assert self.Bias == 0.0
                 self.Bias = None
         else:
             self.Bias = None
+        return self

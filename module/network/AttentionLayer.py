@@ -2,11 +2,45 @@ import torch
 import math
 
 import DLUtils
-class SelfAttention(DLUtils.module.AbstractNetwork):
+
+import DLUtils
+class ResLayer(DLUtils.module.AbstractNetwork):
     def __init__(self, SubModule=None):
         super().__init__()
         Param = self.Param
         Param._CLASS = "DLUtils.NN.ResLayer"
+        if SubModule is None:
+            self.AddSubModule("SubModule", SubModule)
+    def Receive(self, X):
+        # X: [BatchSize, TokenNum, FeatureSize]
+        
+        Y = self.Attention(X)
+        Y = X + Y # Residual Adding
+        Y = self.LayerNorm1(Y)
+
+        Z = self.MLP(Y)
+        Z = Y + Z
+        Z = self.LayerNorm2(Y)
+        return Y
+    def Init(self, IsSuper=False, IsRoot=True):
+        Param = self.Param
+        if not Param.hasattr("LayerNorm1"):
+            self.AddSubModule(
+                "LayerNorm1", DLUtils.norm.LayerNorm()
+            )
+        if not Param.hasattr("LayerNomr2"):
+            self.AddSubModule(
+                "LayerNorm2", DLUtils.norm.LayerNorm()
+            )
+        
+        return super().Init(IsSuper=True, IsRoot=IsRoot)
+    
+
+class SelfAttention(DLUtils.module.AbstractNetwork):
+    def __init__(self, SubModule=None):
+        super().__init__()
+        Param = self.Param
+        Param._CLASS = "DLUtils.NN.SelfAttention"
         if SubModule is None:
             self.AddSubModule("SubModule", SubModule)
     def SetParam(self, **Dict):
@@ -69,7 +103,7 @@ class SelfAttention(DLUtils.module.AbstractNetwork):
         self.VSize = Param.V.Size
         assert self.QKSize % self.HeadNum == 0
         assert self.VSize % self.HeadNum == 0
-        return super().Init(IsSuper, IsRoot)
+        return super().Init(IsSuper=True, IsRoot=IsRoot)
 
 def Attention(Q, K, V):
     # Q: [BatchSize, TokenNum,  QKSize]

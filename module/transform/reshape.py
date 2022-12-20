@@ -30,5 +30,5 @@ class Index2OneHot(AbstractOperator):
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         self.FeatureNum = Param.FeatureNum
-        return super().Init(IsSuper, IsRoot)
+        return super().Init(IsSuper=True, IsRoot=IsRoot)
 

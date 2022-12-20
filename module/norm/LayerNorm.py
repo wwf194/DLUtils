@@ -15,9 +15,6 @@ class LayerNorm(DLUtils.module.AbstractNetwork):
     def SetFeatureNum(self, FeatureNum):
         self.Param.FeatureNum = FeatureNum
         return self
-    def SetEps(self, eps):
-        self.Param.eps = eps
-        return self
     def EnableAffineTransform(self, State):
         Param = self.Param
         if State is True:
@@ -32,27 +29,26 @@ class LayerNorm(DLUtils.module.AbstractNetwork):
         else:
             if Param.AffineTransform.get("Enable") is True:
                 Param.AffineTransform.Trainable = False
-    def Init(self, **Dict):
-        Param = self.Param
-        if not hasattr(Param, "eps"):
-            self.SetEps(1.0e-6)
-        assert hasattr(Param, "FeatureNum")
-        if Param.AffineTransform.get("Enable") is True:
-            Param.Tensor = ["A", "B"]
-            if Param.Data.get("A") is None:
-                Param.Data.A = np.ones((Param.FeatureNum))
-                self.Log("LayerNorm.Init: initing A in affine transform to all ones")
-            if Param.Data.get("B") is None:
-                Param.Data.B = np.zeros((Param.FeatureNum))
-                self.Log("LayerNorm.Init: initing B in affine transform to all zeros")
-            if Param.AffineTransform.setdefault("Trainable", True) is True:
-                Param.TrainParam = ["A", "B"]
-        else:
-            self.A = 1.0
-            self.B = 0.0
-        self.eps = Param.Data.setdefault("eps", 1.0e-9)
     def Receive(self, X):
         # X: [BatchSize, FeatureNum]
         XMean = X.mean(dim=1, keepdim=True)
         XStd  = X.std(dim=11, keepdim=True)
         return self.A * (X - XMean) / (XStd + self.eps) + self.B
+    def Init(self, IsSuper=False, IsRoot=True):
+        Param = self.Param
+        assert hasattr(Param, "FeatureNum")
+        if Param.AffineTransform.setdefault("Enable", True):
+            Param.Tensor = ["A", "B"]
+            if not Param.Data.hasattr("A"):
+                A = np.ones(Param.FeatureNum)
+                self.AddTrainParam("A", A)
+                self.Log("LayerNorm.Init: initing A in affine transform to all ones")
+            if not Param.Data.hasattr("B") is None:
+                B = np.zeros((Param.FeatureNum))
+                self.AddTrainParam("B", B)
+                self.Log("LayerNorm.Init: initing B in affine transform to all zeros")
+        else:
+            self.A = 1.0
+            self.B = 0.0
+        self.eps = Param.Data.setdefault("eps", 1.0e-9)
+        return super().Init(IsSuper=True, IsRoot=IsRoot)

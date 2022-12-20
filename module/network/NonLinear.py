@@ -1,5 +1,3 @@
-
-
 import DLUtils
 from ..AbstractModule import AbstractNetwork
 import torch
