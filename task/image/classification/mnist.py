@@ -45,7 +45,7 @@ class MNIST(ImageClassificationTask):
         Data = self.Data
         return DataLoader(
             DataFetcher(Data.Test.Image, Data.Test.Label).SetLog(self),
-            BatchSize=BatchSize
+            BatchSize=BatchSize, BatchNum=self.TestBatchNum(BatchSize)
         )
     def TrainData(self, BatchSize=64):
         if not hasattr(self, "Data"):
@@ -53,7 +53,7 @@ class MNIST(ImageClassificationTask):
         Data = self.Data
         return DataLoader(
             DataFetcher(Data.Train.Image, Data.Train.Label).SetLog(self),
-            BatchSize=BatchSize
+            BatchSize=BatchSize, BatchNum=self.TrainBatchNum(BatchSize)
         )
     def TrainBatchNum(self, BatchSize):
         Param = self.Param
@@ -202,13 +202,15 @@ class DataFetcher(torch.utils.data.Dataset):
         return self
 
 class DataLoader(torch.utils.data.DataLoader):
-    def __init__(self, DataFetcher, BatchSize):
+    def __init__(self, DataFetcher, BatchSize, BatchNum):
         self.DataFetcher = DataFetcher
         super().__init__(
             dataset=DataFetcher, 
             batch_size=BatchSize, 
             # num_workers=2 # Setting num_workers > 1 might severely slow down speed.
         )
+        self.BatchSize = BatchSize
+        self._BatchNum = BatchNum
     def Get(self, BatchIndex):
         Image, Label = next(iter(self))
         return Image.to(self.Device), Label.to(self.Device)
@@ -216,4 +218,7 @@ class DataLoader(torch.utils.data.DataLoader):
         self.DataFetcher.SetDevice(Device)
         self.Device = Device
         return self
+    def BatchNum(self):
+        return self._BatchNum
+
     

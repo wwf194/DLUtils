@@ -1,7 +1,54 @@
 import DLUtils
 from DLUtils.attr import *
 
+
+
+import numpy as np
 from DLUtils.module.AbstractModule import AbstractModule
+from .. import EpochBatchTrainComponent
+from .. import EventAfterEpoch
+
+class TestInEpochBatchTrainProcess(EventAfterEpoch):
+    def __init__(self, **Dict):
+        super().__init__(**Dict)
+        self.Event = self.Test # to be called
+    def BindEvaluator(self, Evaluator):
+        self.Evaluator = Evaluator
+        return self
+    def BindTestData(self, TestData):
+        self.TestData = TestData
+        return self
+    def BindModel(self, Model):
+        self.Model = Model
+        return self
+    def Bind(self, **Dict):
+        Model = Dict.get("Model")
+        if Model is not None:
+            self.BindModel(Model)
+        TestData = Dict.get("TestData")
+        if TestData is not None:
+            self.BindTestData(TestData)
+        Evaluator = Dict.get("Evaluator")
+        if Evaluator is not None:
+            self.BindEvaluator(Evaluator)
+        return self
+    def Test(self, **Dict):
+        TestData = self.TestData
+        Model = self.Model
+        Evaluator = self.Evaluator
+        EvaluationLog = self.EvaluationLog
+        BatchNum = TestData.BatchNum()
+        EvaluationLog.BeforeTestEpoch(**Dict)
+        for TestBatchIndex in range(BatchNum):
+            Input, OutputTarget = TestData.Get(TestBatchIndex)
+            Output = Model(Input)
+            Evaluation = Evaluator.Evaluate(
+                Input, Output, OutputTarget, Model
+            )
+            Dict["BatchIndex"] = TestBatchIndex
+            EvaluationLog.AfterTestBatch(Evaluation=Evaluation, **Dict)
+        return self
+
 class CheckPointForEpochBatchTrain(DLUtils.log.AbstractLogAlongEpochBatchTrain):
     def __init__(self, **kw):
         #DLUtils.transform.InitForNonModel(self, param, ClassPath="DLUtils.Train.CheckPointForEpochBatchTrain", **kw)

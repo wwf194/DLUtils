@@ -35,7 +35,6 @@ class ResLayer(DLUtils.module.AbstractNetwork):
         
         return super().Init(IsSuper=True, IsRoot=IsRoot)
     
-
 class SelfAttention(DLUtils.module.AbstractNetwork):
     def __init__(self, SubModule=None):
         super().__init__()
@@ -55,7 +54,6 @@ class SelfAttention(DLUtils.module.AbstractNetwork):
         VSize = Dict.get("VSize")
         if VSize is not None:
             Param.V.Size = VSize
-
     def SetWeight(self, **Dict):
         Param = self.Param
         Q = Dict.get("Q")
@@ -105,19 +103,19 @@ class SelfAttention(DLUtils.module.AbstractNetwork):
         assert self.VSize % self.HeadNum == 0
         return super().Init(IsSuper=True, IsRoot=IsRoot)
 
-def Attention(Q, K, V):
+def Attention(Q, K, V, QKSize=None):
     # Q: [BatchSize, TokenNum,  QKSize]
     # K: [BatchSize, TokenNum,  QKSize]
     # V: [BatchSize, TokenNum,  VSize ]
-    QSize = Q.size(2)
+    QKSize = Q.size(2)
     QK = torch.bmm(
-        Q,
-        K.permute(0, 2, 1)
+        Q,                  # [BatchSize, TokenNum,  QKSize]
+        K.permute(0, 2, 1)  # [BatchSize, QKSize,    TokenNum]
     ) # [BatchSize, TokenNum, TokenNum]
-    QK = QK / math.sqrt(QSize)
-    QKSoftmax = torch.softmax(QK, dim=-1) # [BatchSize, TokenNum, TokenNum]
-    VWeighedByAttention  = torch.bmm(QKSoftmax, V) # [BatchSize, TokenNum, VSize]
-    return VWeighedByAttention
+    QK = QK / math.sqrt(QKSize)
+    QKSoftmax = torch.softmax(QK, dim=2)  # [BatchSize, TokenNum, TokenNum]
+    VAttention  = torch.bmm(QKSoftmax, V) # [BatchSize, TokenNum, VSize]
+    return VAttention
 
 SingleHeadAttention = Attention
 
@@ -144,10 +142,7 @@ def MultiHeadAttention(Q, K, V, BatchSize, TokenNum, HeadNum, VHeadSize, QKHeadS
     VAttention = VAttention.permute(0, 2, 1, 3) # [BatchSize, TokenNum, HeadNum, VHeadSize]
     #VAttention = VAttention.reshape(BatchSize, TokenNum, HeadNum, VHeadSize) 
     VAttention = VAttention.reshape(BatchSize, TokenNum, HeadNum * VHeadSize)
-
-def LayerNorm(X:torch.Tensor):
-    # X: [BatchSize, ]
-    pass
+AttentionMultiHead = MultiHeadAttention
 
 from ..AbstractModule import AbstractNetwork
 class Transformer(AbstractNetwork):

@@ -300,6 +300,12 @@ class Param(param):
         if self.Get("_IS_FALSE") is True:
             self.SubstantiateAlongSpine(NODE_TYPE.SPINE, NODE_SUBTYPE.DICT)
         return self
+    def setemptyattr(self, Key):
+        if self.Get("_IS_FALSE") is True:
+            self.SubstantiateAlongSpine(NODE_TYPE.SPINE, NODE_SUBTYPE.DICT)
+        SubNode = DLUtils.Param({})
+        self._DICT[Key]
+        return SubNode
     def append(self, Item):
         self._LIST.append(Item)
         if isinstance(Item, param):
