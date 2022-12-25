@@ -12,11 +12,12 @@ class MNIST(ImageClassificationTask):
     def _INIT(self):
         Param = self.Param
         Param._CLASS = "DLUtils.task.image.classification.MNIST"
-        Param.Train.Num = 60000
+        Param.Train.Num = 50000
         Param.Test.Num = 10000
         self.DataLoaderList = set()
         return self
     def SetDataPath(self, DataPath, CheckIntegrity=True):
+        DataPath = DLUtils.file.ToAbsPath(DataPath)
         DLUtils.file.EnsureDir(DataPath)
         Param = self.Param
         Param.DataPath = DataPath

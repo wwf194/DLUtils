@@ -88,6 +88,36 @@ class param():
             return self.__dict__[Key]
         else:
             return None
+    def Absorb(self, Node):
+        assert Node._SUBTYPE == NODE_SUBTYPE.DICT
+        for Key, SubNode in Node._DICT.items():
+            if self.hasattr(Key):
+                SubNodeExist = self.getattr(Key)
+                if isinstance(SubNodeExist, DLUtils.param):
+                    if isinstance(SubNode, DLUtils.param):
+                        SubNodeExist.Absorb(SubNode)
+                    else:
+                        SubNodeExist._LEAF = SubNode
+                        if SubNodeExist._TYPE == NODE_TYPE.SPINE:
+                            SubNodeExist._TYPE = NODE_TYPE.SPINE_WITH_LEAF
+                else:
+                    if isinstance(SubNode, DLUtils.param):
+                        if SubNode._TYPE == SubNode._SPINE:
+                            SubNode._LEAF = SubNodeExist
+                            SubNode._TYPE = NODE_TYPE.SPINE_WITH_LEAF
+                        self._DICT[Key] = SubNode
+                    else:
+                        self._DICT[Key] = SubNode # overwrite leaf
+            else:
+                self.setattr(Key, SubNode)
+        if Node.HasAttr("_LEAF"):
+            self._LEAF = Node._LEAF
+            if self._TYPE == NODE_TYPE.SPINE:
+                self._TYPE = NODE_TYPE.SPINE_WITH_LEAF
+        if Node.HasAttr("_COMMENT"):
+            for Comment in Node._COMMENT:
+                self.AddComment(Comment)
+        return self
     def HasAttr(self, Key):
         return Key in self.__dict__
     def GetAttr(self, Key):
@@ -212,6 +242,7 @@ class Param(param):
             self.SetAttr(Key, Item)
         #self.SetAttr("__dict__", Node.__dict__)
         return
+
     def AddComment(self, Comment, Type=None):
         CommentList = self.SetDefault("_COMMENT", [])
         if Type is None:
@@ -444,6 +475,7 @@ def Tree2JsonStr(RootNode):
     return _Tree2JsonStr(RootNode)
 
 import json
+import numpy as np
 def ToJsonStr(Obj):
     if isinstance(Obj, set):
         Obj = list(Obj)
@@ -465,6 +497,11 @@ def ToJsonStr(Obj):
         #Content = "[]"
         #Content = str(Obj) # avoid single quotation marks
         Content = json.dumps(Obj)
+    elif isinstance(Obj, np.ndarray):
+        if len(Obj.shape) == 1:
+            Content = f"{str(DLUtils.NpArray2List(Obj))}"
+        else:
+            Content = f"\"np.ndarray. Type: {Obj.dtype}. Shape:{Obj.shape}\""
     else:
         Content = "\"_NON_BASIC_JSON_TYPE\""
     return Content
@@ -520,23 +557,27 @@ def _JsonDict2StrRecur(Obj, StrList, IndentNum, ParentKey=None):
 def _AddComment(Node, StrList, _TYPE=None):
     # Add Comment
     CommentList = Node.get("_COMMENT")
+    AddedComment = False
     if CommentList is not None:
         assert isinstance(CommentList, list)
         if _TYPE is None:
             for Comment in CommentList:
                 StrList.append("\t")
                 StrList += Comment[0]
+                AddedComment = True
         else:
             for Comment in CommentList:
                 if Comment[1] == _TYPE:
                     StrList.append("\t")
                     StrList += Comment[0]
+                    AddedComment = True
+    return AddedComment
 
-def _Tree2JsonStrRecur(Node, StrList, IndentNum, Key):
+def _Tree2JsonStrRecur(Node, StrList, IndentNum, Key, NoIndent=False):
     _TYPE = Node["_TYPE"]
     _SUBTYPE = Node["_SUBTYPE"]
     if _TYPE==NODE_TYPE.LEAF:
-        if isinstance(Key, int):
+        if isinstance(Key, int) and not NoIndent:
             _AppendWithIndent(StrList, IndentNum, ToJsonStr(Node["_LEAF"]))
         else:
             StrList.append(ToJsonStr(Node["_LEAF"]))
@@ -590,7 +631,24 @@ def _Tree2JsonStrRecur(Node, StrList, IndentNum, Key):
                 Index += 1
             _AppendWithIndent(StrList, IndentNum, "}")
         elif _SUBTYPE==NODE_SUBTYPE.LIST:
+            AllLeafNode = True
+            for SubIndex, SubNode in Node["_LIST"].items():
+                if SubNode["_TYPE"] != NODE_TYPE.LEAF:
+                    AllLeafNode = False
             SubIndexMax = len(Node["_LIST"]) - 1
+            if AllLeafNode:
+                # to be implemented: if any leaf node has comment
+                # to be implemented: too many leaf nodes
+                _AppendWithIndent(StrList, 0, "[") # Include root node.
+                for SubIndex, SubNode in Node["_LIST"].items():
+                    _Tree2JsonStrRecur(SubNode, StrList, IndentNum + 1, SubIndex, NoIndent=True)
+                    if SubIndex < SubIndexMax:
+                        StrList.append(", ")
+                    else:
+                        pass
+                _AppendWithIndent(StrList, 0, "]") # Include root node.
+                return
+
             if SubIndexMax == -1:
                 if isinstance(Key, int):
                     _AppendWithIndent(StrList, IndentNum, "[]")
@@ -612,12 +670,10 @@ def _Tree2JsonStrRecur(Node, StrList, IndentNum, Key):
                     StrList.append(",")
                 else:
                     pass
-
                 if SubNode["_TYPE"] == NODE_TYPE.LEAF:
-                    _AddComment(SubNode, StrList)
+                    AddedComment = _AddComment(SubNode, StrList)
                 else:
-                    _AddComment(SubNode, StrList, COMMENT_TYPE.SPINE_AFTER)
-                
+                    AddedComment = _AddComment(SubNode, StrList, COMMENT_TYPE.SPINE_AFTER)
                 StrList.append("\n")
             _AppendWithIndent(StrList, IndentNum, "]")
         else:
@@ -804,6 +860,11 @@ def Param2Tree(Obj):
     return Tree
 
 def Param2TreeRecur(Obj, SupNode, SupNodeKey):
+    if isinstance(Obj, list) or isinstance(Obj, dict):
+        Obj = DLUtils.Param(Obj)
+        SupNode.delattr(SupNodeKey)
+        SupNode.setattr(SupNodeKey, Obj)
+
     if isinstance(Obj, param):
         _TYPE = Obj.GetAttr("_TYPE")
         _SUBTYPE = Obj.GetAttr("_SUBTYPE")
@@ -837,6 +898,7 @@ def Param2TreeRecur(Obj, SupNode, SupNodeKey):
                     Node["_LIST"][Index]["_COMMENT"] = Comment
 
         return Node
+
     else:
         return _NewNode(
             NODE_TYPE.LEAF,
@@ -918,14 +980,16 @@ def _Tree2PathsRecur(Node, PathTable, PathCurrent, **Dict):
         elif _SUBTYPE == NODE_SUBTYPE.LIST:
             _LIST = Node["_LIST"]
             if len(_LIST) == 0:
-                PathTable.append(
-                    [PathCurrent, _SymbolEmptyList(), PATH_TYPE.LEAF]
-                )
+                PathTable.append([PathCurrent, _SymbolEmptyList(), PATH_TYPE.LEAF])
                 return
-            for Index, SubNode in enumerate(_LIST):
-                _Tree2PathsRecur(
-                    SubNode, PathTable, PathCurrent + [Index], **Dict
-                )
+            if isinstance(_LIST, list):
+                for Index, SubNode in enumerate(_LIST):
+                    _Tree2PathsRecur(SubNode, PathTable, PathCurrent + [Index], **Dict)
+            elif isinstance(_LIST, dict):
+                for Index, SubNode in _LIST.items():
+                    _Tree2PathsRecur(SubNode, PathTable, PathCurrent + [Index], **Dict)
+            else:
+                raise Exception()
         else:
             raise Exception()
     elif _TYPE == NODE_TYPE.LEAF:

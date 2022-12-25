@@ -7,17 +7,16 @@ import DLUtils
 
 from DLUtils.attr import GetAttrs
 
-def NpArrayStatistics(data, verbose=False, ReturnType="PyObj"):
-    DataStats = {
+def NpArrayStatistics(data, verbose=False):
+    DataStat = DLUtils.param({
         "Min": np.nanmin(data),
         "Max": np.nanmax(data),
         "Mean": np.nanmean(data),
         "Std": np.nanstd(data),
         "Var": np.nanvar(data)
-    }
-    return DLUtils.Dict2GivenType(DataStats, ReturnType)
-
-NpStatistics = NpArrayStatistics
+    })
+    return DataStat
+NpArrayStat = NpStatistics = NpArrayStatistics
 
 def ReplaceNaNOrInfWithZeroNp(data):
     data[~np.isfinite(data)] = 0.0

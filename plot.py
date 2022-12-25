@@ -1858,13 +1858,19 @@ def Norm2Image(data):
     return data
 
 from PIL import Image as Im
-def NpArray2ImageFile(Data, SavePath=None):
+def NpArray2ImageFilePIL(Data, SavePath=None):
     # image : np.ndarray, with dtype np.uint8
-    imagePIL = Im.fromarray(Data)
+    ImagePIL = Im.fromarray(Data)
     DLUtils.EnsureFileDir(SavePath)
-    imagePIL.save(SavePath)
-NpArray2ImgFile = NpArray2ImageFile
-UInt8NpArray2ImageFile = NpArray2ImageFile
+    ImagePIL.save(SavePath)
+
+import matplotlib.image
+def NpArray2ImageFileFloatMPL(Data, ImageFilePath):
+    # requires Data is float, values in [0.0, 1.0].
+    matplotlib.image.imsave(ImageFilePath, Data)
+NpArray2ImageFile = NpArray2ImageFileFloatMPL
+NpArray2ImageFileFloat = NpArray2ImageFileFloatMPL
+UInt8NpArray2ImageFile = NpArray2ImageFileFloatMPL
 
 def Tensor2ImageFile(Data, SavePath):
     Data = DLUtils.TorchTensor2NpArray(Data)

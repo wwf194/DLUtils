@@ -4,6 +4,11 @@ import torch
 import DLUtils
 from .. import ImageClassificationTask
 
+LabelContent = [
+        'airplane', 'automobile', 'bird', 'cat', 'deer',
+        'dog', 'frog', 'horse', 'ship', 'truck'
+    ]
+
 class CIFAR10(ImageClassificationTask):
     def __init__(self):
         super().__init__()
@@ -19,11 +24,11 @@ class CIFAR10(ImageClassificationTask):
         DLUtils.file.EnsureDir(DataPath)
         Param = self.Param
         Param.DataPath = DataPath
-        ConfigFile = DLUtils.file.ParentFolderPath(__file__) + "cifar10-folder-config.jsonc"
+        ConfigFile = DLUtils.file.ParentFolderPath(__file__) + "cifar10-config.jsonc"
         Config = DLUtils.file.JsonFile2Param(ConfigFile, SplitKeyByDot=False)
         DataPath = ExtractDataSetFile(DataPath)
         if CheckIntegrity:
-            assert DLUtils.file.CheckIntegrity(DataPath, Config)
+            assert DLUtils.file.CheckIntegrity(DataPath, Config.Folder)
         self.DataPath = DataPath
         self.IsDataPathBind = True
         return self
@@ -124,195 +129,6 @@ def ProcessOriginalDataDict(Dict, FileNameList):
     ImageNum = Images.shape[0]
     return DataObj
 
-class DataManagerForEpochBatchTrain(DLUtils.module.AbstractModule):
-    def __init__(self):
-        #DLUtils.transform.InitForNonModel(self, param, **kw)
-        return
-    def Build(self, IsLoad=False):
-        self.BeforeBuild(IsLoad)
-        cache = self.cache
-        param = self.param
-        cache.flows = DLUtils.EmptyPyObj()
-        # self.CreateFlowRandom("DefaultTest", "Test")
-        # self.CreateFlowRandom("DefaultTrain", "Train")
-        self.PrepareData()
-        return self
-    def PrepareData(self):
-        param = self.param
-        cache = self.cache
-        UseCachedDataTransform = False
-        if HasAttrs(param, "Data.Transform.Md5"):
-            Md5s = DLUtils.file.ListFilesAndCalculateMd5("./cache/", Md5InKeys=True)
-            if param.Data.Transform.Md5 in Md5s.keys():
-                FileName = Md5s[param.Data.Transform.Md5]
-                cache.Data = DLUtils.DataFile2PyObj("./cache/" + FileName)
-                UseCachedDataTransform = True
-        if not UseCachedDataTransform:
-            self.LoadData(Dir="Auto")
-            self.ApplyTransformOnData()
-    def GetInputOutputShape(self):
-        cache = self.cache
-        InputShape = cache.Data.Train.Images[0].shape
-        if len(InputShape) == 1:
-            InputShape = InputShape[0]
-        return InputShape, 10 # InputShape, OutputShape
-    def ApplyTransformOnData(self, TransformParam="Auto", Type=["Train", "Test"], Save=True):
-        DLUtils.Log("Applying transformation on dataset images...")
-        param = self.param
-        cache = self.cache
-        if TransformParam in ["Auto"]:
-            TransformParam = param.Data.Transform
-        assert hasattr(cache, "Data")
-        for _Type in Type:
-            Data = getattr(cache.Data, _Type)
-            Images = GetAttrs(Data.Images)
-            for Transform in TransformParam.Methods:
-                if Transform.Type in ["ToGivenDataType"]:
-                    Images = DLUtils.ToGivenDataTypeNp(Images, DataType=Transform.DataType)
-                elif Transform.Type in ["Color2Gray", "ColorImage2GrayImage"]:
-                    Images = DLUtils.plot.ColorImage2GrayImage(Images, ColorAxis=3)
-                elif Transform.Type in ["Norm2Mean0Std1"]:
-                    EnsureAttrs(Transform, "axis", None)
-                    Images = DLUtils.math.Norm2Mean0Std1Np(Images, axis=tuple(GetAttrs(Transform.axis)))
-                elif Transform.Type in ["Flatten"]:
-                    # Plot example images before Flatten, which is usually the last step.
-                    DLUtils.plot.PlotExampleImage(Images, SaveDir=DLUtils.GetMainSaveDir() + "Dataset/", SaveName="CIFAR10-%s"%_Type)
-                    Shape = Images.shape
-                    Images = Images.reshape(Shape[0], -1)
-                else:
-                    raise Exception(Transform.Type)
-            SetAttrs(Data, "Images", value=Images)        
-        DLUtils.Log("Applied transformation on dataset images.")
-        if Save:
-            SavePath = DLUtils.RenameFileIfExists("./" + "cache/" + "Cifar10-Transformed-Cached.data")
-            DLUtils.PyObj2DataFile(
-                cache.Data,
-                SavePath
-            )
-            Md5 = DLUtils.File2MD5(SavePath)
-            DLUtils.Log("Saved transformed data. Md5:%s"%Md5)
-            SetAttrs(param, "Data.Transform.Md5")
-    def Labels2ClassNames(self, Labels):
-        ClassNames = []
-        for Label in Labels:
-            ClassNames.append()
-    def Label2ClassName(self, Label):
-        return
-    def NotifyEpochIndex(self, EpochIndex):
-        self.EpochIndex = EpochIndex
-    def LoadData(self, Dir="Auto"):
-        cache = self.cache
-        if Dir in ["Auto", "auto"]:
-            Dir = DLUtils.dataset.GetDatasetPath("CIFAR10")
-        DataFile = Dir + "CIFAR10-Data"
-        cache.Data = DLUtils.json.DataFile2PyObj(DataFile)
-        return
-    def EstimateBatchNum(self, BatchSize, Type="Train"):
-        cache = self.cache
-        Data = getattr(cache.Data, Type)
-        return DLUtils.dataset.CalculateBatchNum(BatchSize, Data.Images.Num)
-    def HasFlow(self, Name):
-        return hasattr(self.cache.flows, Name)
-    def GetFlow(self, Name):
-        return getattr(self.cache.flows, Name)
-    def CreateFlow(self, Name, BatchParam, Type="Train", IsRandom=False):
-        cache = self.cache
-        # if self.HasFlow(Name):
-        #     DLUtils.AddWarning("Overwriting existing flow: %s"%Name)
-        #self.ClearFlow(Type=Type)
-        #flow = cache.flows.SetAttr(Name, DLUtils.EmptyPyObj())
-        flow = DLUtils.EmptyPyObj()
-        flow.Name = Name
-        flow.IndexCurrent = 0
-        flow.BatchSize = BatchParam.Batch.Size
-        Data = getattr(cache.Data, Type)
-        flow.BatchNumMax = DLUtils.dataset.CalculateBatchNum(flow.BatchSize, Data.Images.Num)
-        flow.IndexMax = Data.Images.Num
-        flow.Data = Data
-        flow.Images = GetAttrs(flow.Data.Images)
-        flow.Labels = GetAttrs(flow.Data.Labels)
-        if hasattr(BatchParam, "Batch.Num"): # Limited Num of Batches
-            flow.BatchNum = BatchParam.Batch.Num
-        else: # All
-            flow.BatchNum = flow.BatchNumMax
-        flow.BatchIndex = -1
-        if IsRandom:
-            flow.IsRandom = True
-            flow.RandomBatchOrder = DLUtils.RandomOrder(range(flow.BatchNum))
-            flow.RandomBatchIndex = 0
-        else:
-            flow.IsRandom = False
-        self.ResetFlow(flow)
-        return flow
-    def CreateFlowRandom(self, BatchParam, Name, Type):
-        return self.CreateFlow(BatchParam, Name, Type, IsRandom=True)
-    #def ClearFlow(self, Type="Train"):
-    def ClearFlow(self, Name):
-        cache = self.cache
-        if hasattr(cache.flows, Name):
-            delattr(cache.flows, Name)
-        else:
-            DLUtils.AddWarning("No such flow: %s"%Name)
-    # def GetBatch(self, Name):
-    #     self.GetBatch(self, self.GetFlow(Name))
-    def GetBatch(self, flow):
-        flow.BatchIndex += 1
-        assert flow.BatchIndex < flow.BatchNum
-        if flow.IsRandom:
-            return self.GetBatchRandomFromFlow(flow)
-        assert flow.IndexCurrent <= flow.IndexMax
-        IndexStart = flow.IndexCurrent
-        IndexEnd = min(IndexStart + flow.BatchSize, flow.IndexMax)
-        DataBatch = self.GetBatchFromIndex(flow, IndexStart, IndexEnd)
-        flow.IndexCurrent = IndexEnd
-        if flow.IndexCurrent >= flow.IndexMax:
-            flow.IsEnd = True
-        return DataBatch
-    def GetData(self, Type):
-        return getattr(self.cache.Data, Type)
-    def GetBatchFromIndex(self, Data, IndexStart, IndexEnd):
-        DataBatch = {
-            "Input": DLUtils.NpArray2Tensor(
-                    Data.Images[IndexStart:IndexEnd]
-                ).to(self.GetTensorLocation()),
-            "Output": DLUtils.NpArray2Tensor(
-                    Data.Labels[IndexStart:IndexEnd],
-                    DataType=torch.long # CrossEntropyLoss requires label to be LongTensor.
-                ).to(self.GetTensorLocation()),
-        }
-        return DataBatch
-    def GetBatchRandom(self, BatchParam, Type, Seed=None):
-        BatchSize = BatchParam.Batch.Size
-        Data = self.GetData(self, Type)
-        if Seed is not None:
-            IndexStart = Seed % (Data.Images.Num - BatchSize + 1)
-        else:
-            IndexStart = DLUtils.RandomIntInRange(0, Data.Images.Num - BatchSize)
-        IndexEnd = IndexStart + BatchSize
-        assert IndexEnd < Data.Images.Num
-        return self.GetBatchFromIndex(self, Data, IndexStart, IndexEnd)
-    def GetBatchRandomFromFlow(self, Name):
-        flow = self.GetFlow(Name)
-        assert flow.IsRandom
-        IndexStart = flow.RandomBatchOrder[flow.RandomBatchIndex] * flow.BatchSize
-        IndexEnd = min(IndexStart + flow.BatchSize, flow.IndexMax)
-        DataBatch = self.GetBatchFromIndex(flow.Images, IndexStart, IndexEnd)
-        flow.RandomBatchIndex += 1
-        if flow.RandomBatchIndex > flow.IndexMax:
-            flow.RandomBatchIndex = 0
-        return DataBatch
-    def ResetFlowFromName(self, Name):
-        #flow = self.GetFlow(Name)
-        self.ResetFlow(Name)
-    def ResetFlow(self, flow):
-        flow.IndexCurrent = 0
-        flow.BatchIndex = -1
-        flow.IsEnd = False
-    def GetBatchNum(self, Name="Train"):
-        cache = self.cache
-        flow = getattr(cache.flows, Name)
-        return flow.BatchNum
-
 from six.moves import cPickle as pickle
 import numpy as np
 import os
@@ -335,15 +151,15 @@ def LoadDataSetFile(filename):
         Label = datadict['labels']      # Y, list, 标签, 分类
     
     Image = Image.reshape(10000, 3, 32, 32).transpose(0,2,3,1).astype(np.float32)
-    Label = np.array(Label)
+    Label = np.array(Label).astype(np.uint8)
     return Image, Label
 
-def ExtractImage(Data, IndexList=None, PlotNum=10, SavePath="./"):
+def ExtractImage(Data, IndexList=None, PlotNum=10, SavePath="./", LabelContent=None):
     if IndexList is None:
-        IndexList = DLUtils.MultipleRandomIntInRange(0, 70000, PlotNum)
+        IndexList = DLUtils.MultipleRandomIntInRange(0, 60000, PlotNum)
     for Index in IndexList:
         if Index >= 50000:
-            Type = "Test"
+            Type = "Test "
             Image = Data.Test.Image[Index - 50000]
             Label = Data.Test.Label[Index - 50000]
         else:
@@ -351,9 +167,10 @@ def ExtractImage(Data, IndexList=None, PlotNum=10, SavePath="./"):
             Image = Data.Train.Image[Index]
             Label = Data.Train.Label[Index]
         if len(Image.shape) == 1:
-            Image = Image.reshape(32, 32, 3)
+            Image = Image.reshape(32, 32, 3) # np.float32
+        Image = Image / 256.0
         DLUtils.plot.NpArray2ImageFile(
-            Image, SavePath + f"{Type} No.{Index} Class:{Label}.png" 
+            Image, SavePath + "{0} {1:0>5} Class {2} {3}.png".format(Type, Index, Label, LabelContent[Label])
         )
 
 def LoadDataSet(FolderPath, PlotExampleImage=True):
@@ -386,11 +203,11 @@ def LoadDataSet(FolderPath, PlotExampleImage=True):
     })
 
     if PlotExampleImage:
-        ExampleDir = FolderPath + "./example"
+        ExampleDir = FolderPath + "example/"
         DLUtils.file.EnsureDir(ExampleDir)
         if DLUtils.file.ExistsDir(ExampleDir) \
-            and len(DLUtils.file.ListAllFiles(ExampleDir)) < 10:
-                ExtractImage(Data=Data, SavePath=ExampleDir)
+            and len(DLUtils.file.ListAllFiles(ExampleDir)) < 30:
+                ExtractImage(Data=Data, SavePath=ExampleDir, LabelContent=LabelContent)
     return Data
 
 def ExtractDataSetFile(Path, MoveCompressedFile2ExtractFolder=True):
@@ -430,6 +247,39 @@ def ExtractDataSetFile(Path, MoveCompressedFile2ExtractFolder=True):
             raise Exception()
     return FolderPath
 
-def DataSetConfig(DataSetFolderPath, SaveDir):
-    Config = DLUtils.file.FolderConfig(DataSetFolderPath)
-    Config.ToJsonFile(SaveDir + "cifar10-folder-config.jsonc")
+def DataSetFolderConfig(DataSetFolderPath, SaveDir=None):
+    FolderConfigFilePath = DLUtils.file.FolderPathOfFile(__file__) + "cifar10-folder-config.jsonc"
+    if DLUtils.file.FileExists(FolderConfigFilePath):
+        ConfigFolder = DLUtils.file.JsonFile2Param(FolderConfigFilePath)
+    else:
+        ConfigFolder = DLUtils.file.FolderConfig(DataSetFolderPath)
+    if SaveDir is not None:
+        ConfigFolder.ToJsonFile(SaveDir + "cifar10-folder-config.jsonc")
+    return ConfigFolder
+
+def DataSetConfig(DataSetFolderPath, SaveDir=None):
+    DataSetFolderPath = DLUtils.file.StandardizePath(DataSetFolderPath)
+    Data = LoadDataSet(DataSetFolderPath)
+    Config = DLUtils.Param({
+        "Test.Num": 10000,
+        "Train.Num": 50000,
+        "Image.Shape": [32, 32, 3],
+        "Class.Num": 10,
+        "Image.Value.Range": [0, 255],
+        "Image.Value.Type": "uint8",
+        "Label.Content": LabelContent
+    })
+    Config.Absorb(DataSetStat(Data))
+    Config.Folder = DataSetFolderConfig(DataSetFolderPath)
+    if SaveDir is not None:
+        Config.ToJsonFile(SaveDir + "cifar10-config.jsonc")
+    return Config
+
+def DataSetStat(Data):
+    Stat = DLUtils.Param()
+    ColorChannelStat = Stat.Image.ColorChannel
+    ColorChannelStat.Train.Mean = np.nanmean(Data.Train.Image, axis=(0, 1, 2)) # [ImageNum, 32, 32, 3]
+    ColorChannelStat.Train.Std = np.nanmean(Data.Train.Image, axis=(0, 1, 2)) # [ImageNum, 32, 32, 3]
+    ColorChannelStat.Test.Mean = np.nanmean(Data.Test.Image, axis=(0, 1, 2)) # [ImageNum, 32, 32, 3]
+    ColorChannelStat.Test.Std = np.nanmean(Data.Test.Image, axis=(0, 1, 2)) # [ImageNum, 32, 32, 3]
+    return Stat

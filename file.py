@@ -13,6 +13,14 @@ def FileNameFromPath(FilePath):
     FileName = os.path.basename(FilePath)
     return FileName
 
+def StandardizePath(Path):
+    if Path.startswith("~"):
+        Path = AbsPath("~") + Path[1:]
+    if ExistsDir(Path):
+        if not Path.endswith("/"):
+            Path += "/"
+    return Path
+
 def MoveFile(FilePath, FilePathDest, RaiseIfNonExist=False, Overwrite=True, RaiseIfOverwrite=True):
     if not FileExists(FilePath):
         Msg = f"DLUtils.MoveFile: FilePath {FilePath} does not exist."
@@ -629,13 +637,14 @@ def ListFilesAndCalculateMd5(DirPath, Md5InKeys=False):
 
 ListFilesAndMd5 = ListFilesAndCalculateMd5
 
-def ToAbsPath(Path):
+def AbsPath(Path):
     if "~" in Path:
         Path = os.path.expanduser(Path)
-    AbsPath = os.path.abspath(Path)
-    if IsDir(AbsPath) and not AbsPath.endswith("/"):
-        AbsPath += "/"
-    return AbsPath
+    PathAbs = os.path.abspath(Path)
+    if IsDir(PathAbs) and not PathAbs.endswith("/"):
+        PathAbs += "/"
+    return PathAbs
+ToAbsPath = AbsPath
 
 def GetRelativePath(PathTarget, PathRef):
     PathTarget = ToAbsPath(PathTarget)

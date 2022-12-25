@@ -6,7 +6,6 @@ def mnist_mlp(SaveDir="test/mnist/mlp"):
     EpochNum  = 100
     Device = "cuda:0"
     
-    Device = "cuda:0"
     Log = DLUtils.log.SeriesLog()
     Model = DLUtils.network.ModuleSequence(
         [
