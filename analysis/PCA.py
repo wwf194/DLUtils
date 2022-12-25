@@ -158,7 +158,7 @@ def AnalyzePCAForEpochBatchTrain(ContextObj):
             else:
                 logPCA.Data.append(Data)
             continue
-        DLUtils.AddLog("Testing Model at Epoch%d-Batch%d"%(EpochIndex, BatchIndex))
+        DLUtils.Log("Testing Model at Epoch%d-Batch%d"%(EpochIndex, BatchIndex))
 
         DLUtils.DoTasks(
             "&^param.task.Load",
@@ -225,7 +225,7 @@ def ScanLogPCA(ScanDir=None):
 #     TestBatchNum = ContextObj.setdefault("TestBatchNum", 10)
 #     logPCA = LogForPCA()
 #     for TestBatchIndex in range(TestBatchNum):
-#         DLUtils.AddLog("Epoch%d-Index%d-TestBatchIndex-%d"%(ContextObj.EpochIndex, ContextObj.BatchIndex, TestBatchIndex))
+#         DLUtils.Log("Epoch%d-Index%d-TestBatchIndex-%d"%(ContextObj.EpochIndex, ContextObj.BatchIndex, TestBatchIndex))
 #         log.SetBatchIndex(TestBatchIndex)
 #         InList = [
 #             Trainer.GetBatchParam(), Trainer.GetOptimizeParam(), log

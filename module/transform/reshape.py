@@ -17,7 +17,7 @@ class Reshape(AbstractOperator):
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         self.Shape = Param.Shape.After
-        super().Init(IsSuper=IsSuper, IsRoot=IsRoot)
+        super().Init(IsSuper=True, IsRoot=IsRoot)
 
 class Index2OneHot(AbstractOperator):
     def __init__(self, FeatureNum):

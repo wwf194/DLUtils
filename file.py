@@ -9,9 +9,106 @@ import warnings
 
 from DLUtils.utils._param import JsonFile2Param
 
-def ParentFolderPath(FilePath):
+def FileNameFromPath(FilePath):
+    FileName = os.path.basename(FilePath)
+    return FileName
+
+def MoveFile(FilePath, FilePathDest, RaiseIfNonExist=False, Overwrite=True, RaiseIfOverwrite=True):
+    if not FileExists(FilePath):
+        Msg = f"DLUtils.MoveFile: FilePath {FilePath} does not exist."
+        if RaiseIfNonExist:
+            raise Exception(Msg)
+        else:
+            warnings.warn(Msg)
+    if DirExists(FilePathDest):
+        FileName = FileNameFromPath(FilePath)
+        _FilePathDest = FilePathDest
+        FilePathDest =FilePathDest + FileName
+    EnsureFileDir(FilePathDest)
+
+    if FileExists(FilePathDest):
+        if not Overwrite:
+            Msg = f"DLUtils.MoveFile: FilePathDest {FilePathDest} already exist."
+            if RaiseIfOverwrite:
+                raise Exception(Msg)
+            else:
+                warnings.warn(Msg)
+    shutil.move(FilePath, FilePathDest)
+    return True
+
+def MoveFolder(FolderPath, FolderPathNew, RaiseIfNonExist=False, Overwrite=True):
+    if not FolderExists(FolderPath):
+        Msg = f"DLUtils.MoveFile: FilePath {FolderPath} does not exist."
+        if RaiseIfNonExist:
+            raise Exception(Msg)
+        else:
+            warnings.warn(Msg)
+
+    CopyTree(FolderPath, FolderPathNew)
+    DeleteTree(FolderPath)
+    return True
+MoveDir = MoveFolder
+
+def CopyFilesInSameFolder(FileNameList, SourceDir, DestDir):
+    for FileName in FileNameList:
+        CopyFilesInSameFolder(FileName, SourceDir, DestDir)
+CopyFiles2DestDir = CopyFiles = CopyFilesInSameFolder
+
+def CopyFile2AllSubDirsUnderDestDir(FileName, SourceDir, DestDir):
+    for SubDir in ListAllDirs(DestDir):
+        try:
+            CopyFile2Folder(FileName, SourceDir, DestDir + SubDir)
+        except Exception:
+            continue
+
+def CopyFile2Folder(FileName, SourceDir, DestDir):
+    EnsureFileDir(DestDir + FileName)
+    shutil.copy(SourceDir + FileName, DestDir + FileName)
+
+def IsSameFile(FilePath1, FilePath2):
+    return os.path.samefile(FilePath1, FilePath2)
+
+def DeleteFile(FilePath, RaiseIfNonExist=False):
+    if not FileExists(FilePath):
+        Msg = f"DLUtils.DeleteFile: FilePath {FilePath} does not exist."
+        if RaiseIfNonExist:
+            raise Exception(Msg)
+        else:
+            warnings.warn(Msg)
+    else:
+        os.remove(FilePath)
+
+def DeleteTree(FolderPath, RaiseIfNonExist=False):
+    if not FolderExists(FolderPath):
+        Msg = f"DLUtils.DeleteFile: FolderPath {FolderPath} does not exist."
+        if RaiseIfNonExist:
+            raise Exception(Msg)
+        else:
+            warnings.warn(Msg)
+    shutil.rmtree(FolderPath)
+    return
+DeleteFolder = DeleteDir = DeleteTree
+
+#from distutils.dir_util import copy_tree
+def CopyFolder(SourceDir, DestDir):
+    assert IsDir(SourceDir)
+    if not DestDir.endswith("/"):
+        DestDir += "/"
+    CopyTree(SourceDir, DestDir)
+    #shutil.copytree(SourceDir, DestDir) # Requires that DestDir not exists.
+CopyDir2DestDir = CopyFolder2DestDir = CopyFolder
+
+def FolderPathOfFile(FilePath):
     return os.path.dirname(os.path.realpath(FilePath)) + "/"
-FolderPathOfFile = ParentFolderPath
+ParentFolderPath = FolderPathOfFile
+
+from pathlib import Path
+
+def FolderPathOfFolder(FilePath):
+    Path = Path(FilePath)
+    ParentFolderPath = Path.parent.absolute()
+
+    return ParentFolderPath
 
 def RemoveFiles(FilesPath):
     for FilePath in FilesPath:
@@ -29,7 +126,7 @@ def RemoveAllFilesUnderDir(DirPath, verbose=True):
         #FilePath = os.path.join(DirPath, FileName)
         FilePath = DirPath + FileName
         os.remove(FilePath)
-        DLUtils.AddLog("utils_pytorch: removed file: %s"%FilePath)
+        DLUtils.Log("utils_pytorch: removed file: %s"%FilePath)
 
 def RemoveAllFilesAndDirsUnderDir(DirPath, verbose=True):
     assert ExistsDir(DirPath)
@@ -37,13 +134,13 @@ def RemoveAllFilesAndDirsUnderDir(DirPath, verbose=True):
     for FileName in Files:
         FilePath = os.path.join(DirPath, FileName)
         os.remove(FilePath)
-        DLUtils.AddLog("DLUtils: removed file: %s"%FilePath)
+        DLUtils.Log("DLUtils: removed file: %s"%FilePath)
     for DirName in Dirs:
         DirPath = os.path.join(DirPath, DirName)
         #os.removedirs(DirPath) # Cannot delete subfolders
         import shutil
         shutil.rmtree(DirPath)
-        DLUtils.AddLog("DLUtils: removed directory: %s"%DirPath)
+        DLUtils.Log("DLUtils: removed directory: %s"%DirPath)
 
 def IsDir(DirPath):
     return os.path.isdir(DirPath)
@@ -66,7 +163,7 @@ def RemoveMatchedFiles(DirPath, Patterns):
             if MatchResult is not None:
                 FilePath = os.path.join(DirPath, FileName)
                 os.remove(FilePath)
-                DLUtils.AddLog("DLUtils: removed file: %s"%FilePath)
+                DLUtils.Log("DLUtils: removed file: %s"%FilePath)
 
 def ListAllFilesAndDirs(DirPath):
     if not os.path.exists(DirPath):
@@ -115,7 +212,12 @@ def FileExists(FilePath):
 ExistsFile = FileExists
 
 def FolderExists(DirPath):
-    return os.path.isdir(DirPath)
+    IsDir = os.path.isdir(DirPath)
+    if IsDir:
+        if not DirPath.endswith("/"):
+            DirPath += "/"
+    return IsDir
+
 ExistsDir = DirExists = FolderExists
 ExistsFolder = FolderExists
 
@@ -135,7 +237,6 @@ def EnsureDirectory(DirPath):
         if not DirPath.endswith("/"):
             DirPath += "/"
         os.makedirs(DirPath)
-
 EnsureDir = EnsureDirectory
 EnsureFolder = EnsureDirectory
 
@@ -144,7 +245,6 @@ def EnsureFileDirectory(FilePath):
     FilePath = Path2AbsolutePath(FilePath)
     FileDir = os.path.dirname(FilePath)
     EnsureDir(FileDir)
-
 EnsureFileDir = EnsureFileDirectory
 
 def GetFileDir(FilePath):
@@ -232,6 +332,7 @@ def CopyFolder(SourceDir, DestDir, exceptions=[], verbose=True):
 
 def _CopyFolder(SourceDir, DestDir, subpath='', exceptions=[], verbose=True):
     #EnsurePath(SourceDir + subpath)
+    # efficient copy. skip file with same md5 to increase speed and decrease disk write.
     EnsurePath(DestDir + subpath)
     items = os.listdir(SourceDir + subpath)
     for item in items:
@@ -243,9 +344,9 @@ def _CopyFolder(SourceDir, DestDir, subpath='', exceptions=[], verbose=True):
                     print('neglected file: %s'%path)
             else:
                 if os.path.exists(DestDir + subpath + item):
-                    Md5_source = GetMd5(SourceDir + subpath + item)
-                    Md5_target = GetMd5(DestDir + subpath + item)
-                    if Md5_target==Md5_source: # same file
+                    Md5Source = File2MD5(SourceDir + subpath + item)
+                    Md5Target = File2MD5(DestDir + subpath + item)
+                    if Md5Target==Md5Source: # same file
                         #print('same file')
                         continue
                     else:
@@ -315,12 +416,19 @@ def RenameFileIfExists(FilePath):
         return FilePath
 RenameIfFileExists = RenameFileIfExists
 
-def RenameDir(DirOld, DirNew):
-    if not ExistsDir(DirOld):
-        DLUtils.AddWarning("RenameDir: Dir %s does not exist."%DirOld)
-        return
-    assert not ExistsFile(DirNew.rstrip("/"))
-    os.rename(DirOld, DirNew)
+def RenameDir(FolderPath, FolderNameNew):
+    # providing a new folder path is not allowed
+    # since this might result in move, rather than rename.
+    FolderNameNew = FolderNameNew.rstrip("/")
+    if not ExistsDir(FolderPath):
+        DLUtils.AddWarning("RenameDir: Dir %s does not exist."%FolderPath)
+        return False
+    ParentFolderPath = FolderPathOfFolder(FolderPath)
+    FolderPathNew = ParentFolderPath + FolderNameNew
+    assert not ExistsFile(FolderPathNew.rstrip("/"))
+    os.rename(FolderPath, FolderPathNew)
+
+RennameFolder = RenameDir
 
 def RenameDirIfExists(DirPath):
     DirPath = DirPath.rstrip("/")
@@ -355,26 +463,22 @@ def Str2File(Str, FilePath):
     with open(FilePath, "w") as file:
         file.write(Str)
 
-def Table2TextFileDict(Dict, SavePath):
-    DLUtils.Str2File(pd.DataFrame(Dict).to_string(), SavePath)   
-Table2TextFile = Table2TextFileDict
+def Tensor2TextFile2D(Data, SavePath="./test/"):
+    Data = DLUtils.ToNpArray(Data)
+    NpArray2TextFile2D(Data, SavePath=SavePath)
 
-def Table2TextFileColumns(*Columns, **kw):
-    # ColNum = len(Columns)
-    # Str = " ".join(kw["Names"])
-    # Str += "\n"
-    # for RowIndex in range(len(Columns[0])):
-    #     for ColIndex in range(ColNum):
-    #         Str += str(Columns[ColIndex][RowIndex])
-    #         Str += " "
-    #     Str += "\n"
-    # DLUtils.Str2File(Str, kw["SavePath"])
-    Names = kw["Names"]
-    Dict = {}
-    for Index, Column in enumerate(Columns):
-        Dict[Names[Index]] = Column
-    Table2TextFileDict(Dict, kw["SavePath"])
-
+def NpArray2TextFile2D(Data, ColName=None, RowName=None, SavePath=None):
+    assert len(Data.shape) == 2
+    DataDict= {}
+    if ColName is None:
+        ColName = range(Data.shape[1])
+    for ColIndex, Name in enumerate(ColName):
+        DataDict[Name] = Data[:, ColIndex]
+    if RowName is not None:
+        # to be implemented
+        pass
+    DLUtils.Str2File(pd.DataFrame(DataDict).to_string(), SavePath)
+    
 def LoadParamFromFile(Args, **kw):
     if isinstance(Args, dict):
         _LoadParamFromFile(DLUtils.json.JsonObj2PyObj(Args), **kw)
@@ -502,6 +606,7 @@ def File2MD5(FilePath):
     Md5Str = Md5Calculator.hexdigest()
     return Md5Str
 
+
 def FileList2Md5(FilePathList):
     Md5List = []
     for FilePath in FilePathList:
@@ -523,68 +628,6 @@ def ListFilesAndCalculateMd5(DirPath, Md5InKeys=False):
     return Dict
 
 ListFilesAndMd5 = ListFilesAndCalculateMd5
-
-# def select_file(name, candidate_files, default_file=None, match_prefix='', match_suffix='.py', file_type='', raise_no_match_error=True):
-#     use_default_file = False
-#     perfect_match = False
-#     if name is None:
-#         use_default_file = True
-#     else:
-#         matched_count = 0
-#         matched_files = []
-#         perfect_match_name = None
-#         if match_prefix + name + match_suffix in candidate_files: # perfect match. return this file directly
-#             perfect_match_name = match_prefix + name + match_suffix
-#             perfect_match = True
-#             matched_files.append(perfect_match_name)
-#             matched_count += 1
-#         for file_name in candidate_files:
-#             if name in file_name:
-#                 if file_name!=perfect_match_name:
-#                     matched_files.append(file_name)
-#                     matched_count += 1
-#         #print(matched_files)
-#         if matched_count==1: # only one matched file
-#             return matched_files[0]
-#         elif matched_count>1: # multiple files matched
-#             warning = 'multiple %s files matched: '%file_type
-#             for file_name in matched_files:
-#                 warning += file_name
-#                 warning += ' '
-#             warning += '\n'
-#             if perfect_match:
-#                 warning += 'Using perfectly matched file: %s'%matched_files[0]
-#             else:
-#                 warning += 'Using first matched file: %s'%matched_files[0]
-#             warnings.warn(warning)
-#             return matched_files[0]
-#         else:
-#             warnings.warn('No file matched name: %s. Trying using default %s file.'%(str(name), file_type))
-#             use_default_file = True
-#     if use_default_file:
-#         if default_file is not None:
-#             if default_file in candidate_files:
-#                 print('Using default %s file: %s'%(str(file_type), default_file))
-#                 return default_file
-#             else:
-#                 sig = True
-#                 for candidate_file in candidate_files:
-#                     if default_file in candidate_file:
-#                         print('Using default %s file: %s'%(str(file_type), candidate_file))
-#                         sig = False
-#                         return candidate_file
-#                 if not sig:
-#                     if raise_no_match_error:
-#                         raise Exception('Did not find default %s file: %s'%(file_type, str(default_file)))
-#                     else:
-#                         return None
-#         else:
-#             if raise_no_match_error:
-#                 raise Exception('Plan to use default %s file. But default %s file is not given.'%(file_type, file_type))
-#             else:
-#                 return None
-#     else:
-#         return None
 
 def ToAbsPath(Path):
     if "~" in Path:
@@ -651,20 +694,7 @@ def VisitDirAndApplyMethodOnDirs(DirPath=None, Method=None, Recur=False, **Dict)
         for DirName in DirList:
             VisitDirAndApplyMethodOnFiles(DirPath + DirName + "/", Method, Recur, **Dict)
 
-def CopyFiles2DestDir(FileNameList, SourceDir, DestDir):
-    for FileName in FileNameList:
-        CopyFile2DestDir(FileName, SourceDir, DestDir)
 
-def CopyFile2AllSubDirsUnderDestDir(FileName, SourceDir, DestDir):
-    for SubDir in ListAllDirs(DestDir):
-        try:
-            CopyFile2DestDir(FileName, SourceDir, DestDir + SubDir)
-        except Exception:
-            continue
-
-def CopyFile2DestDir(FileName, SourceDir, DestDir):
-    EnsureFileDir(DestDir + FileName)
-    shutil.copy(SourceDir + FileName, DestDir + FileName)
 
 def EnsureDirFormat(Dir):
     if not Dir.endswith("/"):
@@ -682,17 +712,10 @@ def CopyFilesAndDirs2DestDir(Names, SourceDir, DestDir):
             EnsureDir(_DestDir)
             CopyDir2DestDir(_SourceDir, _DestDir)
         elif DLUtils.IsFile(ItemPath):
-            CopyFile2DestDir(Name, SourceDir, DestDir)
+            CopyFile2Folder(Name, SourceDir, DestDir)
         else:
             raise Exception()
-#from distutils.dir_util import copy_tree
-def CopyFolder2DestDir(SourceDir, DestDir):
-    assert IsDir(SourceDir)
-    if not DestDir.endswith("/"):
-        DestDir += "/"
-    _CopyTree(SourceDir, DestDir)
-    #shutil.copytree(SourceDir, DestDir) # Requires that DestDir not exists.
-CopyDir2DestDir = CopyFolder2DestDir
+
 
 def SplitPaths(Paths):
     PathsSplit = []
@@ -702,18 +725,17 @@ def SplitPaths(Paths):
 def SplitPath(Path):
     return Path
 
-def _CopyTree(SourceDir, DestDir, **kw):
+def CopyTree(SourceDir, DestDir, **kw):
     kw.setdefault("SubPath", "")
     Exceptions = kw.setdefault("Exceptions", []) # to be implemented: allowing excetionpaths                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
     Files, Dirs = ListAllFilesAndDirs(SourceDir)
     for File in Files:
         # if File in Exceptions[0]:
         #     continue
-        CopyFile2DestDir(File, SourceDir, DestDir)
+        CopyFile2Folder(File, SourceDir, DestDir)
     for Dir in Dirs:
         EnsureDir(DestDir + Dir)
-        _CopyTree(SourceDir + Dir, DestDir + Dir, **kw)
-
+        CopyTree(SourceDir + Dir, DestDir + Dir, **kw)
 
 def Data2TextFile(data, Name=None, FilePath=None):
     if FilePath is None:
@@ -725,7 +747,7 @@ from .utils.json import PyObj2DataFile, DataFile2PyObj, PyObj2JsonFile, \
 
 from .utils._param import JsonDict2Str
 
-def FolderDesciprtion(FolderPath):
+def FolderConfig(FolderPath):
     FolderPath = ToAbsPath(FolderPath)
 
     if not FolderPath.endswith("/"):
@@ -797,20 +819,21 @@ def CheckIntegrity(FolderPath, Config):
 
 import gzip
 import shutil
-def ExtractGzFile(FilePath, SavePath=None):
-    if SavePath is None:
-        SavePath = DLUtils.RemoveSuffix(FilePath, ".gz")
-        if SavePath is None:
-            raise Exception(SavePath)
+def ExtractGzFile(FilePath, ExtractFilePath=None):
+    # file -> file
+    if ExtractFilePath is None:
+        ExtractFilePath = DLUtils.RemoveSuffix(FilePath, ".gz")
+        if ExtractFilePath is None:
+            raise Exception(ExtractFilePath)
     with gzip.open(FilePath, 'rb') as FileIn:
-        with open(SavePath, 'wb') as FileOut:
+        with open(ExtractFilePath, 'wb') as FileOut:
             shutil.copyfileobj(FileIn, FileOut)
-
+    return ExtractFilePath
 def IsGzFile(FilePath):
     with open(FilePath, 'rb') as test_f:
         return test_f.read(2) == b'\x1f\x8b'
-
-def UncompressGzFile(FilePath, SavePath=None):
+def _ExtractGzFile(FilePath, SavePath=None):
+    # file -> file
     if SavePath is None:
         SavePath = DLUtils.RemoveSuffix(FilePath, "tar.gz")
         if SavePath is None:
@@ -821,14 +844,14 @@ def UncompressGzFile(FilePath, SavePath=None):
 import tarfile
 # Input: Zip File
 # Output: Extracted Folder
-def ExtractTarFile(FolderPath):
+def ExtractTarFile(FolderPath, ExtractFolderPath):
+    # file -> folder
     # importing the "tarfile" module
-
-    # open file
     File = tarfile.open(FolderPath)
     # extracting file
-    File.extractall('./Destination_FolderName')
+    File.extractall(ExtractFolderPath)
     File.close()
+    return ExtractFolderPath
 
 UncompressTarGzFile = ExtractTarFile
 
@@ -838,17 +861,24 @@ def IsTarFile(FilePath):
 import zipfile
 # Input: Zip File
 # Output: Extracted Folder
-def UnzipFile(ZipFilePath, SavePath):
-    SavePath = EnsureDirFormat(SavePath)
+def ExtractZipFile(ZipFilePath, ExtractDir):
+    # file -> folder
+    ExtractDir = EnsureDir(ExtractDir)
     with zipfile.ZipFile(ZipFilePath, 'r') as zip_ref:
-        zip_ref.extractall(SavePath)
-ZipFile2Folder = UnzipFile
-ExtractZipFile = UnzipFile
+        zip_ref.extractall(ExtractDir)
+    return ExtractDir
+
+ZipFile2Folder = ExtractZipFile
+ExtractZipFile = ExtractZipFile
+UnzipFile = ExtractZipFile
 
 def IsZipFile(FilePath):
     return zipfile.is_zipfile(FilePath)
 
-def ZipFolder(ZipPathList, ZipFilePath):
+def Folder2ZipFile(ZipPathList, ZipFilePath):
+    return
+
+def File2ZipFile(FilePath, ZipFilePath):
     return
 
 def JsonDict2JsonFile(JsonDict, FilePath):

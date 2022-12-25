@@ -8,45 +8,44 @@ import DLUtils
 
 class LogComponent:
     # method for class
-    def SetLog(self, Log, SetForSubModules=True):
-        self.Log = Log
-        Param = self.Param
+    def SetLog(self, Logger, SetForSubModules=True):
+        self.Logger = Logger
         if hasattr(self, "LogCache"):
-            for log in self.LogCache:
-                self.Log.Add(log)
+            for Log in self.LogCache:
+                self.Logger.Add(Log)
         if SetForSubModules:
             self.SetLogRecur()
         return self
-    def SetLogRecur(self, Log=None):
-        if Log is None:
-            Log = self.Log
+    def SetLogRecur(self, Logger=None):
+        if Logger is None:
+            Logger = self.Logger
         for Name, SubModule in self.SubModules.items():
-            SubModule.SetLog(Log)
+            SubModule.SetLog(Logger)
         return self
-    def AddLog(self, Content, Type="Unknown"):
+    def Log(self, Content, Type="Unknown"):
         Param = self.Param
         log = DLUtils.param({
                 "Logger": Param._PATH,
                 "Type": Type,
                 "Content": Content
             })
-        if not hasattr(self, "Log"):
+        if not hasattr(self, "Logger"):
             if not hasattr(self, "LogCache"):
                 self.LogCache = []
             self.LogCache.append(log)
         else:
-            self.Log.Add(log)
+            self.Logger.Add(log)
         return self
 
 class AbstractModule(LogComponent):
-    def __init__(self, Log=None):
+    def __init__(self, Logger=None):
         self.Name = "NullName"
         self.SubModules = DLUtils.param()
         Param = self.Param = DLUtils.Param()
         Param._CLASS = "DLUtils.module.AbstractModule"
         Param._PATH = "Root"
-        if Log is not None:
-            self.Log = Log
+        if Logger is not None:
+            self.Logger = Logger
     def __call__(self, *List, **Dict):
         return self.Receive(*List, **Dict)
     def ExtractParam(self, RetainSelf=True):
@@ -59,10 +58,7 @@ class AbstractModule(LogComponent):
         return self.Param
     def LoadParam(self, Param):
         self.Param = Param
-        if Param.hasattr("Tensor"):
-            self.UpdateTensorFromDict()
-        else:
-            Param.Tensor = []
+        self.SubModules = DLUtils.param()
         self.LoadParamRecur(Param)
         return self
     def LoadParamRecur(self, Param):
@@ -90,13 +86,11 @@ class AbstractModule(LogComponent):
     def SetAsRoot(self):
         self.Param._IS_ROOT = True
         return self
-
-    def ToFile(self, FilePath):
-        Param = self.ExtractParam(RetainSelf=False)
+    def ToFile(self, FilePath, RetainSelf=False):
+        Param = self.ExtractParam(RetainSelf=RetainSelf)
         DLUtils.file.Obj2File(Param, FilePath)
         return self
     def FromFile(self, FilePath):
-        self.SubModules = {}
         Param = DLUtils.file.File2Obj(FilePath)
         self.LoadParam(Param)
         return self
@@ -105,7 +99,7 @@ class AbstractModule(LogComponent):
         return self
     def PathStr(self):
         Param = self.Param
-        if isinstance(self, DLUtils.NN.NonLinearLayer):
+        if isinstance(self, DLUtils.network.NonLinearLayer):
             a = 1
         #if not hasattr(self, "_PathStr"):
         if isinstance(Param._PATH, str):
@@ -121,27 +115,61 @@ class AbstractModule(LogComponent):
         else:
             return str(self.__class__)
     def Init(self, IsSuper=False, IsRoot=True):
-        # Check whether this object is correctly configured.
         for Name, SubModule in self.SubModules.items():
             SubModule.Init(IsSuper=False, IsRoot=False)
-        if hasattr(self, "Log"):
-            self.SetLogRecur()
+            setattr(self, Name, SubModule)
+        if hasattr(self, "Logger"):
+            self.SetLogRecur(self.Logger)
         return self
-    def AddLogWithSelfInfo(self, Content, Type="Unknown"):
-        self.AddLog(f"{self.PathStr()}({self.ClassStr()}): {Content}", Type=Type)
+    def LogWithSelfInfo(self, Content, Type="Unknown"):
+        self.Log(f"{self.PathStr()}({self.ClassStr()}): {Content}", Type=Type)
+        return self
+    def SetDevice(self, Device=None, IsRoot=True):
+        if Device is None:
+            Device = self.Device
+        else:
+            self.Device = Device
+        Param = self.Param
+        if Param.hasattr("Tensor"):
+            for TensorName in Param.Tensor:
+                if hasattr(self, TensorName):
+                    Tensor = getattr(self, TensorName)
+                    TensorNew = Tensor.to(Device).detach() # requires_grad remains same.
+                    TensorNew.requires_grad = Tensor.requires_grad
+                    setattr(self, TensorName, TensorNew)
+                else:
+                    Tensor = Param.Data.getattr(TensorName)
+                    TensorNew = DLUtils.ToTorchTensor(Tensor).to(Device).detach()
+                    TensorNew.requires_grad = Tensor.requires_grad
+                    setattr(self, TensorName, TensorNew)
+        self.SetDeviceRecur(Device)
+        if IsRoot:
+            self.Log(
+                f"Set device to {Device}", "SystemConfigChange"
+            )
+        return self
+    def SetDeviceRecur(self, Device):
+        for Name, SubModule in self.SubModules.items():
+            if hasattr(SubModule, "SetDevice"):
+                SubModule.SetDevice(Device, IsRoot=False)
+        return self
+    def Clear(self):
+        Attrs = list(self.__dict__.keys())
+        for Attr in Attrs:
+            delattr(self, Attr)
         return self
 
 class AbstractOperator(AbstractModule):
     # operation module without trainable parameter
-    def __init__(self, Log=None):
-        super().__init__(Log=Log)
+    def __init__(self, Logger=None):
+        super().__init__(Logger=Logger)
     def AddSubModule(self, Name, Module):
         raise Exception("AbstractOperator module.")
 
 class AbstractNetwork(AbstractModule):
     # network with trainable weights.
-    def __init__(self, Log=None):
-        super().__init__(Log=Log)
+    def __init__(self, Logger=None):
+        super().__init__(Logger=Logger)
         Param = self.Param
         Param.Tensor = set()
         Param.TrainParam = set()
@@ -149,7 +177,8 @@ class AbstractNetwork(AbstractModule):
         Param = self.Param
         Param.Data.setattr(Name, TrainParam)
         Param.TrainParam.add(Name)
-        Param.Param.add(Name)
+        Param.Tensor.add(Name)
+        
         return self
     def AddTensor(self, Name, Tensor):
         Param = self.Param
@@ -158,14 +187,15 @@ class AbstractNetwork(AbstractModule):
         return self
     def UpdateTensorFromDict(self, Recur=False):
         Param = self.Param
-        for Name in Param.Tensor:
-            Tensor = DLUtils.ToTorchTensorOrNum(getattr(Param.Data, Name))
-            if hasattr(self, "Device"):
-                TensorNew = Tensor.to(self.Device).detach()
-                TensorNew.requires_grad = Tensor.requires_grad
-            else:
-                TensorNew = Tensor
-            setattr(self, Name, TensorNew)
+        if Param.hasattr("Tensor"):
+            for Name in Param.Tensor:
+                Tensor = DLUtils.ToTorchTensorOrNum(getattr(Param.Data, Name))
+                if hasattr(self, "Device"):
+                    TensorNew = Tensor.to(self.Device).detach()
+                    TensorNew.requires_grad = Tensor.requires_grad
+                else:
+                    TensorNew = Tensor
+                setattr(self, Name, TensorNew)
         if Param.hasattr("TrainParam"):
             for Name in Param.TrainParam:
                 Tensor = getattr(self, Name)
@@ -177,10 +207,11 @@ class AbstractNetwork(AbstractModule):
         return self
     def UpdateDictFromTensor(self, Recur=False):
         Param = self.Param
-        for Name in Param.TrainParam:
-            if hasattr(self, Name):
-                Tensor = getattr(self, Name)
-                setattr(Param.Data, Name, DLUtils.ToNpArrayOrNum(Tensor))
+        if  Param.hasattr("TrainParam"):
+            for Name in Param.TrainParam:
+                if hasattr(self, Name):
+                    Tensor = getattr(self, Name)
+                    setattr(Param.Data, Name, DLUtils.ToNpArrayOrNum(Tensor))
         if Recur:
             for Name, SubModule in self.SubModules.items():
                 if hasattr(SubModule, "UpdateDictFromTensor"):
@@ -190,13 +221,13 @@ class AbstractNetwork(AbstractModule):
         self.UpdateDictFromTensor()
         self.UpdateTensorFromDict()
         Param = self.Param
-        TrainParamName = self.Param.get("TrainParam")
         if PathStrPrefix:
             Prefix = self.PathStr() + "."
         else:
             Prefix = ""
-        if TrainParamName is not None:
-            for Name in TrainParamName:
+        TrainParam = Param.get("TrainParam")
+        if TrainParam is not None:
+            for Name in TrainParam:
                 ParamDict[Prefix + Name] = getattr(self, Name)
         if Recur:
             self.ExtractTrainParamRecur(ParamDict=ParamDict, PathStrPrefix=PathStrPrefix)
@@ -210,79 +241,55 @@ class AbstractNetwork(AbstractModule):
         Param = self.Param
         Param = self.ExtractParam()
         SavePath = DLUtils.ParseSavePath(SaveDir, SaveName, SaveNameDefault=Param._PATH)
-        for WeightName in Param.TrainParam:
-            Data = Param.Data.getattr(WeightName)
-            if hasattr(Data, "shape"):
-                DimNum = len(Data.shape)
-            else:
-                DimNum = 0
-            if DimNum == 1 or DimNum == 0:
-                DLUtils.plot.PlotData1D(
-                    Name=WeightName,
-                    Data=Data,
-                    SavePath=SavePath + "." + WeightName + ".svg",
-                    #XLabel="Dimension 0", YLabel="Dimension 0"
-                )
-                DLUtils.plot.PlotDataAndDistribution1D(
-                    Name=WeightName,
-                    Data=Data,
-                    SavePath=SavePath + "." + WeightName + " - Distribution.svg",
-                    XLabel="Dimension 0", YLabel="Dimension 0"
-                )
-            elif DimNum == 2:
-                DLUtils.plot.PlotData2D(
-                    Name=WeightName,
-                    Data=Data,
-                    SavePath=SavePath + "." + WeightName + ".svg",
-                    XLabel="Output Dimension", YLabel="Input Dimension"
-                )
-                DLUtils.plot.PlotDataAndDistribution2D(
-                    Name=WeightName,
-                    Data=Data,
-                    SavePath=SavePath + "." + WeightName + " - Distribution.svg",
-                    XLabel="Output Dimension", YLabel="Input Dimension"
-                )
-        self.PlotWeightRecur(SaveDir, SaveName)
+        if Param.hasattr("TrainParam"):
+            for WeightName in Param.TrainParam:
+                Data = Param.Data.getattr(WeightName)
+                if hasattr(Data, "shape"):
+                    DimNum = len(Data.shape)
+                else:
+                    DimNum = 0
+                if DimNum == 1 or DimNum == 0:
+                    DLUtils.plot.PlotData1D(
+                        Name=WeightName,
+                        Data=Data,
+                        SavePath=SavePath + "." + WeightName + ".svg",
+                        #XLabel="Dimension 0", YLabel="Dimension 0"
+                    )
+                    DLUtils.plot.PlotDataAndDistribution1D(
+                        Name=WeightName,
+                        Data=Data,
+                        SavePath=SavePath + "." + WeightName + " - Distribution.svg",
+                        XLabel="Dimension 0", YLabel="Dimension 0"
+                    )
+                elif DimNum == 2:
+                    DLUtils.plot.PlotData2D(
+                        Name=WeightName,
+                        Data=Data,
+                        SavePath=SavePath + "." + WeightName + ".svg",
+                        XLabel="Output Dimension", YLabel="Input Dimension"
+                    )
+                    DLUtils.plot.PlotDataAndDistribution2D(
+                        Name=WeightName,
+                        Data=Data,
+                        SavePath=SavePath + "." + WeightName + " - Distribution.svg",
+                        XLabel="Output Dimension", YLabel="Input Dimension"
+                    )
+            self.PlotWeightRecur(SaveDir, SaveName)
         return self
     def ExtractParam(self, RetainSelf=True):
         Param = self.Param
+        self.UpdateDictFromTensor()
         if not RetainSelf:
             # prune some empty nodes for readability and storage space saving.
             if Param.hasattr("TrainParam") and len(Param.TrainParam) == 0:
                 Param.delattr("TrainParam")
-                if isinstance(self, DLUtils.NN.LinearLayer):
-                    a = 1
-        self.UpdateDictFromTensor()
         self.ExtractParamRecur(Param, RetainSelf)
         return Param
     def LoadParam(self, Param):
-        self.Param = Param
+        super().LoadParam(Param)
         if Param.hasattr("TrainParam"):
             self.UpdateTensorFromDict()
-        else:
-            Param.TrainParam = []
         self.LoadParamRecur(Param)
-        return self
-    def Move2Device(self, Device):
-        self.Device = Device
-        Param = self.Param
-        for TensorName in Param.Tensor:
-            if hasattr(self, TensorName):
-                Tensor = getattr(self, TensorName)
-                TensorNew = Tensor.to(Device).detach() # requires_grad remains same.
-                TensorNew.requires_grad = Tensor.requires_grad
-                setattr(self, TensorName, TensorNew)
-            else:
-                Tensor = Param.Data.getattr(TensorName)
-                TensorNew = DLUtils.ToTorchTensor(Tensor).to(Device).detach()
-                TensorNew.requires_grad = Tensor.requires_grad
-                setattr(self, TensorName, TensorNew)
-        self.Move2DeviceRecur(Device)
-        return self
-    def Move2DeviceRecur(self, Device):
-        for Name, SubModule in self.SubModules.items():
-            if hasattr(SubModule, "Move2Device"):
-                SubModule.Move2Device(Device)
         return self
     def PlotWeightRecur(self, SaveDir, SaveName):
         for Name, SubModule in self.SubModules.items():
@@ -292,8 +299,14 @@ class AbstractNetwork(AbstractModule):
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         super().Init(True, IsRoot=IsRoot)
+        if Param.hasattr("TrainParam"):
+            for Name in Param.TrainParam:
+                setattr(self, Name, Param.Data.getattr(Name))
+        if Param.hasattr("Tensor"):
+            for Name in Param.Tensor:
+                setattr(self, Name, Param.Data.getattr(Name))
         self.UpdateTensorFromDict()
         assert hasattr(self, "Receive")
         if IsRoot:
-            self.AddLog(f"{Param._CLASS}: initialization finished.", Type="initialization")
+            self.Log(f"{Param._CLASS}: initialization finished.", Type="initialization")
         return self

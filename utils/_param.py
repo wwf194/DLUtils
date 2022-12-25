@@ -168,8 +168,11 @@ class param():
     def __setstate__(self, Dict):
         for Key, Item in Dict.items():
             self.SetAttr(Key, Item)
-    def __getitem__(self, Index):
-        return self._LIST[Index]
+    def __getitem__(self, Key):
+        if self._SUBTYPE == NODE_SUBTYPE.DICT:
+            return self._DICT[Key]
+        else:
+            return self._LIST[Key]
     def ToJsonFile(self, FilePath):
         Param2JsonFile(self, FilePath)
         return self
@@ -304,7 +307,7 @@ class Param(param):
         if self.Get("_IS_FALSE") is True:
             self.SubstantiateAlongSpine(NODE_TYPE.SPINE, NODE_SUBTYPE.DICT)
         SubNode = DLUtils.Param({})
-        self._DICT[Key]
+        self._DICT[Key] = SubNode
         return SubNode
     def append(self, Item):
         self._LIST.append(Item)
@@ -978,8 +981,22 @@ def _GetNodeKey(Node, Key):
 
 def _Paths2Tree(PathTable, RootNode=None):
     if RootNode is None:
-        if len(PathTable) > 0:
-            KeyExample = PathTable[0][0][1]
+        if len(PathTable) == 1:
+            if isinstance(PathTable[0][1], _SymbolEmptyDict):
+                RootNode = _NewNode(
+                    _TYPE=NODE_TYPE.SPINE, # Root node must be list / dict.
+                    _SUBTYPE=NODE_SUBTYPE.DICT,
+                    _PATH_FROM_ROOT=["ROOT"]
+                )
+            elif isinstance(PathTable[0][1], _SymbolEmptyList):
+                RootNode = _NewNode(
+                    _TYPE=NODE_TYPE.SPINE, # Root node must be list / dict.
+                    _SUBTYPE=NODE_SUBTYPE.LIST,
+                    _PATH_FROM_ROOT=["ROOT"]
+                )      
+        elif len(PathTable) > 1:
+            PathItem = PathTable[0][0]
+            KeyExample = PathItem[1]
             if isinstance(KeyExample, str):
                 RootNode = _NewNode(
                     _TYPE=NODE_TYPE.SPINE, # Root node must be list / dict.
@@ -1002,9 +1019,12 @@ def _Paths2Tree(PathTable, RootNode=None):
         # Dealing with keys that are not last.
         if PathLength == 1:
             assert Path[0] == 'ROOT'
-            assert _PATH_TYPE == PATH_TYPE.COMMENT
-            RootNode["_COMMENT"] = Leaf
-            continue
+            if _PATH_TYPE == PATH_TYPE.COMMENT:
+                RootNode["_COMMENT"] = Leaf
+                continue
+            else:
+                assert isinstance(Leaf, _SymbolEmptyDict) or isinstance(Leaf, _SymbolEmptyList)
+                continue
         Index = 1
         for Key in Path[1:-1]: #Path with ROOT.
             NextKey = Path[Index + 1]

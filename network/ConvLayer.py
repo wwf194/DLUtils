@@ -7,7 +7,7 @@ class ConvLayer2D(DLUtils.module.AbstractNetwork):
     def __init__(self, InputNum=None, OutputNum=None, KernelSize=None, **Dict):
         super().__init__()
         Param = self.Param
-        Param._CLASS = "DLUtils.NN.ConvLayer2D"
+        Param._CLASS = "DLUtils.network.ConvLayer2D"
         self.SetParam(
             InputNum=InputNum, OutputNum=OutputNum,
             KernelSize=KernelSize, **Dict

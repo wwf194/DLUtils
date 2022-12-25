@@ -29,9 +29,9 @@ class RNNLIF(AbstractTransformWithTensor):
         cache = self.cache
         
         if cache.IsInit:
-            DLUtils.AddLog("RNNLIF: Initializing...")
+            DLUtils.Log("RNNLIF: Initializing...")
         else:
-            DLUtils.AddLog("RNNLIF: Loading...")
+            DLUtils.Log("RNNLIF: Loading...")
         Neurons = param.Neurons
         EnsureAttrs(Neurons.Recurrent, "IsExciInhi", value=True)
         if GetAttrs(Neurons.Recurrent.IsExciInhi):
@@ -45,9 +45,9 @@ class RNNLIF(AbstractTransformWithTensor):
         self.ParseRouters()
 
         if cache.IsInit:
-            DLUtils.AddLog("RNNLIF: Initialized.")
+            DLUtils.Log("RNNLIF: Initialized.")
         else:
-            DLUtils.AddLog("RNNLIF: Loaded.")
+            DLUtils.Log("RNNLIF: Loaded.")
 
 
         return self

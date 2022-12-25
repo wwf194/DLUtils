@@ -270,7 +270,7 @@ def _ParsePyObjDynamicMultiRefs(Obj, parent, Attr, RaiseFailedParse, **kw):
                         break
                 except Exception:
                     pass
-                    #DLUtils.AddLog("Failed to resoolve to current PyObjRef. Try redirecting to next PyObjRef.")
+                    #DLUtils.Log("Failed to resoolve to current PyObjRef. Try redirecting to next PyObjRef.")
             if not success:
                 report = "_ParsePyObjDynamicMultiRefs: Failed to resolve to any PyObjRef in given ObjRefList by running: %s"%Obj
                 if RaiseFailedParse:
@@ -319,7 +319,7 @@ def _ParsePyObjDynamicMultiRefsInPlace(Obj, parent, Attr, RaiseFailedParse, **kw
                     break
                 except Exception:
                     pass
-                    #DLUtils.AddLog("Failed to resolve to current PyObjRef. Try redirecting to next PyObjRef.")
+                    #DLUtils.Log("Failed to resolve to current PyObjRef. Try redirecting to next PyObjRef.")
             if not success:
                 report = "_ParsePyObjDynamicMultiRefsInPlace: Failed to resolve to any PyObjRef in given ObjRefList by running: %s"%sentence
                 if RaiseFailedParse:
@@ -465,7 +465,7 @@ def _ParsePyObjStaticInPlace(Obj, parent, attr, **kw):
                 Obj = ObjBackup
             
             if not IsJsonObj(Obj) and kw.setdefault("WithinJson", True):
-                DLUtils.AddLog("_ParsePyObjStaticInPlace: Not a Json Obj: %s of type %s ."%(Obj, type(Obj)))
+                DLUtils.Log("_ParsePyObjStaticInPlace: Not a Json Obj: %s of type %s ."%(Obj, type(Obj)))
             else:
                 parent[attr] = Obj
         else:
@@ -518,12 +518,12 @@ def ParseStr(Str, Dynamic=False, Verbose=True, **kw):
         Str = StrBackup
         success = False
         # if Verbose:
-        #     DLUtils.AddLog("ParseStr: Failed to run %s"%sentence)
+        #     DLUtils.Log("ParseStr: Failed to run %s"%sentence)
     if success:
         if not DLUtils.IsJsonObj(Str):
             if kw.get("WithinJson"):
                 # if Verbose:
-                #     DLUtils.AddLog("ParseStr: Not a Json Obj: %s of type %s ."%(Str, type(Str)))
+                #     DLUtils.Log("ParseStr: Not a Json Obj: %s of type %s ."%(Str, type(Str)))
                 success = False
                 Str = StrBackup
     return Str, success
@@ -593,7 +593,7 @@ def ParseStrLocal(Str, Dynamic=False, **kw):
     if success:
         if not IsJsonObj(Str):
             Str = _Str
-            DLUtils.AddLog("_ParsePyObjStaticInPlace: Not a Json Obj: %s of type %s ."%(Str, type(Str)))
+            DLUtils.Log("_ParsePyObjStaticInPlace: Not a Json Obj: %s of type %s ."%(Str, type(Str)))
             success = False
 
     return Str, success 
@@ -634,7 +634,7 @@ def _ParsePyObjStatic(Obj, parent, Attr, **kw):
             try:
                 sentence = eval(sentence)
             except Exception:
-               DLUtils.AddLog("_ParsePyObjStatic: Exception when running %s"%sentence)
+               DLUtils.Log("_ParsePyObjStatic: Exception when running %s"%sentence)
         if isinstance(sentence, str) and sentence.startswith("#"):
             sentence = DLUtils.RemoveHeadTailWhiteChars(sentence.lstrip("#"))
             sentence = eval(sentence)

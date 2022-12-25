@@ -11,10 +11,19 @@ parser = argparse.ArgumentParser(description="命令行参数解析") # descript
 parser.add_argument(
         "-t", "--task", # 数量>=1即可                
         dest="task", # 这个参数将被存储在args.dest属性中
-        default="NULL", # 之后的参数必须是 xxx=xxx 的形式 
-        help="directory to save trained models"
+        nargs="+",
+        default=None, # 之后的参数必须是 xxx=xxx 的形式 
+        help="task type"
+    )
+parser.add_argument(
+        "-p", "--path",               
+        dest="path",
+        default=None,
+        help="file or directory path required by task"
     )
 args = parser.parse_args() # parser输入的命令行参数
+
+import DLUtils
 
 def TestJsonUtils():
     FileName = "test/JsonTestFile.jsonc"
@@ -47,87 +56,34 @@ def TestPlotData():
     DLUtils.plot.PlotData1D("Data1D:98", data, "./test/data1D98.svg", XLabel="X Label", YLabel="Y Label")
 
 if __name__=="__main__":
-    if args.task in ["json", "TestJsonUtils"]:
+    TaskList = args.task
+    Task = TaskList[0]
+    if Task in ["json", "TestJsonUtils"]:
         TestJsonUtils()
-    elif args.task in ["BuildMLP", "mlp"]:
-        import DLUtils
-        #DLUtils.file.FolderDesciprtion("~/Data/mnist").ToJsonFile("task/image/classification/mnist-folder-config.jsonc")
-
-        Log = DLUtils.log.SeriesLog()
-        Model = DLUtils.NN.ModuleSequence(
-            [
-                DLUtils.transform.Reshape(-1, 28 * 28),
-                DLUtils.transform.Norm(0.0, 256.0, 0.0, 1.0),
-                DLUtils.NN.NonLinearLayer().SetWeight(
-                    DLUtils.SampleFromKaimingUniform((28 * 28, 100), "ReLU")
-                ).SetMode("f(Wx+b)").SetBias(0.0).SetNonLinear("ReLU"),
-                #DLUtils.norm.LayerNorm().SetFeatureNum(100),
-                DLUtils.NN.LinearLayer().SetWeight(
-                    DLUtils.SampleFromXaiverUniform((100, 10))
-                ).SetMode("Wx+b").SetBias("zeros"),
-            ]
-        ).SetLog(Log).Init()
-        Log.ToJsonFile("./test/log.json")
-        Log.ToFile("./test/log.dat")
-
-        TrainParam = Model.ExtractTrainParam()
-        DLUtils.file.JsonDict2File(TrainParam, "./test/trainable_param.json")
-        
-        SavePath = "./test/mlp - param.dat"
-        Model.ToFile(SavePath).ToJsonFile("./test/mlp - param.json")
-        Model = DLUtils.NN.ModuleSequence().FromFile("./test/mlp - param.dat")
-        Model.ToJsonFile("./test/mlp - param - 2.json")
-        Model.PlotWeight("./test/")
-        Model.SetLog(Log).FromFile(SavePath).Init()
-        Input = DLUtils.SampleFromNormalDistribution((64, 28, 28), 0.0, 1.0)
-        Output = Model.Receive(
-            DLUtils.ToTorchTensor(Input)
-        )
-        DLUtils.plot.PlotDataAndDistribution2D(Input[0], SavePath="./test/Input.svg")
-        DLUtils.plot.PlotBatchDataAndDistribution1D(Output, SavePath="./test/Output.svg")
-
-        Loss = DLUtils.NN.ModuleGraph() \
-            .AddSubModule(
-                "ClassIndex2OneHot", DLUtils.transform.Index2OneHot(10)
-            )\
-            .AddSubModule(
-                "Loss", DLUtils.Loss("SoftMaxAndCrossEntropy")
-            )\
-            .AddRoute(
-                "ClassIndex2OneHot", ["OutputTarget"], "OutputTargetProb"
-            )\
-            .AddRoute(
-                "Loss", ["Output", "OutputTargetProb"], "Loss"
-            )\
-            .SetOutput("Loss").Init()
-
-        Evaluator = DLUtils.Evaluator("ImageClassification") \
-            .SetLoss(Loss)
-
-        Optimizer = DLUtils.Optimizer("GradientDescend") \
-            .SetSubType("Adam") \
-            .Enable("Momentum") \
-            .SetTrainParam(Model.ExtractTrainParam()) \
-            .SetParam(LearningRate=0.0001, Alpha=0.1, Beta=0.1) \
-            .BindEvaluator(Evaluator) \
-            .BindModel(Model) \
-            .Init()
-
-        Task = DLUtils.Task("ImageClassification").SetType("MNIST").SetDataPath("~/Data/mnist.zip")
-
-        BatchSize = 64
-        Device = "cuda:0"
-        
-        DLUtils.TrainProcess("Epoch-Batch") \
-            .SetLog(Log) \
-            .SetParam(EpochNum=100) \
-            .SetParam(BatchNum=Task.TrainBatchNum(BatchSize)) \
-            .BindEvaluator(Evaluator) \
-            .BindModel(Model) \
-            .BindTrainData(Task.TrainData(BatchSize=BatchSize)) \
-            .BindTestData(Task.TestData()) \
-            .BindOptimizer(Optimizer) \
-            .SetDevice(Device) \
-            .Start()
+    elif Task in ["example"]:
+        SubTask = TaskList[1]
+        if SubTask in ["mnist_mlp"]:
+            import DLUtils
+            #DLUtils.file.FolderConfig("~/Data/mnist").ToJsonFile("task/image/classification/mnist-folder-config.jsonc")
+            DLUtils.example.mnist_mlp(
+                SaveDir="./test/mnist/MLP/"
+            )
+        elif SubTask in ["cifar10"]:
+            if TaskList[2] in ["conv"]:
+                Task = DLUtils.Task("ImageClassification").SetType("cifar10").SetDataPath("~/Data/cifar-10-python.tar.gz")
+            else:
+                raise Exception()
+        else:
+            raise Exception(SubTask)
+    elif Task in ["cifar10"]:
+        SubTask = TaskList[1]
+        if SubTask in ["generate_config"]:
+            Path = args.path
+            if Path is None:
+                Path = "~/Data/cifar-10-batches-py"
+            DLUtils.task.image.classification.cifar10.DataSetConfig(
+                args.path,
+                "./task/image/classification/cifar10/"
+            )
     else:
         raise Exception()

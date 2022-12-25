@@ -98,7 +98,7 @@ def CalculateWeightChangeRatio(Weight, WeightChange):
 
 def ListParameter(model):
     for name, param in model.named_parameters():
-        DLUtils.AddLog("%s: Shape: %s"%(name, param.size()))
+        DLUtils.Log("%s: Shape: %s"%(name, param.size()))
 
 def CreateSelfConnectionMask(Size):
     return np.ones((Size, Size), dtype=np.float32) - np.eye(Size, dtype=np.float32)

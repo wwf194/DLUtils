@@ -40,13 +40,13 @@ class AbstractTransform(DLUtils.module.AbstractModule):
         param = self.param
         if hasattr(param, "FullName"):
             Name = param.FullName + "." + Name
-        log.AddLogCache(Name, data, Type)
+        log.LogCache(Name, data, Type)
     def LogDict(self, Dict, Name, Type=None, log="Data"):
         log = DLUtils.ParseLog(log)
         param = self.param
         if hasattr(param, "FullName"):
             Name = param.FullName + "." + Name
-        log.AddLogDict(Name, Dict, Type)
+        log.LogDict(Name, Dict, Type)
     def LogStat(self, data, Name, Type="Stat", log="Data"):
         log = DLUtils.ParseLog(log)
         param = self.param
@@ -56,7 +56,7 @@ class AbstractTransform(DLUtils.module.AbstractModule):
         stat = DLUtils.math.NpStatistics(data, ReturnType="Dict")
         if not Name.endswith("Stat"):
             Name += "-Stat"
-        log.AddLogDict(Name, stat, Type)
+        log.LogDict(Name, stat, Type)
     def LogActivityStat(self, Name, data, Type="Activity-Stat", log=None):
         self.LogStat(data, Name, Type=Type, log=log)
     def LogWeightStat(self, Name, WeightDict, Type="Weight-Stat", log=None):
@@ -64,21 +64,21 @@ class AbstractTransform(DLUtils.module.AbstractModule):
         param = self.param
         for Name, Weight in WeightDict.items():
             WeightStat = DLUtils.math.TorchTrainParamtat(Weight, ReturnType="Dict")
-            log.AddLogDict(Name + "-Stat", WeightStat, Type)
+            log.LogDict(Name + "-Stat", WeightStat, Type)
     def LogActivityAlongTime(self, Name, data, Type="ActivityAlongTime", log="Data"):
         log = DLUtils.ParseLog(log)
         param = self.param
         data = DLUtils.ToNpArray(data)
         if hasattr(param, "FullName"):
             Name = param.FullName + "." + Name
-        log.AddLogCache(Name, data, Type)
+        log.LogCache(Name, data, Type)
     def LogTensor(self, Name, data, Type="None", log="Data"):
         log = DLUtils.ParseLog(log)
         param = self.param
         data = DLUtils.ToNpArray(data)
         if hasattr(param, "FullName"):
             Name = param.FullName + "." + Name
-        log.AddLogCache(Name, data, Type)
+        log.LogCache(Name, data, Type)
     def LogActivityStat(self, log: DLUtils.log.LogAlongEpochBatchTrain):
         for Name, Activity in log.GetLogValueOfType("ActivityAlongTime").items():
             self.LogActivityStat(Name + "-Stat", Activity, "Activity-Stat", log)
@@ -88,14 +88,14 @@ class AbstractTransform(DLUtils.module.AbstractModule):
         data = DLUtils.ToNpArray(data)
         if hasattr(param, "FullName"):
             Name = param.FullName + "." + Name
-        log.AddLogCache(Name, data, Type)
+        log.LogCache(Name, data, Type)
     def Log(self, Name, data, Type=None, log="Data"):
         log = DLUtils.ParseLog(log)
         param = self.param
         if hasattr(param, "FullName"):
             Name = param.FullName + "." + Name
         data = ProcessLogData(data)
-        log.AddLog(Name, data, Type)
+        log.Log(Name, data, Type)
     def LogWeight(self, Name="Weight", WeightDict=None, Type="Weight", log=None):
         self.LogTensorDict(Name, WeightDict, Type, log)
     def LogGrad(self, Name="Grad", WeightDict=None, Type="Grad", log=None):
@@ -106,7 +106,7 @@ class AbstractTransform(DLUtils.module.AbstractModule):
         _weights = {}
         for name, weight in TensorDict.items():
             _weights[name] = DLUtils.ToNpArray(weight)
-        log.AddLogCache(param.FullName + "." + Name, _weights, Type)
+        log.LogCache(param.FullName + "." + Name, _weights, Type)
     def LogFloat(self, Name, data, Type="Float", log="Data"):
         log = DLUtils.ParseLog(log)
         param = self.param
@@ -114,18 +114,18 @@ class AbstractTransform(DLUtils.module.AbstractModule):
             data = data.item()
         if hasattr(param, "FullName"):
             Name = param.FullName + "." + Name
-        log.AddLog(Name, data, Type)
+        log.Log(Name, data, Type)
     def LogLoss(self, Name, loss, Type="Loss", log="Data"):
         log = DLUtils.ParseLog(log)
         if isinstance(loss, torch.Tensor):
             data = loss.item()
-        log.AddLog(Name, data, Type)
+        log.Log(Name, data, Type)
     def LogLossDict(self, Name, LossDict, Type="Loss", log=None):
         # #log = DLUtils.ParseLog(log)
         # for Name, Loss in LossDict.items():
         #     if isinstance(Loss, torch.Tensor):
         #         LossDict[Name] = Loss.item()
-        # log.AddLogDict(Name, LossDict, Type)
+        # log.LogDict(Name, LossDict, Type)
         for Name, Loss in LossDict.items():
             self.LogLoss(Name, Loss, Type, log)
 class AbstractTransformWithTensor(AbstractTransform):

@@ -380,7 +380,7 @@ def PlotPolyLineFromVerticesPlt(ax, Points, Color=NamedColor.Black, Width=2.0, C
         pass
     else:
         for Index in range(LineNum):
-            # DLUtils.AddLog("(%.3f %.3f) (%.3f %.3f)"%(Points[Index][0], Points[Index][1], Points[(Index + 1)%PointNum][0], Points[(Index + 1)%PointNum][1]))
+            # DLUtils.Log("(%.3f %.3f) (%.3f %.3f)"%(Points[Index][0], Points[Index][1], Points[(Index + 1)%PointNum][0], Points[(Index + 1)%PointNum][1]))
             PlotLinePlt(ax, Points[Index], Points[(Index + 1)%PointNum], Color=Color, Width=Width)
 
 PlotPolyLine = PlotPolyLineFromVerticesPlt
@@ -1858,12 +1858,17 @@ def Norm2Image(data):
     return data
 
 from PIL import Image as Im
-def NpArray2ImageFile(image, SavePath=None):
+def NpArray2ImageFile(Data, SavePath=None):
     # image : np.ndarray, with dtype np.uint8
-    imagePIL = Im.fromarray(image)
+    imagePIL = Im.fromarray(Data)
     DLUtils.EnsureFileDir(SavePath)
     imagePIL.save(SavePath)
+NpArray2ImgFile = NpArray2ImageFile
 UInt8NpArray2ImageFile = NpArray2ImageFile
+
+def Tensor2ImageFile(Data, SavePath):
+    Data = DLUtils.TorchTensor2NpArray(Data)
+    return NpArray2ImageFile(Data, SavePath)
 
 def PlotExampleImage(Images, PlotNum=10, SaveDir=None, SaveName=None):
     PlotIndices = DLUtils.RandomSelect(range(Images.shape[0]), PlotNum)

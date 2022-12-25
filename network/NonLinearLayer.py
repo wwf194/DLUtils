@@ -10,7 +10,7 @@ class NonLinearLayer(LinearLayer):
     def __init__(self, InputNum=None, OutputNum=None):
         super().__init__(InputNum=InputNum, OutputNum=OutputNum)
         Param = self.Param
-        Param._CLASS = "DLUtils.NN.NonLinearLayer"
+        Param._CLASS = "DLUtils.network.NonLinearLayer"
     def SetMode(self, Mode):
         Param = self.Param
         Param.Mode = Mode
@@ -30,13 +30,13 @@ class NonLinearLayer(LinearLayer):
             self.Receive = self.ReceiveAddFMulWxb
         else:
             raise Exception(Mode)
-        self.AddLogWithSelfInfo(f"set mode as {Mode}", "initialization")
+        self.LogWithSelfInfo(f"set mode as {Mode}", "initialization")
         return self
     def SetNonLinear(self, NonLinearModule):
         if isinstance(NonLinearModule, str):
-            NonLinearModule = DLUtils.NN.NonLinear.NonLinearModule(NonLinearModule)
+            NonLinearModule = DLUtils.network.NonLinear.NonLinearModule(NonLinearModule)
         self.AddSubModule("NonLinear", NonLinearModule)
-        self.AddLogWithSelfInfo(f"set nonlinear type: {NonLinearModule.ClassStr()}", "initialization")
+        self.LogWithSelfInfo(f"set nonlinear type: {NonLinearModule.ClassStr()}", "initialization")
         self.SetNonLinearMethod()
         return self
     def SetNonLinearMethod(self):

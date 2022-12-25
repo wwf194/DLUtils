@@ -78,7 +78,7 @@ class GradientDescend(DLUtils.module.AbstractModule):
             #     1.0 * torch.where(Weight == 0.0)
             # else:
             # if LogWeightChangeRatio:
-            #     DLUtils.GetDataLogger().AddLog("%s.ChangeRatio"%Name,
+            #     DLUtils.GetDataLogger().Log("%s.ChangeRatio"%Name,
             #         DLUtils.transform.CalculateWeightChangeRatio(Weight, WeightChange),
             #         Type="WeightChangeRatio"
             #     )

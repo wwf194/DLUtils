@@ -11,7 +11,7 @@ class LinearLayer(DLUtils.module.AbstractNetwork):
     def __init__(self, InputNum=None, OutputNum=None):
         super().__init__()
         Param = self.Param
-        Param._CLASS = "DLUtils.NN.LinearLayer"
+        Param._CLASS = "DLUtils.network.LinearLayer"
         if InputNum is not None:
             Param.Input.Num = InputNum
         if OutputNum is not None:

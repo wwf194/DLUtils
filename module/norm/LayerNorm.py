@@ -9,9 +9,11 @@ class LayerNorm(DLUtils.module.AbstractNetwork):
         Param = self.Param
         Param._CLASS = "DLUtils.norm.LayerNorm"
         if eps is not None:
-            self.eps = eps
+            self.SetEps(eps)
         self.SetFeatureNum(FeatureNum)
-        self.SetEps(eps)
+    def SetEps(self, eps):
+        Param = self.Param
+        Param.Data.eps = eps
     def SetFeatureNum(self, FeatureNum):
         self.Param.FeatureNum = FeatureNum
         return self
@@ -32,13 +34,14 @@ class LayerNorm(DLUtils.module.AbstractNetwork):
     def Receive(self, X):
         # X: [BatchSize, FeatureNum]
         XMean = X.mean(dim=1, keepdim=True)
-        XStd  = X.std(dim=11, keepdim=True)
+        XStd  = X.std(dim=1, keepdim=True)
         return self.A * (X - XMean) / (XStd + self.eps) + self.B
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         assert hasattr(Param, "FeatureNum")
         if Param.AffineTransform.setdefault("Enable", True):
-            Param.Tensor = ["A", "B"]
+            Param.Tensor.add("A")
+            Param.Tensor.add("B")
             if not Param.Data.hasattr("A"):
                 A = np.ones(Param.FeatureNum)
                 self.AddTrainParam("A", A)

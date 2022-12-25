@@ -111,7 +111,7 @@ def PlotDistribution(Activity, Name="UnNamed"):
 def LogStat(data, Name):
     data = DLUtils.ToNpArray(data)
     statistics = DLUtils.math.NpStatistics(data, ReturnType="Dict")
-    DLUtils.GetDataLogger().AddLogDict({statistics})
+    DLUtils.GetDataLogger().LogDict({statistics})
 
 def Tensor2Statistics2File(data, Name, FilePath=None):
     #Name, FilePath = DLUtils.ParseTextFilePathFromName(Name, FilePath)

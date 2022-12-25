@@ -1,15 +1,9 @@
 import torch
 import DLUtils
-
-# def ProcessMNIST(dataset_dir, augment=True, batch_size=64):    
-#     transform = transforms.Compose(
-#     [transforms.ToTensor()])
-#     trainset = torchvision.datasets.MNIST(root=dataset_dir, transform=transform, train=True, download=False)
-#     testset = torchvision.datasets.MNIST(root=dataset_dir, transform=transform, train=False, download=False)
-#     trainloader = DataLoader(dataset=trainset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
-#     testloader = DataLoader(dataset=testset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
-#     return trainloader, testloader
-from . import ImageClassificationTask
+from DLUtils.module import AbstractModule
+import numpy as np
+import struct
+from .. import ImageClassificationTask
 
 class MNIST(ImageClassificationTask):
     def __init__(self):
@@ -20,6 +14,7 @@ class MNIST(ImageClassificationTask):
         Param._CLASS = "DLUtils.task.image.classification.MNIST"
         Param.Train.Num = 60000
         Param.Test.Num = 10000
+        self.DataLoaderList = set()
         return self
     def SetDataPath(self, DataPath, CheckIntegrity=True):
         DLUtils.file.EnsureDir(DataPath)
@@ -27,7 +22,7 @@ class MNIST(ImageClassificationTask):
         Param.DataPath = DataPath
         ConfigFile = DLUtils.file.ParentFolderPath(__file__) + "mnist-folder-config.jsonc"
         Config = DLUtils.file.JsonFile2Param(ConfigFile, SplitKeyByDot=False)
-        Data, DataPath = ExtractMNIST(DataPath)
+        DataPath = ExtractDataSetFile(DataPath)
         if CheckIntegrity:
             assert DLUtils.file.CheckIntegrity(DataPath, Config)
         self.DataPath = DataPath
@@ -37,40 +32,49 @@ class MNIST(ImageClassificationTask):
         return self
     def PreprocessData(self, Preprocess, BatchSize=1000):
         assert self.IsDataPathBind
-        Data = LoadMNIST(self.DataPath)
+        Data = LoadDataSet(self.DataPath)
         return self
     def TestData(self, BatchSize=64):
-        if not hasattr(self, "Data"):
-            self.Data = LoadMNIST(self.DataPath)
-        Data = self.Data
-        return DataLoader(
-            DataFetcher(Data.Test.Image, Data.Test.Label).SetLog(self),
-            BatchSize=BatchSize, BatchNum=self.TestBatchNum(BatchSize)
-        )
+        return self.DataLoader("Test", BatchSize)
     def TrainData(self, BatchSize=64):
+        return self.DataLoader("Train", BatchSize)
+    def DataLoader(self, Type, BatchSize=64):
         if not hasattr(self, "Data"):
-            self.Data = LoadMNIST(self.DataPath)
+            self.Data = LoadDataSet(self.DataPath)
         Data = self.Data
-        return DataLoader(
-            DataFetcher(Data.Train.Image, Data.Train.Label).SetLog(self),
-            BatchSize=BatchSize, BatchNum=self.TrainBatchNum(BatchSize)
+        if Type in ["Train"]:
+            Data = Data.Train
+            BatchNum=self.TrainBatchNum(BatchSize)
+        else:
+            Data = Data.Test
+            BatchNum=self.TestBatchNum(BatchSize)
+        _DataLoader = DataLoader(
+            DataFetcher(Data.Image, Data.Label),
+            BatchSize=BatchSize, BatchNum=BatchNum
         )
+        self.DataLoaderList.add(_DataLoader)
+        if hasattr(self, "Device"):
+            _DataLoader.SetDevice(self.Device)
+        return _DataLoader
     def TrainBatchNum(self, BatchSize):
         Param = self.Param
         BatchNum = Param.Train.Num // BatchSize
         if Param.Train.Num // BatchSize > 0:
             BatchNum += 1
         return BatchNum
-
     def TestBatchNum(self, BatchSize):
         Param = self.Param
         BatchNum = Param.Test.Num // BatchSize
         if Param.Test.Num // BatchSize > 0:
             BatchNum += 1
         return BatchNum
+    def SetDevice(self, Device, IsRoot=True):
+        for Data in self.DataLoaderList:
+            Data.SetDevice(Device)
+        self.Device = Device
+        return self
 
-import numpy as np
-import struct
+
 def LoadImage(file_name):
     ##   在读取或写入一个文件之前，你必须使用 Python 内置open()函数来打开它。##
     ##   file object = open(file_name [, access_mode][, buffering])          ##
@@ -113,41 +117,123 @@ def LoadLabel(file_name):
 
     # np.int64 -> np.uint8
     labels = labels.astype(np.uint8)
-    return labels   
+    return labels 
 
-def ExtractMNIST(Path):
+
+def ExtractImage(Data, IndexList=None, PlotNum=10, SavePath="./"):
+    if IndexList is None:
+        IndexList = DLUtils.MultipleRandomIntInRange(0, 70000, PlotNum)
+    for Index in IndexList:
+        if Index >= 60000:
+            Type = "Test"
+            Image = Data.Test.Image[Index - 60000]
+            Label = Data.Test.Label[Index - 60000]
+        else:
+            Type = "Train"
+            Image = Data.Train.Image[Index]
+            Label = Data.Train.Label[Index]
+        if len(Image.shape) == 1:
+            Image = Image.reshape(28, 28)
+        DLUtils.plot.NpArray2ImageFile(
+            Image, SavePath + f"{Type} No.{Index} Class:{Label}.png" 
+        )
+    
+class DataFetcher(torch.utils.data.Dataset, AbstractModule):
+    def __init__(self, Image, Label, BatchSize=None):
+        AbstractModule.__init__(self)
+        torch.utils.data.Dataset.__init__(self)
+        self.Image = Image
+        self.Label = Label
+        self.BatchSize = BatchSize
+    def SetDevice(self, Device, IsRoot=True):
+        self.Device = Device
+        self.Log(f"change device to {Device}")
+        return self
+    def __getitem__(self, Index):
+        #Image = torch.from_numpy(self.Image[Index]).to(self.Device)
+        #Label = torch.from_numpy(self.Label[Index]).to(self.Device)
+        Image = self.Image[Index]
+        Label = self.Label[Index]
+        return Image, Label
+    def __len__(self):
+        return self.Image.shape[0]
+
+class DataLoader(torch.utils.data.DataLoader, AbstractModule):
+    def __init__(self, DataFetcher, BatchSize, BatchNum):
+        self.DataFetcher = DataFetcher
+        AbstractModule.__init__(self)
+        torch.utils.data.DataLoader.__init__(
+            self, 
+            dataset=DataFetcher, 
+            batch_size=BatchSize, 
+            # num_workers=2 # Setting num_workers > 1 might severely slow down speed.
+        )
+        self.BatchSize = BatchSize
+        self._BatchNum = BatchNum
+        if hasattr(DataFetcher, "Device"):
+            self.Device = DataFetcher.Device
+        self.Reset()
+    def BeforeEpoch(self, Dict):
+        self.Reset()
+    def AfterEpoch(self, Dict):
+        self.Reset()
+    def Get(self, BatchIndex):
+        Image, Label = next(self.Iter)
+        return Image.to(self.Device), Label.to(self.Device)
+    def SetDevice(self, Device, IsRoot=True):
+        self.DataFetcher.SetDevice(Device)
+        self.Device = Device
+        return self
+    def BatchNum(self):
+        return self._BatchNum
+    def Reset(self):
+        self.Iter = iter(self)
+        return self
+    
+def ExtractDataSetFile(Path, MoveCompressedFile2ExtractFolder=True):
     Path = DLUtils.file.ToAbsPath(Path)
-    if DLUtils.file.IsFile(Path):
-        FolderPath = DLUtils.file.FolderPathOfFile(Path)
+
+    if DLUtils.file.FileExists(Path): # extract from mnist zip file
+        # typical file name: mnist.zip
+        CompressFilePath = Path
+        FolderPath = DLUtils.file.FolderPathOfFile(Path) # extract to same parent folder
+        ExtractFolderPath = FolderPath + "mnist/"
         if DLUtils.file.IsZipFile(Path):
-            Path = DLUtils.file.ZipFile2Folder(Path, FolderPath + "mnist/")
-            FolderPath = FolderPath + "mnist/"
+            Path = DLUtils.file.ExtractZipFile(Path, ExtractFolderPath)
         elif DLUtils.file.IsTarFile(Path):
-            Path = DLUtils.file.ExtractTarFile(Path, FolderPath + "mnist/")
-            FolderPath = FolderPath + "mnist/"
+            Path = DLUtils.file.ExtractTarFile(Path, ExtractFolderPath)
+        else:
+            raise Exception()
+        FolderPath = ExtractFolderPath
+        if MoveCompressedFile2ExtractFolder:
+            DLUtils.file.MoveFile(CompressFilePath, ExtractFolderPath)
+    elif DLUtils.file.FolderExists(Path):
+        FolderPath = Path
+    else:
+        if Path.endswith(".zip"):
+            # .zip file already extracted and put into extracted folder.
+            FileName = DLUtils.FileNameFromPath(Path)
+            FolderPath = DLUtils.FolderPathOfFile(Path) + "mnist/"
+            assert DLUtils.FolderExists(FolderPath)
         else:
             raise Exception()
 
     for FileName in DLUtils.ListAllFiles(FolderPath):
-        if DLUtils.file.IsGzFile(FolderPath + FileName):
+        # if files in folder is gz file.
+        # uncompress them to files with same name, without gz suffix.
+        if DLUtils.file.IsGzFile(FolderPath + FileName): 
             assert FileName.endswith(".gz")
             DLUtils.file.ExtractGzFile(FolderPath + FileName)
 
-    Data = LoadMNIST(FolderPath)
+    return FolderPath
 
-    ExampleDir = FolderPath + "ImageExample/"
-    if DLUtils.file.ExistsDir(ExampleDir) \
-        and len(DLUtils.file.ListAllFiles(ExampleDir)) >= 10:
-            ExtractImage(MNISTData=Data, SavePath=ExampleDir)
-    return Data, FolderPath
-
-def LoadMNIST(FolderPath):
+def LoadDataSet(FolderPath, PlotExampleImage=True):
     TrainImagePath = FolderPath + 'train-images-idx3-ubyte'
     TrainLabelPath = FolderPath + 'train-labels-idx1-ubyte'
-    TestImagePath = FolderPath + 't10k-images-idx3-ubyte'
-    TestLabelPath = FolderPath + 't10k-labels-idx1-ubyte'
+    TestImagePath =  FolderPath + 't10k-images-idx3-ubyte'
+    TestLabelPath =  FolderPath + 't10k-labels-idx1-ubyte'
 
-    return DLUtils.param({
+    Data = DLUtils.param({
         "Train":{
             # np.ndarray dtype=np.int64 all values are non-negative integers.
             "Image": LoadImage(TrainImagePath), 
@@ -159,66 +245,10 @@ def LoadMNIST(FolderPath):
         }
     })
 
-def ExtractImage(MNISTData, IndexList=None, PlotNum=10, SavePath="./"):
-    if IndexList is None:
-        IndexList = DLUtils.MultipleRandomIntInRange(0, 70000, PlotNum)
-    for Index in IndexList:
-        if Index >= 60000:
-            Type = "Test"
-            Image = MNISTData.Test.Image[Index - 60000]
-            Label = MNISTData.Test.Label[Index - 60000]
-        else:
-            Type = "Train"
-            Image = MNISTData.Train.Image[Index]
-            Label = MNISTData.Train.Label[Index]
-        if len(Image.shape) == 1:
-            Image = Image.reshape(28, 28)
-        DLUtils.plot.NpArray2ImageFile(
-            Image, SavePath + f"{Type} No.{Index} Class:{Label}.png" 
-        )
-    
-class DataFetcher(torch.utils.data.Dataset):
-    def __init__(self, Image, Label, BatchSize=None):
-        self.Image = Image
-        self.Label = Label
-        self.BatchSize = BatchSize
-    def SetDevice(self, Device):
-        self.Device = Device
-        self.AddLog(f"change device to {Device}")
-        return self
-    def __getitem__(self, Index):
-        #Image = torch.from_numpy(self.Image[Index]).to(self.Device)
-        #Label = torch.from_numpy(self.Label[Index]).to(self.Device)
-        Image = self.Image[Index]
-        Label = self.Label[Index]
-        return Image, Label
-    def __len__(self):
-        return self.Image.shape[0]
-    def SetLog(self, Log):
-        self.Log = Log
-        return self
-    def AddLog(self, Content):
-        self.Log.AddLog(Content)
-        return self
-
-class DataLoader(torch.utils.data.DataLoader):
-    def __init__(self, DataFetcher, BatchSize, BatchNum):
-        self.DataFetcher = DataFetcher
-        super().__init__(
-            dataset=DataFetcher, 
-            batch_size=BatchSize, 
-            # num_workers=2 # Setting num_workers > 1 might severely slow down speed.
-        )
-        self.BatchSize = BatchSize
-        self._BatchNum = BatchNum
-    def Get(self, BatchIndex):
-        Image, Label = next(iter(self))
-        return Image.to(self.Device), Label.to(self.Device)
-    def SetDevice(self, Device):
-        self.DataFetcher.SetDevice(Device)
-        self.Device = Device
-        return self
-    def BatchNum(self):
-        return self._BatchNum
-
-    
+    if PlotExampleImage:
+        ExampleDir = FolderPath + "./example"
+        DLUtils.file.EnsureDir(ExampleDir)
+        if DLUtils.file.ExistsDir(ExampleDir) \
+            and len(DLUtils.file.ListAllFiles(ExampleDir)) < 10:
+                ExtractImage(Data=Data, SavePath=ExampleDir)
+    return Data

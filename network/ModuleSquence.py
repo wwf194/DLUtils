@@ -1,6 +1,6 @@
 import DLUtils
 import numpy as np
-from ..AbstractModule import AbstractNetwork
+from ..module.AbstractModule import AbstractNetwork
 
 class ModuleSequence(AbstractNetwork):
     def __init__(self, ModuleList=None, Log=None):
@@ -10,10 +10,8 @@ class ModuleSequence(AbstractNetwork):
         assert isinstance(ModuleList, list)
         if ModuleList is not None:
             self.SetModuleList(ModuleList)
-        self.Param.absorb_dict({
-            "_CLASS": "DLUtils.NN.ModuleSequence",
-            "Module.Num": len(self.ModuleList)
-        })
+        Param = self.Param
+        Param._CLASS = "DLUtils.network.ModuleSequence"
     def LoadParam(self, Param):
         super().LoadParam(Param)
         Param = self.Param
@@ -42,6 +40,7 @@ class ModuleSequence(AbstractNetwork):
                 )
         self.ModuleNum = len(ModuleList)
         self.ModuleList = ModuleList
+        Param.Module.Num = len(ModuleList)
         return self
     def Receive(self, Input):
         for ModuleIndex in range(self.ModuleNum):

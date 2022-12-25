@@ -325,8 +325,8 @@ def _ParseAttrs(attrs, *args):
 _parse_attrs = _ParseAttrs
 
 # overwrite default hasattr
-def hasattr(Obj, Attr, HasAttrOrginal=hasattr):
-    if HasAttrOrginal(Obj, "__hasattr__"):
-        return Obj.__hasattr__(Attr)
-    return HasAttrOrginal(Obj, Attr)
-__builtins__['hasattr'] = hasattr
+# def hasattr(Obj, Attr, HasAttrOrginal=hasattr):
+#     if HasAttrOrginal(Obj, "__hasattr__"):
+#         return Obj.__hasattr__(Attr)
+#     return HasAttrOrginal(Obj, Attr)
+# __builtins__['hasattr'] = hasattr

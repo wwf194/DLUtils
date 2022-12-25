@@ -101,7 +101,7 @@ def Main(**kw):
             try: # catch all unhandled exceptions
                 DLUtils.DoTasks(Tasks, ObjRoot=DLUtils.GetGlobalParam())
             except Exception:
-                DLUtils.AddLog(traceback.format_exc())
+                DLUtils.Log(traceback.format_exc())
                 raise Exception()
         else:
             DLUtils.DoTasks(Tasks, ObjRoot=DLUtils.GetGlobalParam())
@@ -833,10 +833,10 @@ def NotifyWhenFunctionReturn(event, Function, *Args, **ArgsKw):
 def ReturnInGivenTime(TimeLimit, Verbose=True):
     # TimeLimit: float or int. In Seconds.
     if Verbose:
-        DLUtils.AddLog("Start counding down. TimeLimit=%d."%TimeLimit)
+        DLUtils.Log("Start counding down. TimeLimit=%d."%TimeLimit)
     time.sleep(TimeLimit)
     if Verbose:
-        DLUtils.AddLog("TimeLimit reached. TimeLimit=%d."%TimeLimit)
+        DLUtils.Log("TimeLimit reached. TimeLimit=%d."%TimeLimit)
     return
 
 def GetGPUWithLargestUseableMemory(TimeLimit=10, Default='cuda:0'):
@@ -848,7 +848,7 @@ def GetGPUWithLargestUseableMemory(TimeLimit=10, Default='cuda:0'):
 def __GetGPUWithLargestUseableMemory(List):
     GPU= _GetGPUWithLargestUseableMemory()
     List[0] = GPU
-    DLUtils.AddLog("Selected GPU: %s"%List[0])
+    DLUtils.Log("Selected GPU: %s"%List[0])
 
 def _GetGPUWithLargestUseableMemory(Verbose=True): # return torch.device with largest available gpu memory.
     try:
@@ -863,11 +863,11 @@ def _GetGPUWithLargestUseableMemory(Verbose=True): # return torch.device with la
         GPUUseableMemory = np.array(GPUUseableMemory, dtype=np.int64)
         GPUWithLargestUseableMemoryIndex = np.argmax(GPUUseableMemory)    
         if Verbose:
-            DLUtils.AddLog("Useable GPU Num: %d"%GPUNum)
+            DLUtils.Log("Useable GPU Num: %d"%GPUNum)
             report = "Useable GPU Memory: "
             for GPUIndex in range(GPUNum):
                 report += "GPU%d: %.2fGB "%(GPUIndex, GPUUseableMemory[GPUIndex] * 1.0 / 1024 ** 3)
-            DLUtils.AddLog(report)
+            DLUtils.Log(report)
         return 'cuda:%d'%(GPUWithLargestUseableMemoryIndex)
     except Exception:
         return "cuda:0"
@@ -1250,7 +1250,7 @@ def CalculateGitProjectTotalLines(Verbose=False):
     # GitCommand = 'git log  --pretty=tformat: --numstat | awk "{ add += $1; subs += $2; loc += $1 - $2 } END { printf "added lines: %s, removed lines: %s, total lines: %s\n", add, subs, loc }"'
     # report = os.system(GitCommand)
     # if Verbose:
-    #     DLUtils.AddLog(report)
+    #     DLUtils.Log(report)
     # return report
     import os
     GitCommand = 'git log  --pretty=tformat: --numstat | awk \'{ add += $1; subs += $2; loc += $1 - $2 } END { printf "added lines: %s, removed lines: %s, total lines: %s\\n", add, subs, loc }\''

@@ -1,5 +1,4 @@
 import DLUtils
-from ..AbstractModule import AbstractNetwork
 import torch
 
 def NonLinearModule(Str):
@@ -8,11 +7,12 @@ def NonLinearModule(Str):
     else:
         raise Exception()
 
-class ReLU(AbstractNetwork):
+
+class ReLU(DLUtils.module.AbstractNetwork):
     def __init__(self):
         super().__init__()
         self.Param.absorb_dict({
-            "_CLASS": "DLUtils.NN.ReLU"
+            "_CLASS": "DLUtils.network.ReLU"
         })
     def Receive(self, Input):
         return torch.relu(Input)

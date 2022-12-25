@@ -12,7 +12,7 @@ def LogAccuracyForSingleClassPrediction(ClassIndexPredicted, ClassIndexTruth, lo
     ClassIndexPredicted = DLUtils.ToNpArray(ClassIndexPredicted)
     ClassIndexTruth = DLUtils.ToNpArray(ClassIndexTruth)
     NumCorrect, NumTotal = DLUtils.evaluate.CalculateAccuracyForSingelClassPrediction(ClassIndexPredicted, ClassIndexTruth)
-    log.AddLogDict(
+    log.LogDict(
         "Accuracy",
         {
             "SampleNumTotal": NumTotal,

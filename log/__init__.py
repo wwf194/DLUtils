@@ -154,7 +154,7 @@ class LogAlongEpochBatchTrain(AbstractLogAlongEpochBatchTrain):
         #self.IsPlotable = defaultdict(lambda:True)
         data.logType = defaultdict(lambda:"Unknown")
         self.GetLog = self.GetLogByName
-        self.AddLog = self.AddLogList
+        self.Log = self.LogList
         self.Get = self.GetLog
         return self
     # def UpdateEpoch(self, EpochIndex):
@@ -163,7 +163,7 @@ class LogAlongEpochBatchTrain(AbstractLogAlongEpochBatchTrain):
     # def UpdateBatch(self, BatchIndex):
     #     cache = self.cache
     #     cache.BatchIndex = BatchIndex
-    def AddLogList(self, Name, Value, Type=None):
+    def LogList(self, Name, Value, Type=None):
         data = self.data
         cache =self.cache
         if not Name in data.log:
@@ -178,20 +178,20 @@ class LogAlongEpochBatchTrain(AbstractLogAlongEpochBatchTrain):
         log["Epoch"].append(self.GetEpochIndex())
         log["Batch"].append(self.GetBatchIndex()),
         log["Value"].append(Value)
-    def AddLogsOfType(self, Logs, Type):
+    def LogsOfType(self, Logs, Type):
         cache = self.cache
         data = self.data
         for Name, Log in Logs.items():
             if "Value" in Log:
-                self.AddLogList(
+                self.LogList(
                     Name, Log["Value"], Type
                 )
             else:
                 _Log = DLUtils.DeleteKeysIfExist(dict(Log), ["Epoch", "Batch"])
-                self.AddLogDict(
+                self.LogDict(
                     Name, _Log, Type
                 )
-    def AddLogDict(self, Name, Dict, Type=None):
+    def LogDict(self, Name, Dict, Type=None):
         data = self.data
         cache = self.cache
         if not Name in data.log:
@@ -326,12 +326,12 @@ class LogAlongEpochBatchTrain(AbstractLogAlongEpochBatchTrain):
             else:
                 continue
 #DLUtils.transform.SetEpochBatchMethodForModule(LogForEpochBatchTrain)
-LogAlongEpochBatchTrain.AddLogCache = LogAlongEpochBatchTrain.LogCache
+LogAlongEpochBatchTrain.LogCache = LogAlongEpochBatchTrain.LogCache
 
 class _Log:
     def __init__(self, Name, **kw):
         self.log = _CreateLog(Name, **kw)
-    def AddLog(self, log, TimeStamp=True, FilePath=True, RelativeFilePath=True, LineNum=True, StackIndex=1, **kw):
+    def Log(self, log, TimeStamp=True, FilePath=True, RelativeFilePath=True, LineNum=True, StackIndex=1, **kw):
         Caller = getframeinfo(stack()[StackIndex][0])
         if TimeStamp:
             log = "[%s]%s"%(DLUtils.system.GetTime(), log)
@@ -371,8 +371,8 @@ def ParseLog(log, **kw):
         return log
     return log
 
-def AddLog(Str, log=None, *args, **kw):
-    ParseLog(log, **kw).AddLog(Str, *args, StackIndex=2, **kw)
+def Log(Str, log=None, *args, **kw):
+    ParseLog(log, **kw).Log(Str, *args, StackIndex=2, **kw)
 
 def AddWarning(Str, log=None, *args, **kw):
     ParseLog(log, **kw).AddWarning(Str, *args, StackIndex=2, **kw)
@@ -380,7 +380,7 @@ def AddWarning(Str, log=None, *args, **kw):
 def AddError(Str, log=None, *args, **kw):
     ParseLog(log, **kw).AddError(Str, *args, StackIndex=2, **kw)
 
-def AddLog2GlobalParam(Name, **kw):
+def Log2GlobalParam(Name, **kw):
     import DLUtils
     setattr(DLUtils.GlobalParam.log, Name, CreateLog(Name, **kw))
 
@@ -448,7 +448,7 @@ def CreateMainSaveDir(SaveDir=None, Name=None, GlobalParam=None, Method="FromInd
             raise Exception(Method)
     DLUtils.EnsureDir(SaveDir)
     #print("[%s]Using Main Save Dir: %s"%(DLUtils.system.GetTime(),SaveDir))
-    #DLUtils,AddLog("[%s]Using Main Save Dir: %s"%(DLUtils.system.GetTime(),SaveDir))
+    #DLUtils,Log("[%s]Using Main Save Dir: %s"%(DLUtils.system.GetTime(),SaveDir))
     SetAttrs(DLUtils.GetGlobalParam(), "SaveDir.Main", value=SaveDir)
     return SaveDir
 
@@ -473,7 +473,7 @@ def ChangeMainSaveDir(SaveDir, GlobalParam=None):
     SaveDirOld = GlobalParam.SaveDir.Main
     DLUtils.file.RenameDir(SaveDirOld, SaveDir)
     SetMainSaveDir(SaveDir, GlobalParam)
-    DLUtils.AddLog("DLUtils.GlobalParam.SaveDir.Main %s -> %s"%(SaveDirOld, SaveDir))
+    DLUtils.Log("DLUtils.GlobalParam.SaveDir.Main %s -> %s"%(SaveDirOld, SaveDir))
 
 def SetSubSaveDir(SaveDir=None, Name="Experiment", GlobalParam=None):
     if GlobalParam is None:
@@ -528,7 +528,7 @@ def GetDataLog():
 def GetLog(Name, CreateIfNone=True, **kw):
     if not hasattr(DLUtils.GlobalParam.log, Name):
         if CreateIfNone:
-            DLUtils.AddLog(Name)
+            DLUtils.Log(Name)
         else:
             raise Exception()
     return getattr(DLUtils.GlobalParam.log, Name)

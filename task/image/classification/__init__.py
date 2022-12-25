@@ -1,14 +1,26 @@
 import DLUtils
 
-class ImageClassificationTask(DLUtils.module.LogComponent):
+
+
+
+class ImageClassificationTask(DLUtils.module.AbstractModule):
     def __init__(self, Type=None):
-        self.Param = DLUtils.Param()
+        super().__init__()
         if Type is not None:
             self.SetType(Type)
     def SetType(self, Type):
         if Type in ["MNIST", "mnist"]:
             self.__class__ = MNIST
             self._INIT()
+            assert isinstance(self, MNIST)
+        elif Type in ["CIFAR10", "cifar10"]:
+            self.__class__ = CIFAR10
+            self._INIT()
+            assert isinstance(self, CIFAR10)         
+        elif Type in ["MSCOCO", "MS COCO"]:
+            self.__class__ = MSCOCO
+            self._INIT()
+            assert isinstance(self, MSCOCO)
         else:
             raise Exception()
         return self
@@ -33,7 +45,6 @@ class Flow():
         self.DataPath = DataPath
     def Get():
         return 
-from .mnist import MNIST
 
 ModuleList = [
     "CIFAR10",
@@ -94,5 +105,8 @@ def GetDatasetPath(Name):
     assert hasattr(config, Name)
     return getattr(config, Name).path
 
+import DLUtils.task.image.classification.mnist as mnist
+import DLUtils.task.image.classification.cifar10 as cifar10
 
-
+from .mnist import MNIST
+from .cifar10 import CIFAR10

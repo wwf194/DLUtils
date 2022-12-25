@@ -2,10 +2,77 @@ import sys
 import numpy as np
 import torch
 import DLUtils
-from DLUtils.attr import *
+from .. import ImageClassificationTask
 
-DatasetConfigFile = DLUtils.file.GetFileDir(__file__) + "cifar10.jsonc"
-DatasetConfig = DLUtils.json.JsonFile2PyObj(DatasetConfigFile)
+class CIFAR10(ImageClassificationTask):
+    def __init__(self):
+        super().__init__()
+        self._INIT()
+    def _INIT(self):
+        Param = self.Param
+        Param._CLASS = "DLUtils.task.image.classification.CIFAR10"
+        Param.Train.Num = 60000
+        Param.Test.Num = 10000
+        self.DataLoaderList = set()
+        return self
+    def SetDataPath(self, DataPath, CheckIntegrity=True):
+        DLUtils.file.EnsureDir(DataPath)
+        Param = self.Param
+        Param.DataPath = DataPath
+        ConfigFile = DLUtils.file.ParentFolderPath(__file__) + "cifar10-folder-config.jsonc"
+        Config = DLUtils.file.JsonFile2Param(ConfigFile, SplitKeyByDot=False)
+        DataPath = ExtractDataSetFile(DataPath)
+        if CheckIntegrity:
+            assert DLUtils.file.CheckIntegrity(DataPath, Config)
+        self.DataPath = DataPath
+        self.IsDataPathBind = True
+        return self
+    def SetParam(self):
+        return self
+    def PreprocessData(self, Preprocess, BatchSize=1000):
+        assert self.IsDataPathBind
+        Data = LoadDataSet(self.DataPath)
+        return self
+    def TestData(self, BatchSize=64):
+        return self.DataLoader("Test", BatchSize)
+    def TrainData(self, BatchSize=64):
+        return self.DataLoader("Train", BatchSize)
+    def DataLoader(self, Type, BatchSize=64):
+        if not hasattr(self, "Data"):
+            self.Data = LoadDataSet(self.DataPath)
+        Data = self.Data
+        if Type in ["Train"]:
+            Data = Data.Train
+            BatchNum=self.TrainBatchNum(BatchSize)
+        else:
+            Data = Data.Test
+            BatchNum=self.TestBatchNum(BatchSize)
+        _DataLoader = DataLoader(
+            DataFetcher(Data.Image, Data.Label),
+            BatchSize=BatchSize, BatchNum=BatchNum
+        )
+        self.DataLoaderList.add(_DataLoader)
+        if hasattr(self, "Device"):
+            _DataLoader.SetDevice(self.Device)
+        return _DataLoader
+    def TrainBatchNum(self, BatchSize):
+        Param = self.Param
+        BatchNum = Param.Train.Num // BatchSize
+        if Param.Train.Num // BatchSize > 0:
+            BatchNum += 1
+        return BatchNum
+    def TestBatchNum(self, BatchSize):
+        Param = self.Param
+        BatchNum = Param.Test.Num // BatchSize
+        if Param.Test.Num // BatchSize > 0:
+            BatchNum += 1
+        return BatchNum
+    def SetDevice(self, Device, IsRoot=True):
+        for Data in self.DataLoaderList:
+            Data.SetDevice(Device)
+        self.Device = Device
+        return self
+
 
 def LoadOriginalFiles(Dir):
     Files = DLUtils.file.ListFiles(Dir)
@@ -55,7 +122,6 @@ def ProcessOriginalDataDict(Dict, FileNameList):
         "FileNames": FileNames
     })
     ImageNum = Images.shape[0]
-    SetAttrs(DataObj, "Images.Num", value=ImageNum)
     return DataObj
 
 class DataManagerForEpochBatchTrain(DLUtils.module.AbstractModule):
@@ -91,7 +157,7 @@ class DataManagerForEpochBatchTrain(DLUtils.module.AbstractModule):
             InputShape = InputShape[0]
         return InputShape, 10 # InputShape, OutputShape
     def ApplyTransformOnData(self, TransformParam="Auto", Type=["Train", "Test"], Save=True):
-        DLUtils.AddLog("Applying transformation on dataset images...")
+        DLUtils.Log("Applying transformation on dataset images...")
         param = self.param
         cache = self.cache
         if TransformParam in ["Auto"]:
@@ -116,7 +182,7 @@ class DataManagerForEpochBatchTrain(DLUtils.module.AbstractModule):
                 else:
                     raise Exception(Transform.Type)
             SetAttrs(Data, "Images", value=Images)        
-        DLUtils.AddLog("Applied transformation on dataset images.")
+        DLUtils.Log("Applied transformation on dataset images.")
         if Save:
             SavePath = DLUtils.RenameFileIfExists("./" + "cache/" + "Cifar10-Transformed-Cached.data")
             DLUtils.PyObj2DataFile(
@@ -124,7 +190,7 @@ class DataManagerForEpochBatchTrain(DLUtils.module.AbstractModule):
                 SavePath
             )
             Md5 = DLUtils.File2MD5(SavePath)
-            DLUtils.AddLog("Saved transformed data. Md5:%s"%Md5)
+            DLUtils.Log("Saved transformed data. Md5:%s"%Md5)
             SetAttrs(param, "Data.Transform.Md5")
     def Labels2ClassNames(self, Labels):
         ClassNames = []
@@ -246,60 +312,124 @@ class DataManagerForEpochBatchTrain(DLUtils.module.AbstractModule):
         cache = self.cache
         flow = getattr(cache.flows, Name)
         return flow.BatchNum
-#DLUtils.transform.SetMethodForNonModelClass(DataManagerForEpochBatchTrain, HasTensor=True)
 
-def ProcessCIFAR10(dataset_dir,  norm=True, augment=False, batch_size=64, download=False):
-    if(augment==True):
-        feature_map_width=24
+from six.moves import cPickle as pickle
+import numpy as np
+import os
+import platform
+
+#读取文件
+def LoadPickle(f):
+    version = platform.python_version_tuple() # 取python版本号
+    if version[0] == '2':
+        return pickle.load(f) # pickle.load, 反序列化为python的数据类型
+    elif version[0] == '3':
+        return pickle.load(f, encoding='latin1')
+    raise ValueError("invalid python version: {}".format(version))
+
+def LoadDataSetFile(filename):
+    """ load single batch of cifar """
+    with open(filename, 'rb') as f:
+        datadict = LoadPickle(f)   # dict类型
+        Image = datadict['data']        # X, ndarray, 像素值
+        Label = datadict['labels']      # Y, list, 标签, 分类
+    
+    Image = Image.reshape(10000, 3, 32, 32).transpose(0,2,3,1).astype(np.float32)
+    Label = np.array(Label)
+    return Image, Label
+
+def ExtractImage(Data, IndexList=None, PlotNum=10, SavePath="./"):
+    if IndexList is None:
+        IndexList = DLUtils.MultipleRandomIntInRange(0, 70000, PlotNum)
+    for Index in IndexList:
+        if Index >= 50000:
+            Type = "Test"
+            Image = Data.Test.Image[Index - 50000]
+            Label = Data.Test.Label[Index - 50000]
+        else:
+            Type = "Train"
+            Image = Data.Train.Image[Index]
+            Label = Data.Train.Label[Index]
+        if len(Image.shape) == 1:
+            Image = Image.reshape(32, 32, 3)
+        DLUtils.plot.NpArray2ImageFile(
+            Image, SavePath + f"{Type} No.{Index} Class:{Label}.png" 
+        )
+
+def LoadDataSet(FolderPath, PlotExampleImage=True):
+    """ load all of cifar """
+    ImageList = [] # list
+    LabelList = []
+
+    # TrainData
+    for Index in range(1,6):
+        FilePath = FolderPath + f'data_batch_{Index}'
+        Image, Label = LoadDataSetFile(FilePath)
+        ImageList.append(Image) # 在list尾部添加对象X, x = [..., [X]]
+        LabelList.append(Label)    
+        ImageTrain = np.concatenate(ImageList) # [ndarray, ndarray] 合并为一个ndarray
+        LabelTrain = np.concatenate(LabelList)
+
+    # TestData
+    IamgeTest, LabelTest = LoadDataSetFile(FolderPath + 'test_batch')
+    
+    Data = DLUtils.param({
+        "Train":{
+            # np.ndarray dtype=np.int64 all values are non-negative integers.
+            "Image": ImageTrain,
+            "Label": LabelTrain
+        },
+        "Test":{
+            "Image": IamgeTest,
+            "Label": LabelTest
+        }
+    })
+
+    if PlotExampleImage:
+        ExampleDir = FolderPath + "./example"
+        DLUtils.file.EnsureDir(ExampleDir)
+        if DLUtils.file.ExistsDir(ExampleDir) \
+            and len(DLUtils.file.ListAllFiles(ExampleDir)) < 10:
+                ExtractImage(Data=Data, SavePath=ExampleDir)
+    return Data
+
+def ExtractDataSetFile(Path, MoveCompressedFile2ExtractFolder=True):
+    Path = DLUtils.file.ToAbsPath(Path)
+    if DLUtils.file.FileExists(Path): # extract from mnist zip file
+        # typical file name: cifar-10-python.tar.gz
+        CompressFilePath = Path
+        FolderPath = DLUtils.file.FolderPathOfFile(Path) # extract to same parent folder
+        if DLUtils.file.IsGzFile(Path): 
+            assert Path.endswith(".gz")
+            ExtractFilePath = DLUtils.file.ExtractGzFile(CompressFilePath)
+            Path = ExtractFilePath
+        if DLUtils.file.IsZipFile(Path): 
+            assert FileName.endswith(".zip")
+            ExtractFolderPath = FolderPath + "cifar10/"
+            Path = DLUtils.file.ExtractZipFile(Path, ExtractFolderPath)
+        if DLUtils.file.IsTarFile(Path):
+            FilePath = Path
+            assert FilePath.endswith(".tar")
+            ExtractFolderPath = DLUtils.file.FolderPathOfFile(FilePath) + "cifar10/"
+            ExtractFolderPath = DLUtils.file.ExtractTarFile(FilePath, ExtractFolderPath)
+            if not DLUtils.file.IsSameFile(FilePath, CompressFilePath):
+                DLUtils.file.DeleteFile(FilePath)
+            DLUtils.file.MoveFolder(ExtractFolderPath + "cifar-10-batches-py/", ExtractFolderPath)
+            FolderPath = ExtractFolderPath
+        if MoveCompressedFile2ExtractFolder:
+            DLUtils.file.MoveFile(CompressFilePath, ExtractFolderPath)
+    elif DLUtils.file.FolderExists(Path):
+        FolderPath = Path
     else:
-        feature_map_width=32
-        
-    trans_train=[]
-    trans_test=[]
+        if Path.endswith(".gz"):
+            # .zip file already extracted and put into extracted folder.
+            FileName = DLUtils.FileNameFromPath(Path)
+            FolderPath = DLUtils.FolderPathOfFile(Path) + "cifar10/"
+            assert DLUtils.FolderExists(FolderPath)
+        else:
+            raise Exception()
+    return FolderPath
 
-    if(augment==True):
-        TenCrop=[
-            transforms.TenCrop(24),
-            transforms.Lambda(lambda crops: torch.stack([transforms.ToTensor()(crop) for crop in crops])),
-            transforms.Lambda(lambda crops: torch.stack([transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))(crop) for crop in crops]))
-            ]
-        trans_train.append(TenCrop)
-        trans_test.append(TenCrop)
-
-    trans_train.append(transforms.ToTensor())
-    trans_test.append(transforms.ToTensor())
-
-    if(norm==True):
-        trans_train.append(transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)))
-        trans_test.append(transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)))
-    '''
-    transforms.RandomCrop(24),
-    transforms.RandomHorizontalFlip(),
-    
-    if(augment==True):
-        transform_train = transforms.Compose([
-
-            transforms.ToTensor(),
-            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
-            ])
-        transform_test = transforms.Compose()
-    else:
-        transform_train = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
-            ])
-        transform_test = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
-            ])
-    '''
-    transform_test=transforms.Compose(trans_test)
-    transform_train=transforms.Compose(trans_train)
-    
-    trainset = torchvision.datasets.CIFAR10(root=dataset_dir, train=True, transform=transform_train, download=download)
-    testset = torchvision.datasets.CIFAR10(root=dataset_dir,train=False, transform=transform_test, download=download)
-    
-    trainloader = DataLoader(dataset=trainset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
-    testloader = DataLoader(dataset=testset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
-
-    return trainloader, testloader
+def DataSetConfig(DataSetFolderPath, SaveDir):
+    Config = DLUtils.file.FolderConfig(DataSetFolderPath)
+    Config.ToJsonFile(SaveDir + "cifar10-folder-config.jsonc")

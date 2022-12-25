@@ -19,7 +19,7 @@ import DLUtils.log as log # log -> transform
 import DLUtils.transform as transform
 import DLUtils.train as train # module -> train
 import DLUtils.router as router
-import DLUtils.functions as functions
+import DLUtils.function as function
 import DLUtils.utils.math as math
 
 import DLUtils.optimize as optimize # module -> optimize
@@ -28,18 +28,22 @@ import DLUtils.evaluate as evaluate
 import DLUtils.system as system
 import DLUtils.analysis as analysis
 
-import DLUtils.module.network as NN
+import DLUtils.network as network
 import DLUtils.module.norm as norm
 import DLUtils.module.transform as transform
 
+import DLUtils.task as task
+from .task import Task
+
 from .utils import *
 
-from .functions import *
-from .log import *
+# from .functions import *
+# from .log import *
 
 from .train.algorithm import Optimizer
-from .train.evaluate import Evaluator
-from .task import Task
+from .train.evaluate import Evaluator, EvaluationLog
+
+
 
 import DLUtils.train.loss as loss
 from .train.loss import Loss
@@ -54,9 +58,18 @@ from DLUtils.data.utils import \
     SampleFromUniformDistribution
 
 from DLUtils.parse import ParseSavePath
-from DLUtils.train import TrainProcess
+from DLUtils.train import TrainSession
 
 from DLUtils.log import \
     ResetGlobalLogIndex, \
     GlobalLogIndex
+
+from DLUtils.function import \
+    EmptyFunction
+
+from DLUtils.plot import \
+    NpArray2ImageFile, \
+    Tensor2ImageFile
+
+import DLUtils.example as example
 
