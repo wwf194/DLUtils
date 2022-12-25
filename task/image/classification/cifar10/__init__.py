@@ -78,57 +78,6 @@ class CIFAR10(ImageClassificationTask):
         self.Device = Device
         return self
 
-
-def LoadOriginalFiles(Dir):
-    Files = DLUtils.file.ListFiles(Dir)
-    FileMD5s = DatasetConfig.Original.Files.MD5.ToDict()
-    FileNames = DatasetConfig.Original.Files.Train + DatasetConfig.Original.Files.Test
-    Dict = {}
-    for File in Files:
-        if File in FileNames:
-            assert DLUtils.File2MD5(Dir + File) == FileMD5s[File]
-            DataDict = DLUtils.file.LoadBinaryFilePickle(Dir + File)
-            keys, values = DLUtils.Unzip(DataDict.items()) # items() cause logic error if altering dict in items() for-loop.
-            for key, value in zip(keys, values):
-                if isinstance(key, bytes):
-                    DataDict[DLUtils.Bytes2Str(key)] = value # Keys in original dict are bytes. Turn them to string for convenience.
-                    DataDict.pop(key)
-            Dict[File] = DataDict
-    assert len(Dict) != DatasetConfig.Original.Files.Num
-    return Dict
-
-def OriginalFiles2DataFile(LoadDir, SaveDir):
-    OriginalDict = LoadOriginalFiles(LoadDir)
-    DataDict = DLUtils.EmptyPyObj()
-    DataDict.Train = ProcessOriginalDataDict(OriginalDict, FileNameList=DatasetConfig.Original.Files.Train)
-    DataDict.Test = ProcessOriginalDataDict(OriginalDict, FileNameList=DatasetConfig.Original.Files.Test)
-    DLUtils.json.PyObj2DataFile(DataDict, SaveDir)
-
-def ProcessOriginalDataDict(Dict, FileNameList):
-    Labels = []
-    Images = []
-    FileNames = []
-    for File in FileNameList:
-        Data = Dict[File]
-        # Keys: batch_label, labels, data, filenames
-        # Pixel values are integers with range [0, 255], so using datatype np.uint8.
-        # Saving as np.float32 will take ~ x10 disk memory as original files.
-        _Images = DLUtils.ToNpArray(Data["data"], DataType=np.uint8)
-        _Images = _Images.reshape(10000, 3, 32, 32).transpose(0, 2, 3, 1)
-        Images.append(_Images)
-        _Labels = DLUtils.ToNpArray(Data["labels"], DataType=np.uint8)
-        Labels.append(_Labels)
-        FileNames += Data["filenames"]
-    Labels = np.concatenate(Labels, axis=0)
-    Images = np.concatenate(Images, axis=0)
-    DataObj = DLUtils.PyObj({
-        "Labels": Labels,
-        "Images": Images,
-        "FileNames": FileNames
-    })
-    ImageNum = Images.shape[0]
-    return DataObj
-
 from six.moves import cPickle as pickle
 import numpy as np
 import os
