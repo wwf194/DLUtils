@@ -6,7 +6,8 @@ from .AbstractModule import \
     AbstractModule, \
     LogComponent, \
     AbstractNetwork, \
-    AbstractOperator
+    AbstractOperator, \
+    EmptyModule
 
 def BuildModuleFromType(Type):
     module = DLUtils.transform.BuildModuleIfIsLegalType(Type)

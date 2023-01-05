@@ -1,0 +1,15 @@
+[
+    {
+        "A":{
+            "B": true,
+            "B.C": 1.0,
+            "D": null
+        },
+        "A.B":{
+            "D.E":[ //List [ Comment A.B.D.E
+                "Test String A.B.D.E[0]",
+                "Test String A.B.D.E[1]",
+            ] // List ] Comment A.B.D.E
+        }
+    }
+]

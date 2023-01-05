@@ -18,7 +18,7 @@ import DLUtils.module as module
 import DLUtils.log as log # log -> transform
 import DLUtils.transform as transform
 import DLUtils.train as train # module -> train
-import DLUtils.router as router
+import DLUtils.structure as structure
 import DLUtils.function as function
 import DLUtils.utils.math as math
 
@@ -55,7 +55,8 @@ from DLUtils.data.utils import \
     SampleFromXaiverUniform, \
     SampleFromConstantDistribution, \
     SampleFromNormalDistribution, \
-    SampleFromUniformDistribution
+    SampleFromUniformDistribution, \
+    Conv2DKernel
 
 from DLUtils.parse import ParseSavePath
 from DLUtils.train import TrainSession
@@ -72,4 +73,6 @@ from DLUtils.plot import \
     Tensor2ImageFile
 
 import DLUtils.example as example
+
+from .structure import FixedSizeQueuePassiveOutInt32 
 

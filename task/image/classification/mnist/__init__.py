@@ -28,6 +28,7 @@ class MNIST(ImageClassificationTask):
             assert DLUtils.file.CheckIntegrity(DataPath, Config)
         self.DataPath = DataPath
         self.IsDataPathBind = True
+        self.Config = Config
         return self
     def SetParam(self):
         return self

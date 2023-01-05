@@ -11,8 +11,8 @@ def NonLinearModule(Str):
 class ReLU(DLUtils.module.AbstractNetwork):
     def __init__(self):
         super().__init__()
-        self.Param.absorb_dict({
-            "_CLASS": "DLUtils.network.ReLU"
-        })
+        Param = self.Param
+        Param._CLASS = "DLUtils.network.ReLU"
+        Param.Type = "ReLU"
     def Receive(self, Input):
         return torch.relu(Input)

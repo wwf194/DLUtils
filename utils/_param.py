@@ -75,13 +75,13 @@ class param():
         return self
     def from_list(self, List):
         _LIST = self.GetAttr("_LIST")
-        for index, item in enumerate(List):
-            if isinstance(item, dict):
-                _LIST.append(param(_SUBTYPE=NODE_SUBTYPE.DICT).from_dict(item))
-            elif isinstance(item, list):
-                _LIST[index].append(param(_SUBTYPE=NODE_SUBTYPE.LIST).from_list(item))
+        for Index, Item in enumerate(List):
+            if isinstance(Item, dict):
+                _LIST.append(param(_SUBTYPE=NODE_SUBTYPE.DICT).from_dict(Item))
+            elif isinstance(Item, list):
+                _LIST.append(param(_SUBTYPE=NODE_SUBTYPE.LIST).from_list(Item))
             else:
-                _LIST[index].append(item)
+                _LIST.append(Item)
         return self
     def Get(self, Key):
         if Key in self.__dict__:
@@ -171,6 +171,12 @@ class param():
         return self.GetAttr("_DICT").items()
     def append(self, Item):
         self._LIST.append(Item)
+    def keys(self):
+        return self._DICT.keys()
+    def values(self):
+        return self._DICT.values()
+    def pop(self, Key):
+        return self._DICT.pop(Key)
     def __hasattr__(self, Key):
         return Key in self._DICT
     def __setattr__(self, Key, Value):
@@ -498,10 +504,10 @@ def ToJsonStr(Obj):
         #Content = str(Obj) # avoid single quotation marks
         Content = json.dumps(Obj)
     elif isinstance(Obj, np.ndarray):
-        if len(Obj.shape) == 1:
+        if len(Obj.shape) == 1 and Obj.shape[0] < 20:
             Content = f"{str(DLUtils.NpArray2List(Obj))}"
         else:
-            Content = f"\"np.ndarray. Type: {Obj.dtype}. Shape:{Obj.shape}\""
+            Content = f"\"np.ndarray. Type: {Obj.dtype}. Shape: {Obj.shape}\""
     else:
         Content = "\"_NON_BASIC_JSON_TYPE\""
     return Content
@@ -862,8 +868,8 @@ def Param2Tree(Obj):
 def Param2TreeRecur(Obj, SupNode, SupNodeKey):
     if isinstance(Obj, list) or isinstance(Obj, dict):
         Obj = DLUtils.Param(Obj)
-        SupNode.delattr(SupNodeKey)
-        SupNode.setattr(SupNodeKey, Obj)
+        # SupNode["_DICT"].pop(SupNodeKey)
+        # SupNode["_DICT"][SupNodeKey] = Obj
 
     if isinstance(Obj, param):
         _TYPE = Obj.GetAttr("_TYPE")
@@ -936,9 +942,9 @@ def _JsonLike2Paths(Obj):
     _JsonLike2PathsRecur(Obj, PathTable, ["ROOT"])
     return PathTable
 
-def Tree2Paths(Root, SplitKeyByDot=True):
+def Tree2Paths(Root, SplitKeyByDot=True, SplitKeyException=[]):
     PathTable = []
-    _Tree2PathsRecur(Root, PathTable, ["ROOT"], SplitKeyByDot=SplitKeyByDot)
+    _Tree2PathsRecur(Root, PathTable, ["ROOT"], SplitKeyByDot=SplitKeyByDot, SplitKeyException=[])
     return PathTable
 
 class PATH_TYPE(Enum):
@@ -946,6 +952,7 @@ class PATH_TYPE(Enum):
 
 def _Tree2PathsRecur(Node, PathTable, PathCurrent, **Dict):
     SplitKeyByDot = Dict.setdefault("SplitKeyByDot", True)
+    SplitKeyException = Dict.setdefault("SplitKeyException", [])
     _TYPE = Node["_TYPE"]
     _SUBTYPE = Node["_SUBTYPE"]
 
@@ -1319,10 +1326,10 @@ def JsonFile2Tree(FilePath):
     _AnalyzeTree(Tree)    
     return Tree
 
-def JsonFile2Param(FilePath, SplitKeyByDot=True):
+def JsonFile2Param(FilePath, SplitKeyByDot=True, SplitKeyException=[]):
     Tree = JsonFile2Tree(FilePath)
     assert Tree["_TYPE"] == NODE_TYPE.SPINE
-    PathTable = Tree2Paths(Tree, SplitKeyByDot=SplitKeyByDot)
+    PathTable = Tree2Paths(Tree, SplitKeyByDot=SplitKeyByDot, SplitKeyException=[])
 
     if Tree["_SUBTYPE"] == NODE_SUBTYPE.DICT:
         RootNode = _NewNode(

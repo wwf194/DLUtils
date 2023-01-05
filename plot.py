@@ -14,7 +14,6 @@ default_res=60
 import DLUtils
 from DLUtils.attr import *
 
-
 def SetMatplotlibParamToDefault():
     mpl.rcParams.update(mpl.rcParamsDefault)
 # matplotlib default param might be overwritten by other lib using it, such as seaborn.
@@ -176,34 +175,158 @@ def PlotMultiPoints(
     # SetTicksAndRangeForAx(ax, Xs, Ys, XRange, YRange)
     return
 
-def SetTicksAndRangeForAx(ax, Xs, Ys, XRange, YRange):
-    SetXTicksAndRange(ax, Xs, XRange)
-    SetYTicksAndRange(ax, Ys, YRange)
+def SetXTicksAndRange(*List, **Dict):
+    XTicks = Dict.setdefault("XTicks", "float")
+    if XTicks in ["float", "Float"]:
+        SetXTicksAndRangeFloat(*List, **Dict)
+    elif XTicks in ["int", "Int"]:
+        SetXTicksAndRangeInt(*List, **Dict)
+    else:
+        raise Exception(XTicks)
 
-def SetXTicksAndRange(ax, Xs, Range=None, **Dict):
+def SetYTicksAndRange(*List, **Dict):
+    YTicks = Dict.setdefault("YTicks", "float")
+    if YTicks in ["float", "Float"]:
+        SetYTicksAndRangeFloat(*List, **Dict)
+    elif YTicks in ["int", "Int"]:
+        SetYTicksAndRangeInt(*List, **Dict)
+    else:
+        raise Exception(YTicks)
+
+def SetXTicksInt(ax, Min, Max, Method="Auto", **Dict):
+    if Min > Max:
+        Min, Max = Max, Min
+    # Min, Max = round(Min) + 1, round(Max)
+    Ticks, TicksStr = CalculateTicksInt(Method, Min, Max, **Dict)
+    ax.set_xticks(Ticks, labels=TicksStr)
+    #ax.set_xticklabels(TicksStr)
+    return Ticks, TicksStr
+
+def GetXTicksInt(Min, Max, Method="Auto", **Dict):
+    if Min > Max:
+        Min, Max = Max, Min
+    #Min, Max = round(Min) + 1, round(Max)
+    Ticks, TicksStr = CalculateTicksInt(Method, Min, Max, **Dict)
+    return Ticks, TicksStr
+
+def Min(Data, DimNum=1):
+    if DimNum == 1:
+        return np.nanmin(Data)
+    elif DimNum == 2:
+        return MinList2D(Data)
+    else:
+        raise Exception()
+
+def Max(Data, DimNum=1):
+    if DimNum == 1:
+        return np.nanmax(Data)
+    elif DimNum == 2:
+        return MaxList2D(Data)
+    else:
+        raise Exception()
+
+def MinList2D(List):
+    if len(List) == 0:
+        return None
+    SubList = List[0]
+    Min = min(SubList)
+    for SubList in List[1:]:
+        _Min = min(SubList)
+        if _Min < Min:
+            Min = _Min
+    return Min
+
+def MaxList2D(List):
+    if len(List) == 0:
+        return None
+    SubList = List[0]
+    Max = max(SubList)
+    for SubList in List[1:]:
+        _Max = max(SubList)
+        if _Max > Max:
+            Max = _Max
+    return Max
+
+def SetXTicksAndRangeInt(ax, Xs, Range=None, **Dict):
     XMin = Dict.setdefault("XMin", None)
     XMax = Dict.setdefault("XMax", None)
+    DimNum = Dict.setdefault("DimNum", 1)
     if Range is None:
         if XMin is None:
-            XMin = np.nanmin(Xs)
+            XMin = Min(Xs, DimNum)
+            XMin = math.floor(XMin)
         if XMax is None:
-            XMax = np.nanmax(Xs)
+            XMax = Max(Xs, DimNum)
+            XMax = math.ceil(XMax)
+    else:
+        XMin, XMax = Range[0], Range[1]
+    assert isinstance(XMin, int) and isinstance(XMax, int)
+    SetXTicksInt(ax, XMin, XMax)
+    SetXRangeMinMaxInt(ax, XMin, XMax)
+
+def SetYTicksAndRangeInt(ax, Xs, Range=None, **Dict):
+    YMin = Dict.setdefault("YMin", None)
+    YMax = Dict.setdefault("YMax", None)
+    DimNum = Dict.setdefault("DimNum", 1)
+    if Range is None:
+        if YMin is None:
+            YMin = Min(Xs, DimNum)
+            YMin = math.floor(YMin)
+        if YMax is None:
+            YMax = Max(Xs, DimNum)
+            YMax = math.ceil(YMax)
+    else:
+        YMin, YMax = Range[0], Range[1]
+    assert isinstance(YMin, float) and isinstance(YMax, float)
+    SetXTicksInt(ax, YMin, YMax)
+    SetXRangeMinMaxInt(ax, YMin, YMax)
+
+def SetYTicksInt(ax, Min, Max, Method="Auto", **Dict):
+    if Min > Max:
+        Min, Max = Max, Min
+    #Min, Max = round(Min) + 1, round(Max)
+    Ticks, TicksStr = CalculateTicksInt(Method, Min, Max, **Dict)
+    ax.set_yticks(Ticks, labels=TicksStr)
+    #ax.set_yticklabels(TicksStr)
+    return Ticks, TicksStr
+
+def GetYTicksInt(Min, Max, Method="Auto", **Dict):
+    if Min > Max:
+        Min, Max = Max, Min
+    #Min, Max = round(Min) + 1, round(Max)
+    Ticks, TicksStr = CalculateTicksInt(Method, Min, Max, **Dict)
+    return Ticks, TicksStr
+
+def SetTicksAndRangeForAx(ax, Xs, Ys, XRange, YRange):
+    SetXTicksAndRangeFloat(ax, Xs=Xs, Range=XRange)
+    SetYTicksAndRangeFloat(ax, Ys=Ys, Range=YRange)
+
+def SetXTicksAndRangeFloat(ax, Xs, Range=None, **Dict):
+    XMin = Dict.setdefault("XMin", None)
+    XMax = Dict.setdefault("XMax", None)
+    DimNum = Dict.setdefault("DimNum", 1)
+    if Range is None:
+        if XMin is None:
+            XMin = Min(Xs, DimNum)
+        if XMax is None:
+            XMax = Max(Xs, DimNum)
     else:
         XMin, XMax = Range[0], Range[1]
     SetXTicksFloat(ax, XMin, XMax)
-    SetXRangeMinMax(ax, XMin, XMax)
+    SetXRangeMinMaxFloat(ax, XMin, XMax)
 
-def SetYTicksAndRange(ax, Ys, Range=None, **Dict):
+def SetYTicksAndRangeFloat(ax, Ys, Range=None, **Dict):
     YMin = Dict.setdefault("YMin", None)
     YMax = Dict.setdefault("YMax", None)
+    DimNum = Dict.setdefault("DimNum", 1)
     if Range is None:
         if YMin is None:
-            YMin = np.nanmin(Ys)
+            YMin = Min(Ys, DimNum)
         if YMax is None:
-            YMax = np.nanmax(Ys)  
+            YMax = Max(Ys, DimNum)
         #YMin, YMax = Range[0], Range[1]
-    SetYRangeMinMax(ax, YMin, YMax)
     SetYTicksFloat(ax, YMin, YMax)
+    SetYRangeMinMaxFloat(ax, YMin, YMax)
 
 def PlotPointsPltNp(
         ax, Points, Color="Blue", Type="Circle", Size=None,
@@ -1093,51 +1216,66 @@ def GetAx(axes, Index=None, RowIndex=None, ColIndex=None):
 def PlotLineChart(ax=None, Xs=None, Ys=None,
         Title="Undefined", Label=None,
         Color="Black", LineWidth=2.0, 
-        PlotTicks=True, XTicks=None, YTicks=None,
         Save=False, SavePath=None, **Dict
     ):
     XLabel = Dict.setdefault("XLabel", "X")
     YLabel = Dict.setdefault("YLabel", "Y")
-    
+    XTicks = Dict.setdefault("XTicks", "X")
+    YTicks = Dict.setdefault("YTicks", "Y")
+
     if ax is None:
         fig, ax = CreateFigurePlt()
     Color = (Color)
     ax.plot(Xs, Ys, color=Color, linewidth=LineWidth, label=Label)
 
-    if PlotTicks and XTicks in ["Float"]:
-        SetXTicksFloat(ax, np.nanmin(Xs), np.nanmax(Xs))
-    if PlotTicks and YTicks in ["Float"]:
-        SetYTicksFloat(ax, np.nanmin(Ys), np.nanmax(Ys))
-
-    SetXTicksAndRange(ax, Xs, **Dict)
-    SetYTicksAndRange(ax, Ys, **Dict)
+    SetTicks = Dict.get("SetTicks", True)
+    if SetTicks:
+        SetXTicksAndRange(ax, Xs=Xs, **Dict)
+        SetYTicksAndRange(ax, Ys=Ys, **Dict)
 
     SetXYLabelForAx(ax, XLabel, YLabel)
     SetTitleForAx(ax, Title)
     SaveFigForPlt(Save, SavePath)
     return ax
 
-def PlotMultiLineChart(ax=None, Xs=None, Ys=None,
-        XLabel=None, YLabel=None, Title="Undefined", Labels=None,
-        Color="Black", LineWidth=2.0, XTicks=None, YTicks=None,
-        Save=False, SavePath=None,
+def PlotMultiLineChart(ax=None, XsList=None, YsList=None,
+        Title="Undefined", Labels=None,
+        ColorList=None, LineWidth=2.0,
+        Save=False, SavePath=None, **Dict
     ):
+    if ax is None:
+        fig, ax = CreateFigurePlt()
+    XLabel = Dict.setdefault("XLabel", "X")
+    YLabel = Dict.setdefault("YLabel", "Y")
+
     Index = 0
-    LineNum = len(Xs)
-    Colors = GenerateColors(LineNum)
-    for _Xs, _Ys in zip(Xs, Ys):
+    LineNum = len(XsList)
+    if ColorList is None:
+        ColorList = GenerateColors(LineNum)
+    elif isinstance(ColorList, str):
+        ColorList = [ColorList for _ in range(LineNum)]
+    else:
+        assert len(ColorList) == LineNum
+    for Xs, Ys in zip(XsList, YsList):
         if Labels is None:
             Label = None
         else:
             Label = Labels[Index]
         PlotLineChart(
-            ax, _Xs, _Ys, Label=Label, Color=Colors[Index], LineWidth=LineWidth, Save=False
+            ax, Xs, Ys,
+            Label=Label,
+            Color=ColorList[Index],
+            LineWidth=LineWidth, Save=False,
+            SetTicks=False
         )
         Index += 1
-    if XTicks in ["Float"]:
-        SetXTicksFloat(ax, np.nanmin(Xs), np.nanmax(Xs))
-    if YTicks in ["Float"]:
-        SetYTicksFloat(ax, np.nanmin(Ys), np.nanmax(Ys))
+
+    SetTicks = Dict.setdefault("SetTicks", True)
+    if SetTicks:
+        XTicks = Dict.setdefault("XTicks", "X")
+        YTicks = Dict.setdefault("YTicks", "Y")
+        SetXTicksAndRange(ax, Xs=Xs, DimNum=2, **Dict)
+        SetYTicksAndRange(ax, Ys=Ys, DimNum=2, **Dict)
     SetXYLabelForAx(ax, XLabel, YLabel)
     SetTitleForAx(ax, Title)
 
@@ -1147,10 +1285,14 @@ def PlotMultiLineChart(ax=None, Xs=None, Ys=None,
     return ax
 
 def PlotMultiLineChartWithSameXs(ax=None, Xs=None, YsDict=None,
-        XLabel=None, YLabel=None, Title="Undefined",
-        Color="Auto", LineWidth=1.0, XTicks=None, YTicks=None,
-        Save=False, SavePath=None,
+        Title="Undefined", Color="Auto", LineWidth=1.0,
+        Save=False, SavePath=None, **Dict
     ):
+    XTicks = Dict.setdefault("XTicks", "X")
+    YTicks = Dict.setdefault("YTicks", "Y")
+    XLabel = Dict.setdefault("XLabel", "X")
+    YLabel = Dict.setdefault("YLabel", "Y")
+
     if ax is None:
         fig, ax = CreateFigurePlt()
     PlotNum = len(YsDict)
@@ -1164,11 +1306,11 @@ def PlotMultiLineChartWithSameXs(ax=None, Xs=None, YsDict=None,
             label=Name,
         )
     ax.legend(loc="upper right")
-
     if XTicks in ["Float"]:
         Min, Max = np.nanmin(Xs), np.nanmax(Xs)
         SetXTicksFloat(ax, Min, Max)
-        SetXRangeMinMax(ax, Min, Max, Pad=0.0)
+        SetXRangeMinMaxFloat(ax, Min, Max, Pad=0.0)
+
     if YTicks in ["Float"]:
         Min = []
         Max = []
@@ -1177,7 +1319,7 @@ def PlotMultiLineChartWithSameXs(ax=None, Xs=None, YsDict=None,
             Max.append(np.nanmax(Ys))
         Min, Max = np.nanmin(Min), np.nanmax(Max)
         SetYTicksFloat(ax, Min, Max)
-        SetYRangeMinMax(ax, Min, Max, Pad=0.0)
+        SetYRangeMinMaxFloat(ax, Min, Max, Pad=0.0)
 
     SetXYLabelForAx(ax, XLabel, YLabel)
     SetTitleForAx(ax, Title)
@@ -1502,7 +1644,6 @@ def GetColorBarTicks(Ticks, Orientation, Min=None, Max=None, **kw):
     else:
         raise Exception(Ticks)
 
-
 def SetXTicksFloatFromData(ax, data, **kw):
     if isinstance(data, np.ndarray):
         Min = np.nanmin(data)
@@ -1577,37 +1718,6 @@ def SetYTicksFloat(ax, Min, Max, Method="Auto"):
     ax.set_yticklabels(TicksStr)
     return Ticks, TicksStr
 
-def SetXTicksInt(ax, Min, Max, Method="Auto", **Dict):
-    if Min > Max:
-        Min, Max = Max, Min
-    # Min, Max = round(Min) + 1, round(Max)
-    Ticks, TicksStr = CalculateTicksInt(Method, Min, Max, **Dict)
-    ax.set_xticks(Ticks, labels=TicksStr)
-    #ax.set_xticklabels(TicksStr)
-    return Ticks, TicksStr
-
-def GetXTicksInt(Min, Max, Method="Auto", **Dict):
-    if Min > Max:
-        Min, Max = Max, Min
-    #Min, Max = round(Min) + 1, round(Max)
-    Ticks, TicksStr = CalculateTicksInt(Method, Min, Max, **Dict)
-    return Ticks, TicksStr
-
-def SetYTicksInt(ax, Min, Max, Method="Auto", **Dict):
-    if Min > Max:
-        Min, Max = Max, Min
-    #Min, Max = round(Min) + 1, round(Max)
-    Ticks, TicksStr = CalculateTicksInt(Method, Min, Max, **Dict)
-    ax.set_yticks(Ticks, labels=TicksStr)
-    #ax.set_yticklabels(TicksStr)
-    return Ticks, TicksStr
-
-def GetYTicksInt(Min, Max, Method="Auto", **Dict):
-    if Min > Max:
-        Min, Max = Max, Min
-    #Min, Max = round(Min) + 1, round(Max)
-    Ticks, TicksStr = CalculateTicksInt(Method, Min, Max, **Dict)
-    return Ticks, TicksStr
 
 import imageio
 def ImageFiles2GIFFile(ImageFiles, TimePerFrame=0.5, SavePath=None):
@@ -1707,27 +1817,40 @@ def GetAxRangeMinMax(Min, Max, Pad=0.0):
     Right = Max + Pad * Range
     return Left, Right
 
-def SetXRangeMinMax(ax, Min, Max, Pad=0.05):
+def GetRangeMinMaxInt(Min, Max, Pad=0.05):
+    Left, Right = GetRangeMinMaxFloat(Min, Max, Pad)
+    Left = math.floor(Left)
+    Right = math.ceil(Right)
+    return Left, Right
+
+def GetRangeMinMaxFloat(Min, Max, Pad=0.05):
     Range = Max - Min
     Left = Min - Pad * Range
     Right = Max + Pad * Range
-    if Left==Right:
+    if Left == Right:
         if Left > 0.0:
             Left, Right = Left * 0.5, Right * 1.5
         elif Left < 0.0:
             Left, Right = Left * 1.5, Right * 0.5
         else:
             Left, Right = -1.0, 1.0
-        ax.set_xlim(Left, Right)
-    else:
-        ax.set_xlim(Left, Right)
+    return Left, Right
 
-def SetYRangeMinMax(ax, Min, Max, Pad=0.05):
-    Range = Max - Min
-    Left = Min - Pad * Range
-    Right = Max + Pad * Range
+def SetXRangeMinMaxFloat(ax, Min, Max, Pad=0.05):
+    Left, Right = GetRangeMinMaxFloat(Min, Max, Pad)
+    ax.set_xlim(Left, Right)
+
+def SetYRangeMinMaxFloat(ax, Min, Max, Pad=0.05):
+    Left, Right = GetRangeMinMaxFloat(Min, Max, Pad)
     ax.set_ylim(Left, Right)
 
+def SetXRangeMinMaxInt(ax, Min, Max, Pad=0.05):
+    Left, Right = GetRangeMinMaxInt(Min, Max, Pad)
+    ax.set_xlim(Left, Right)
+
+def SetYRangeMinMaxInt(ax, Min, Max, Pad=0.05):
+    Left, Right = GetRangeMinMaxInt(Min, Max, Pad)
+    ax.set_ylim(Left, Right)
 
 def SetAxisLocationForAx(ax, XAxisLocation=None, YAxisLocation=None):
     if XAxisLocation is not None:
@@ -1754,8 +1877,10 @@ def SetTitleAndLabelForAx(ax, XLabel=None, YLabel=None, Title=None):
         ax.set_title(Title)
 
 def SaveFigForPlt(Save=True, SavePath=None):
-    if Save is None and SavePath is not None:
+    if SavePath is not None:
         Save = True
+    if SavePath is None and Save is True:
+        raise Exception()
     if Save:
         DLUtils.EnsureFileDir(SavePath)
         plt.tight_layout()
@@ -1774,7 +1899,7 @@ def CompareDensityCurve(data1, data2, Name1, Name2, Save=True, SavePath=None):
     DLUtils.plot.PlotGaussianDensityCurve(ax, data1)
     DLUtils.plot.PlotGaussianDensityCurve(ax, data2)
 
-    SetXRangeMinMax(ax, Min, Max)
+    SetXRangeMinMaxFloat(ax, Min, Max)
 
     if SavePath is None:
         SavePath = DLUtils.GetMainSaveDir() + "%s-%s-GaussianKDE.png"%(Name1, Name2)

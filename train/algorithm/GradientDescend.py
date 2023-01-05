@@ -30,6 +30,7 @@ class GradientDescend(DLUtils.module.AbstractModule):
         return self
     def BindModel(self, Model):
         self.Model = Model
+        # Model.On("TensorMovement", self.ResetOptimizer)
         return self
     def BeforeTrain(self, Device):
         self.SetTrainParam(
@@ -37,6 +38,13 @@ class GradientDescend(DLUtils.module.AbstractModule):
         )
         self.ResetOptimizer()
         return self
+    def SetDevice(self, Device, IsRoot=False):
+        self.Device = Device
+        self.ResetOptimizer()
+        super().SetDevice(self, IsRoot=IsRoot)
+        return self
+    def ResetOptimizer(self, *List, **Dict):
+        raise Exception()
 
 from .SGD import SGD
 from .Adam import Adam

@@ -9,11 +9,41 @@ import warnings
 
 from DLUtils.utils._param import JsonFile2Param
 
+def LastModifiedTime(Path):
+    return os.path.getmtime(Path)
+
+def MostRecentlyModified(PathList, Num=None):
+    if Num is None:
+        Num = len(PathList)
+    if Num == 0:
+        return None
+    elif Num == 1:
+        return PathList[0]
+    else:
+        Path = PathList[0]
+        Time = LastModifiedTime(Path)
+        for _Path in PathList[1:]:
+            _Time = LastModifiedTime(_Path)
+            if _Time > Time:
+                Path = _Path
+        return Path
+
+def AfterTrainModelFile(SaveDir):
+    SaveDir = StandardizePath(SaveDir)
+    FileNameList = ListAllFiles(SaveDir)
+    List = []
+    for Name in FileNameList:
+        if "AfterTrain" in Name:
+            List.append(Name)
+    return MostRecentlyModified([SaveDir + FileName for FileName in List])
+
 def FileNameFromPath(FilePath):
     FileName = os.path.basename(FilePath)
     return FileName
 
 def StandardizePath(Path):
+    if Path is None:
+        return None
     if Path.startswith("~"):
         Path = AbsPath("~") + Path[1:]
     if ExistsDir(Path):
@@ -236,15 +266,16 @@ def CheckFileExists(FilePath):
 def Path2AbsolutePath(Path):
     return os.path.abspath(Path)
 
-def EnsureDirectory(DirPath):
+def EnsureDirectory(FolderPath):
     #DirPathAbs = Path2AbsolutePath(DirPath)
-    if os.path.exists(DirPath):
-        if not os.path.isdir(DirPath):
-            raise Exception("%s Already Exists but Is NOT a Directory."%DirPath)
+    FolderPath = AbsPath(FolderPath)
+    if os.path.exists(FolderPath):
+        if not os.path.isdir(FolderPath):
+            raise Exception("%s Already Exists but Is NOT a Directory."%FolderPath)
     else:
-        if not DirPath.endswith("/"):
-            DirPath += "/"
-        os.makedirs(DirPath)
+        if not FolderPath.endswith("/"):
+            FolderPath += "/"
+        os.makedirs(FolderPath)
 EnsureDir = EnsureDirectory
 EnsureFolder = EnsureDirectory
 
@@ -396,9 +427,7 @@ def RenameFile(DirPath, FileName, FileNameNew):
 def RenameFileIfExists(FilePath):
     if FilePath.endswith("/"):
         raise Exception()
-
     FileName, Suffix = ParseFileNameSuffix(FilePath)
-
     Sig = True
     MatchResult = re.match(r"^(.*)-(\d+)$", FileName)
     if MatchResult is None:
@@ -637,11 +666,22 @@ def ListFilesAndCalculateMd5(DirPath, Md5InKeys=False):
 
 ListFilesAndMd5 = ListFilesAndCalculateMd5
 
-def AbsPath(Path):
+
+import pathlib
+def _AbsPath(Path):
     if "~" in Path:
         Path = os.path.expanduser(Path)
     PathAbs = os.path.abspath(Path)
     if IsDir(PathAbs) and not PathAbs.endswith("/"):
+        PathAbs += "/"
+    return PathAbs
+def AbsPath(Path):
+    if "~" in Path:
+        Path = os.path.expanduser(Path)
+    PathAbs = pathlib.Path(Path).absolute()
+    PathAbs = str(PathAbs)
+    if Path.endswith("/") or ExistsFolder(PathAbs):
+        # if not PathAbs.endswith("/"):
         PathAbs += "/"
     return PathAbs
 ToAbsPath = AbsPath
@@ -774,12 +814,11 @@ def FolderConfig(FolderPath):
         FolderPath = Node.FolderPath
         ParamNode.setattr("Files", DLUtils.param({}))
         ParamNode.setattr("Folders", DLUtils.param({}))
-
         Files = ParamNode.Files
         for FileName in ListAllFiles(FolderPath):
             FilePath = FolderPath + FileName
             Files.setattr(
-                FileName,
+                FileName.replace(".", "(DOT)"),
                 DLUtils.param({
                     "MD5": File2MD5(FolderPath + FileName),
                     "Volume": FileSizeStr(FilePath)
@@ -787,14 +826,14 @@ def FolderConfig(FolderPath):
             )
         Folders = ParamNode.Folders
         for FolderName in ListAllDirs(FolderPath):
-            
+            FolderName = FolderName.replace(".", "(DOT)")
             Folders.setattr(
-                FolderName, DLUtils.param({})
+                FolderName.rstrip("/"), DLUtils.param({})
             )
             NodeList.append(
                 DLUtils.param({
                     "FolderPath": FolderPath + FolderName, # already ends with /
-                    "ParamNode": Folders.getattr(FolderName)
+                    "ParamNode": Folders.getattr(FolderName.rstrip("/"))
                 })
             )
     return Tree
@@ -809,9 +848,11 @@ def CheckIntegrity(FolderPath, Config):
     while len(ConfigNodeList) > 0:
         ConfigNode = ConfigNodeList.pop()
         FolderPath = FolderNodeList.pop()
+        FolderPath = FolderPath.replace("(DOT)", ".")
         FilesNode = ConfigNode.Files
         Files = ListAllFiles(FolderPath)
         for FileName, FileInfo in FilesNode.items():
+            FileName = FileName.replace("(DOT)", ".")
             SubFilePath = FolderPath + FileName
             if not FileExists(SubFilePath):
                 return False
@@ -819,6 +860,7 @@ def CheckIntegrity(FolderPath, Config):
                 return False
         FoldersNode = ConfigNode.Folders
         for FolderName, FolderInfo in FoldersNode.items():
+            FolderName = FolderName.replace("(DOT)", ".")
             SubFolderPath = FolderPath + FolderName
             if not ExistsDir(SubFolderPath):
                 return False

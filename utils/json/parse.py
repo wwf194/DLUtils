@@ -45,14 +45,14 @@ def t_LINE_COMMENT(t):
     t.value = value
     return t
 
+# 函数定义的TOKEN匹配规则 > 正则表达式字符串定义的TOKEN匹配规则
+def t_FLOAT(t): # float先于int匹配
+    r'[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)'
+    return t
+
 def t_INT(t):
     r'(0[xX][0-9a-fA-F]+)|([0-9]+)|([01]+[bB])'
     # 必须返回 t. 可以给t设置属性，方便后续语法分析
-    return t
-
-# 函数定义的TOKEN匹配规则 > 正则表达式字符串定义的TOKEN匹配规则
-def t_FLOAT(t):
-    r'[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)'
     return t
 
 def t_STR_DOUBLE_QUOTATION_MARK(t):
@@ -398,8 +398,13 @@ def p_float(p):
         float : FLOAT
     '''   
     Node = leaf_template()
-    Node["_LEAF"] = float(p[1])
-    Node["_LEAF_TYPE"] = NODE_LEAF_TYPE.FLOAT
+    Str = p[1]
+    if "." in Str:
+        Node["_LEAF"] = float(p[1])
+        Node["_LEAF_TYPE"] = NODE_LEAF_TYPE.FLOAT
+    else:
+        Node["_LEAF"] = int(p[1])
+        Node["_LEAF_TYPE"] = NODE_LEAF_TYPE.INT  
     p[0] = Node
 
 def p_boolean(p):

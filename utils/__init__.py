@@ -326,23 +326,6 @@ def GetTensorLocation(Method="auto"):
         raise Exception()
     return Location
 
-
-def SetTensorLocation(Location):
-    # EnsureAttrs(Args, "Method", default="Auto")
-    # GlobalParam = DLUtils.GetGlobalParam()
-    # if HasAttrs(GlobalParam, "system.TensorLocation"):
-    #     Location = GlobalParam.system.TensorLocation
-    # else:
-    #     if Args.Method in ["Auto", "auto"]:
-    #         Location = DLUtils.GetGPUWithLargestUseableMemory()
-    #     else:
-    #         raise Exception()
-
-    # for Obj in DLUtils.ListValues(DLUtils.GetGlobalParam().object):
-    #     if hasattr(Obj, "SetTensorLocation"):
-    #         Obj.SetTensorLocation(Location)
-    SetAttrs(DLUtils.GetGlobalParam(), "system.TensorLocation", Location)                 
-
 def BuildObjFromParam(Args, **kw):
     if isinstance(Args, DLUtils.PyObj):
         Args = GetAttrs(Args)

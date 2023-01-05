@@ -17,7 +17,7 @@ import DLUtils.train.loss as loss
 import DLUtils.train.EpochBatchTrain as EpochBatchTrain
 from .EpochBatchTrain import EpochBatchTrainSession
 
-def TrainSession(Type):
+def TrainSession(Type="EpochBatchTrain"):
     if Type in ["EpochBatchTrain", "Epoch-Batch"]:
         return EpochBatchTrainSession()
     else:
@@ -68,12 +68,6 @@ def ClearGrad(TensorDict):
 def EpochBatchInFloat(EpochIndex, BatchIndex, BatchNum):
     return EpochIndex + BatchIndex / BatchNum * 1.0
 
-def EpochBatchIndices2EpochsFloat(EpochIndices, BatchIndices, **kw):
-    BatchNum = kw["BatchNum"]
-    EpochIndices = DLUtils.ToNpArray(EpochIndices)
-    BatchIndices = DLUtils.ToNpArray(BatchIndices)
-    EpochsFloat = EpochIndices + BatchIndices / BatchNum
-    return DLUtils.NpArray2List(EpochsFloat)
 
 def Labels2OneHotVectors(Labels, VectorSize=None):
     # Labels: [SampleNum]

@@ -51,9 +51,10 @@ class SGD(GradientDescend):
                 self.Optimize = self._UpdateParam
         self.Nesterov = Nesterov
         return self
-    def ResetOptimizer(self):
+    def ResetOptimizer(self, *List, **Dict):
         self.Optimizer = torch.optim.sgd(
-            self.TrainParam.values(),
+            #self.TrainParam.values(),
+            Dict["Param"],
             lr=self.LearningRate,
             nesterov=self.Nesterov,
         )

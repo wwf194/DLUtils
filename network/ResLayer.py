@@ -7,10 +7,14 @@ class ResLayer(DLUtils.module.AbstractNetwork):
         super().__init__()
         Param = self.Param
         Param._CLASS = "DLUtils.network.ResLayer"
-        if SubModule is None:
+        if SubModule is not None:
             self.AddSubModule("SubModule", SubModule)
     def Receive(self, X):
         # X: [BatchSize, FeatureNum]
         Y = self.SubModule(X)
         Output = X + Y
         return Output
+    def Init(self, IsSuper=False, IsRoot=True):
+        Param = self.Param
+        assert Param.hasattr("SubModule")
+        return super().Init(IsSuper, IsRoot)

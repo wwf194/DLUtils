@@ -45,8 +45,11 @@ class Adam(GradientDescend):
     def _UpdateParam(self, Dict):
         self.Optimizer.zero_grad()
         Dict.Evaluator.Loss.backward()
-        # print("%.3e"%(self.Model.SubModules["2"].Weight.grad[0][0].item()))
+        Cache0 = Dict.Model.L3.Weight.clone().detach().cpu()
         self.Optimizer.step()
+        Cache1 = Dict.Model.L3.Weight.clone().detach().cpu()
+        Diff = Cache1 - Cache0
+        TrainParam = Dict.Model.ExtractTrainParam()
         return self
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
@@ -63,9 +66,15 @@ class Adam(GradientDescend):
         self.ResetOptimizer()
         self.Optimize = self._UpdateParam
         return self
-    def ResetOptimizer(self):
+    def ResetOptimizer(self, *List, **Dict):
+        Param = Dict.get("Param")
+        if Param is None:
+            #Param = list(self.TrainParam.values())
+            Param = list(self.Model.ExtractTrainParam().values())
+        else:
+            Param = list(Param.values())
         self.Optimizer = torch.optim.Adam(
-            self.TrainParam.values(),
+            Param,
             lr=self.LearningRate,
             betas=[
                 self.Alpha, # Momentum

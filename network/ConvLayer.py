@@ -13,7 +13,7 @@ class ConvLayer2D(DLUtils.module.AbstractNetwork):
             KernelSize=KernelSize, **Dict
         )
     def SetParam(self, **Dict):
-        Param = self.param
+        Param = self.Param
         InputNum = Dict.get("InputNum")
         if InputNum is not None:
             Param.Kernel.Input.Num = InputNum
@@ -23,6 +23,15 @@ class ConvLayer2D(DLUtils.module.AbstractNetwork):
         KernelSize = Dict.get("KernelSize")
         if KernelSize is not None:
             Param.Kernel.Size = KernelSize
+        Padding = Dict.get("Padding")
+        if Padding is not None:
+            Param.Conv.Padding = Padding
+        Stride = Dict.get("Stride")
+        if Stride is not None:
+            Param.Conv.Stride = Stride
+        GroupNum = Dict.get("GroupNum")
+        if GroupNum is not None:
+            Param.Conv.Group.Num = GroupNum
         return self
     def SetTrainParam(self, **Dict):
         Param = self.Param
@@ -40,7 +49,7 @@ class ConvLayer2D(DLUtils.module.AbstractNetwork):
         return self
     def Receive(self, Input):
         Output = F.conv2d(
-            input=Input, weight=self.Kernel, bias=self.Bias,
+            input=Input, weight=self.Weight, bias=self.Bias,
             stride=self.Stride,
             padding=self.Padding,
             dilation=self.Dilation,
@@ -48,9 +57,29 @@ class ConvLayer2D(DLUtils.module.AbstractNetwork):
         )
         Output = self.NonLinear(Output)
         return Output
+    def SetWeight(self, Weight):
+        Param = self.Param
+        self.AddTrainParam("Weight", Weight) # [In, Out, KernelWidth, KernelHeight]
+        Param.Kernel.Input.Num = Weight.shape[1]
+        Param.Output.Num = Weight.shape[0]
+        Param.Kernel.Width = Weight.shape[2]
+        Param.Kernel.Height = Weight.shape[3]
+        return self
+    def SetBias(self, Bias):
+        Param = self.Param
+        if isinstance(Bias, float):
+            Param.Data.Bias = Bias
+            return
+        if isinstance(Bias, str):
+            if Bias in ["zeros"]:
+                Bias = np.zeros((Param.Output.Num))
+            else:
+                raise Exception()
+        self.AddTrainParam("Bias", Bias)
+        return self
     def SetNonLinear(self, NonLinearModule):
         if isinstance(NonLinearModule, str):
-            NonLinearModule = DLUtils.GetNonLinearMethodModule(NonLinear)
+            NonLinearModule = DLUtils.transform.NonLinear(NonLinearModule)
         self.AddSubModule("NonLinear", NonLinearModule)
         return self
     def Init(self, IsSuper=False, IsRoot=True):
@@ -67,7 +96,8 @@ class ConvLayer2D(DLUtils.module.AbstractNetwork):
             raise Exception()
         self.Dilation = Param.Conv.setdefault("Dilation", 1)
         self.GroupNum = Param.Conv.Group.setdefault("Num", 1)
-        
+        Param.Input.Num = Param.Kernel.Input.Num * Param.Conv.Group.Num
+        Param.Kernel.Output.Num = Param.Output.Num // Param.Conv.Group.Num
         Param.NonLinear.setdefault("Enable", False)
         if Param.NonLinear.Enable:
             assert Param.SubModules.hasattr("NonLinear")

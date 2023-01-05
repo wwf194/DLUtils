@@ -3,6 +3,15 @@ import numpy as np
 from enum import Enum
 import math
 
+def Conv2DKernel(Shape, **Dict):
+    # Shape: [InputNum, OutputNum, KernelWidth, KernelHeight]
+    GroupNum = Dict.setdefault("GroupNum", 1)
+    # torch
+    Max = GroupNum / (Shape[1] * Shape[2] * Shape[3])
+    Min = - Max
+    assert Shape[0] % GroupNum == 0
+    return SampleFromUniformDistribution((Shape[1], Shape[0] // GroupNum, Shape[2], Shape[3]), Min, Max)
+
 def SampleFromKaimingUniform(Shape, NonLinearFunction="ReLU", **Dict):
     # Y = f(WX). Keep variance of forward signal or backward gradient.
     assert len(Shape) == 2

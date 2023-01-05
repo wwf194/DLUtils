@@ -16,23 +16,19 @@ class CIFAR10(ImageClassificationTask):
     def _INIT(self):
         Param = self.Param
         Param._CLASS = "DLUtils.task.image.classification.CIFAR10"
-        Param.Train.Num = 60000
-        Param.Test.Num = 10000
         self.DataLoaderList = set()
         return self
     def SetDataPath(self, DataPath, CheckIntegrity=True):
-        DLUtils.file.EnsureDir(DataPath)
         Param = self.Param
         Param.DataPath = DataPath
         ConfigFile = DLUtils.file.ParentFolderPath(__file__) + "cifar10-config.jsonc"
-        Config = DLUtils.file.JsonFile2Param(ConfigFile, SplitKeyByDot=False)
+        Config = DLUtils.file.JsonFile2Param(ConfigFile, SplitKeyByDot=True, SplitKeyException=["Folder"])
         DataPath = ExtractDataSetFile(DataPath)
         if CheckIntegrity:
             assert DLUtils.file.CheckIntegrity(DataPath, Config.Folder)
         self.DataPath = DataPath
+        self.Config = Config
         self.IsDataPathBind = True
-        return self
-    def SetParam(self):
         return self
     def PreprocessData(self, Preprocess, BatchSize=1000):
         assert self.IsDataPathBind
@@ -62,14 +58,16 @@ class CIFAR10(ImageClassificationTask):
         return _DataLoader
     def TrainBatchNum(self, BatchSize):
         Param = self.Param
-        BatchNum = Param.Train.Num // BatchSize
-        if Param.Train.Num // BatchSize > 0:
+        Config = self.Config
+        BatchNum = Config.Train.Num // BatchSize
+        if Config.Train.Num // BatchSize > 0:
             BatchNum += 1
         return BatchNum
     def TestBatchNum(self, BatchSize):
         Param = self.Param
-        BatchNum = Param.Test.Num // BatchSize
-        if Param.Test.Num // BatchSize > 0:
+        Config = self.Config
+        BatchNum = Config.Test.Num // BatchSize
+        if Config.Test.Num // BatchSize > 0:
             BatchNum += 1
         return BatchNum
     def SetDevice(self, Device, IsRoot=True):
@@ -99,7 +97,8 @@ def LoadDataSetFile(filename):
         Image = datadict['data']        # X, ndarray, 像素值
         Label = datadict['labels']      # Y, list, 标签, 分类
     
-    Image = Image.reshape(10000, 3, 32, 32).transpose(0,2,3,1).astype(np.float32)
+    Image = Image.reshape(10000, 3, 32, 32).astype(np.float32)
+    # Image = Image.transpose(0,2,3,1)
     Label = np.array(Label).astype(np.uint8)
     return Image, Label
 
@@ -115,8 +114,9 @@ def ExtractImage(Data, IndexList=None, PlotNum=10, SavePath="./", LabelContent=N
             Type = "Train"
             Image = Data.Train.Image[Index]
             Label = Data.Train.Label[Index]
-        if len(Image.shape) == 1:
-            Image = Image.reshape(32, 32, 3) # np.float32
+
+        #Image = Image.reshape(32, 32, 3) # np.float32
+        Image = Image.transpose(1, 2, 0)
         Image = Image / 256.0
         DLUtils.plot.NpArray2ImageFile(
             Image, SavePath + "{0} {1:0>5} Class {2} {3}.png".format(Type, Index, Label, LabelContent[Label])
@@ -159,7 +159,7 @@ def LoadDataSet(FolderPath, PlotExampleImage=True):
                 ExtractImage(Data=Data, SavePath=ExampleDir, LabelContent=LabelContent)
     return Data
 
-def ExtractDataSetFile(Path, MoveCompressedFile2ExtractFolder=True):
+def ExtractDataSetFile(Path, MoveCompressedFile2ExtractFolder=True, IsFile=True):
     Path = DLUtils.file.ToAbsPath(Path)
     if DLUtils.file.FileExists(Path): # extract from mnist zip file
         # typical file name: cifar-10-python.tar.gz
@@ -184,7 +184,7 @@ def ExtractDataSetFile(Path, MoveCompressedFile2ExtractFolder=True):
             FolderPath = ExtractFolderPath
         if MoveCompressedFile2ExtractFolder:
             DLUtils.file.MoveFile(CompressFilePath, ExtractFolderPath)
-    elif DLUtils.file.FolderExists(Path):
+    elif DLUtils.file.FolderExists(Path) and not IsFile:
         FolderPath = Path
     else:
         if Path.endswith(".gz"):
@@ -212,14 +212,14 @@ def DataSetConfig(DataSetFolderPath, SaveDir=None):
     Config = DLUtils.Param({
         "Test.Num": 10000,
         "Train.Num": 50000,
-        "Image.Shape": [32, 32, 3],
+        "Image.Shape": [3, 32, 32],
         "Class.Num": 10,
         "Image.Value.Range": [0, 255],
         "Image.Value.Type": "uint8",
         "Label.Content": LabelContent
     })
     Config.Absorb(DataSetStat(Data))
-    Config.Folder = DataSetFolderConfig(DataSetFolderPath)
+    Config.Folder = DataSetFolderConfig(DataSetFolderPath, SaveDir)
     if SaveDir is not None:
         Config.ToJsonFile(SaveDir + "cifar10-config.jsonc")
     return Config
@@ -228,7 +228,59 @@ def DataSetStat(Data):
     Stat = DLUtils.Param()
     ColorChannelStat = Stat.Image.ColorChannel
     ColorChannelStat.Train.Mean = np.nanmean(Data.Train.Image, axis=(0, 1, 2)) # [ImageNum, 32, 32, 3]
-    ColorChannelStat.Train.Std = np.nanmean(Data.Train.Image, axis=(0, 1, 2)) # [ImageNum, 32, 32, 3]
+    ColorChannelStat.Train.Std = np.nanstd(Data.Train.Image, axis=(0, 1, 2)) # [ImageNum, 32, 32, 3]
     ColorChannelStat.Test.Mean = np.nanmean(Data.Test.Image, axis=(0, 1, 2)) # [ImageNum, 32, 32, 3]
-    ColorChannelStat.Test.Std = np.nanmean(Data.Test.Image, axis=(0, 1, 2)) # [ImageNum, 32, 32, 3]
+    ColorChannelStat.Test.Std = np.nanstd(Data.Test.Image, axis=(0, 1, 2)) # [ImageNum, 32, 32, 3]
     return Stat
+
+class DataFetcher(torch.utils.data.Dataset, DLUtils.module.AbstractModule):
+    def __init__(self, Image, Label, BatchSize=None):
+        DLUtils.module.AbstractModule.__init__(self)
+        torch.utils.data.Dataset.__init__(self)
+        self.Image = Image
+        self.Label = Label
+        self.BatchSize = BatchSize
+    def SetDevice(self, Device, IsRoot=True):
+        self.Device = Device
+        self.Log(f"change device to {Device}")
+        return self
+    def __getitem__(self, Index):
+        Image = self.Image[Index]
+        Label = self.Label[Index]
+        return Image, Label
+    def __len__(self):
+        return self.Image.shape[0]
+
+class DataLoader(torch.utils.data.DataLoader, DLUtils.module.AbstractModule):
+    def __init__(self, DataFetcher=None, BatchSize=None, BatchNum=None):
+        self.DataFetcher = DataFetcher
+        DLUtils.module.AbstractModule.__init__(self)
+        torch.utils.data.DataLoader.__init__(
+            self, 
+            dataset=DataFetcher, 
+            batch_size=BatchSize, 
+            # num_workers=2 # Setting num_workers > 1 might severely slow down speed.
+        )
+        self.BatchSize = BatchSize
+        self._BatchNum = BatchNum
+        if hasattr(DataFetcher, "Device"):
+            self.Device = DataFetcher.Device
+        self.Reset()
+    def BeforeEpoch(self, Dict):
+        self.Reset()
+    def AfterEpoch(self, Dict):
+        self.Reset()
+    def Get(self, BatchIndex):
+        Image, Label = next(self.Iter)
+        return Image.to(self.Device), Label.to(self.Device)
+    def SetDevice(self, Device, IsRoot=True):
+        self.DataFetcher.SetDevice(Device)
+        self.Device = Device
+        return self
+    def BatchNum(self):
+        return self._BatchNum
+    def Reset(self):
+        self.Iter = iter(self)
+        return self
+    def Init(self, IsSuper=False, IsRoot=True):  
+        return super().Init(IsSuper=True, IsRoot=IsRoot)

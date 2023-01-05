@@ -90,9 +90,9 @@ def CalculateBatchNum(BatchSize, SampleNum):
         BatchNum += 1
     return BatchNum
 
-config = DLUtils.file.JsonFile2PyObj(
-    DLUtils.file.GetFileDir(__file__) + "config.jsonc"
-)
+# config = DLUtils.file.JsonFile2PyObj(
+#     DLUtils.file.GetFileDir(__file__) + "config.jsonc"
+# )
 
 def GetDatasetPath(Name):
     if Name in ["CIFAR10", "cifar10"]:

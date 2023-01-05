@@ -21,6 +21,14 @@ parser.add_argument(
         default=None,
         help="file or directory path required by task"
     )
+parser.add_argument(
+        "-a", "--anal",               
+        dest="IsAnal",
+        # nargs=0,
+        action="store_true",
+        default=False,
+        help="is anal"
+    )
 args = parser.parse_args() # parser输入的命令行参数
 
 import DLUtils
@@ -65,12 +73,13 @@ if __name__=="__main__":
         if SubTask in ["mnist_mlp"]:
             import DLUtils
             #DLUtils.file.FolderConfig("~/Data/mnist").ToJsonFile("task/image/classification/mnist-folder-config.jsonc")
-            DLUtils.example.mnist_mlp(
-                SaveDir="./test/mnist/MLP/"
-            )
+            DLUtils.example.mnist_mlp()
         elif SubTask in ["cifar10"]:
             if TaskList[2] in ["conv"]:
-                Task = DLUtils.Task("ImageClassification").SetType("cifar10").SetDataPath("~/Data/cifar-10-python.tar.gz")
+                if args.IsAnal:
+                    DLUtils.example.cifar10_conv_anal()
+                else:
+                    DLUtils.example.cifar10_conv()
             else:
                 raise Exception()
         else:

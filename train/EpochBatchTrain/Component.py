@@ -19,7 +19,12 @@ class EvaluationLog(EventAfterEveryBatch):
 class Test(EventAfterEpoch):
     def __init__(self, **Dict):
         super().__init__(**Dict)
+        Param = self.Param
+        Param._CLASS = "DLUtils.train.EpochBatchTrain.Test"
         self.Event = self.Test # to be called
+
+        
+
     def Test(self, Dict):
         TestData = Dict.TestData
         Evaluator = Dict.Evaluator
@@ -30,11 +35,16 @@ class Test(EventAfterEpoch):
         DictTest = DLUtils.param({
             "Model": Model,
             "BatchNum": BatchNum,
-            "EpochIndex": Dict.EpochIndex
+            "EpochIndex": Dict.EpochIndex,
+            "TestSession": self
         })
-
+        EvaluationLog.BindTestSession(self)
         EvaluationLog.BeforeTestEpoch(DictTest)
+        self.BeforeTest(DictTest)
+        self.BeforeTestEpoch(DictTest)
         for TestBatchIndex in range(BatchNum):
+            DictTest.BatchIndex = TestBatchIndex
+            self.BeforeTestBatch(DictTest)
             Input, OutputTarget = TestData.Get(TestBatchIndex)
             DLUtils.NpArray2Str
             Output = Model(Input)
@@ -43,14 +53,66 @@ class Test(EventAfterEpoch):
             DictTest.OutputTarget = OutputTarget
             Evaluation = Evaluator.Evaluate(DictTest)
             DictTest.Evaluation = Evaluation
-            DictTest.BatchIndex = TestBatchIndex
+            self.AfterTestBatch(DictTest)
             EvaluationLog.AfterTestBatch(DictTest)
         EvaluationLog.AfterTestEpoch(DictTest)
+        self.AfterTestEpoch(DictTest)
         return self
+    def Bind(self, **Dict):
+        for Name, SubModule in Dict.items():
+            self.AddSubModule(Name, SubModule)
+            if hasattr(SubModule, "BeforeTrain"):
+                self.AddBeforeTestEvent(SubModule.BeforeTrain)
+            if hasattr(SubModule, "AfterBatch"):
+                self.AddAfterTestBatchEvent(SubModule.AfterBatch)
+            if hasattr(SubModule, "AfterEpoch"):
+                self.AddAfterTestEpochEvent(SubModule.AfterEpoch)
+    def AddBeforeTestEvent(self, Event):
+        self.BeforeTestEventList.append(Event)
+        return self
+    def AddAfterTestBatchEvent(self, Event):
+        self.AfterTestBatchEventList.append(Event)
+        return self
+    def AddAfterTestBatchEvent(self, Event):
+        self.AfterTestBatchEventList.append(Event)
+        return self
+    def AddAfterTestEpochEvent(self, Event):
+        self.AfterTestEpochEventList.append(Event)
+        return self
+    def BeforeTest(self, Dict):
+        for Event in self.BeforeTestEventList:
+            Event(Dict)
+        return self
+    def BeforeTestEpoch(self, Dict):
+        for Event in self.BeforeTestEpochEventList:
+            Event(Dict)
+        return self
+    def BeforeTestBatch(self, Dict):
+        for Event in self.BeforeTestBatchEventList:
+            Event(Dict)
+        return self
+    def AfterTestBatch(self, Dict):
+        for Event in self.AfterTestBatchEventList:
+            Event(Dict)
+        return self
+    def AfterTestEpoch(self, Dict):
+        for Event in self.AfterTestEpochEventList:
+            Event(Dict)
+        return self
+    def Init(self, IsSuper=False, IsRoot=True):
+        self.BeforeTestEventList = []
+        self.BeforeTestEpochEventList = []
+        self.BeforeTestBatchEventList = []
+        self.AfterTestBatchEventList = []
+        self.AfterTestEpochEventList = []
+        self.AfterTestEventList = []
 
+        return super().Init(IsSuper=True, IsRoot=IsRoot)
 class Save(EventAfterEpoch):
     def __init__(self, **Dict):
         super().__init__(**Dict)
+        Param = self.Param
+        Param._CLASS = "DLUtils.train.EpochBatchTrain.Save"
         self.Event = self.Save # to be called
     def SetParam(self, **Dict):
         Param = self.Param
@@ -59,40 +121,48 @@ class Save(EventAfterEpoch):
             Param.SaveDir = SaveDir
         super().SetParam(**Dict)
         return self
-    def Save(self, Dict):
-        ModelSaveDir = self.SaveDir + "model/" + f"model-Epoch{Dict.EpochIndex}-Batch{Dict.BatchIndex}.dat"
-        Dict.Model.ToFile(ModelSaveDir, RetainSelf=False)
+    def Save(self, Dict, ModelSaveFilePath=None):
+        if ModelSaveFilePath is None:
+            ModelSaveFilePath = self.SaveDir + "model/" + f"model-Epoch{Dict.EpochIndex}.dat"
+        Dict.Model.ToFile(ModelSaveFilePath, RetainSelf=False)
         Dict.Model.Clear()
-        Dict.Model = Dict.Model.FromFile(ModelSaveDir).Init()
+        Dict.Model = Dict.Model.FromFile(ModelSaveFilePath).Init()
         Dict.TrainSession.Model = Dict.Model
         Dict.TrainSession.ToFile(self.SaveDir)
+        Dict.TrainSession.SetConnectEvents()
         Dict.TrainSession.SetDevice()
-        print("Save on Epoch %3d Batch %3d"%(Dict.EpochIndex, Dict.BatchIndex))
+        print("saving model. Epoch {0:>3} Batch {1:>3}. FilePath:{2}".format(Dict.EpochIndex, Dict.BatchIndex, ModelSaveFilePath))
         return self
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         self.SaveDir = Param.setdefault("SaveDir", "./TrainSession/")
+        Param.Save.setdefault("BeforeTrain", True)
+        Param.Save.setdefault("AfterTrain", True)
         return super().Init(IsSuper=False, IsRoot=IsRoot)
-
-class AfterTrainAnalysis(EpochBatchTrainComponent):
+    def BeforeTrain(self, Dict):
+        Param = self.Param
+        super().BeforeTrain(Dict)
+        if Param.Save.Before.Train:
+            Dict.EpochIndex = "0(BeforeTrain)"
+            Dict.BatchIndex = -1
+            self.Save(Dict)
+        return self
     def AfterTrain(self, Dict):
-        self.PlotRateCorrect(Dict)
-    def PlotRateCorrect(self, Dict):
-        TrainLog = self.TrainLog
-        EpochIndex = Dict.EpochIndex
-        BatchIndex = Dict.BatchIndex
-        EvaluationLog = Dict.EvaluationLog
-        EpochIndexFloat = DLUtils.train.EpochBatchIndices2EpochsFloat(
-            EpochIndex, BatchIndex
-        )
-        DLUtils.plot.PlotLineChart(
-            Xs = EpochIndexFloat, Ys = TrainLog.RateCorrect,
-            XLabel="Epoch", YLabel="Correct Rate",
-            SavePath=self.GetSaveDir() + "Epoch ~ Correct Rate"
-        )
+        Param = self.Param
+        ModelSaveFilePath = f"model-Epoch{Dict.EpochIndex}(AfterTrain).dat"
+        ModelSaveDir = self.SaveDir + "model/"
+        ModelSaveFileNameLast = f"model-Epoch{Dict.EpochIndex}.dat"
+        if Dict.EpochIndex == self.EventEpochIndexList[-1] and DLUtils.FileExists(ModelSaveDir + ModelSaveFileNameLast): # Already saved after train
+            DLUtils.file.RenameFile(ModelSaveDir, ModelSaveFileNameLast, ModelSaveFilePath)
+        else:
+            self.Save(Dict, self.SaveDir + "model/" + ModelSaveFilePath)
         return self
 
 class XFixedSizeYFixedSizeProb(EpochBatchTrainComponent):
+    def __init__(self):
+        super().__init__()
+        Param = self.Param
+        Param._CLASS = "DLUtils.train.EpochBatchTrain.XFixedSizeYFixedSizeProb"
     def BeforeTrain(self, Dict):
         self.Log(f"Before Train. {DLUtils.system.Time()}")
         Param = self.Param
@@ -157,3 +227,36 @@ def RateCorrectSingelClassPrediction(ScorePredicted, IndexTruth):
     #IndexTruth = ScoreTruth.argmax(dim=1)
     NumCorrect = torch.sum(IndexPredicted==IndexTruth).item()
     return NumTotal, NumCorrect
+
+class AnalysisAfterTrain(EpochBatchTrainComponent):
+    def __init__(self, SaveDir=None):
+        super().__init__()
+        Param = self.Param
+        #Param._CLASS = "DLUtils.train.EpochBatchTrain.AfterTrainAnalysis"
+        if SaveDir is not None:
+            self.SaveDir = SaveDir
+    def AfterTrain(self, Dict):
+        PlotRateCorrect(Dict, self.SaveDir)
+        return self
+
+def PlotRateCorrect(Dict, SaveDir=None):
+    SaveDir = DLUtils.file.StandardizePath(SaveDir)
+    TrainSession = Dict.TrainSession
+    Param = TrainSession.Param
+    EvaluationLog = TrainSession.EvaluationLog
+    #EpochIndexFloat = TrainSession.BatchIndexFloatList()
+    #EpochIndexList = TrainSession.EpochIndexList
+    XsTrain = EvaluationLog.EpochIndexList(IsTrain=True)
+    XsTest = EvaluationLog.EpochIndexList(IsTrain=False)
+    YsTrain = EvaluationLog.CorrectRateEpoch(IsTrain=True)
+    YsTest = EvaluationLog.CorrectRateEpoch(IsTrain=False)
+    DLUtils.plot.PlotMultiLineChart(
+        Xs = [XsTrain, XsTest],
+        Ys = [YsTrain, YsTest],
+        ColorList = ["Red", "Blue"],
+        XLabel="Epoch", YLabel="Correct Rate",
+        XTicks="Int", YTicks="Float",
+        XRange = [min(XsTrain), max(XsTrain)], YRange=[0.0, 1.0],
+        Labels = ["train", "test"],
+        SavePath=SaveDir + "Epoch ~ Correct Rate.svg"
+    )
