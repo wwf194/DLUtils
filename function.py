@@ -2,7 +2,7 @@ import functools
 import DLUtils
 from DLUtils.attr import *
 
-def StackFunctions(FunctionList, *Functions, Inverse=False, InputNum=1):
+def StackFunctions(FunctionList, *Functions, Inverse=False, InNum=1):
     if isinstance(FunctionList, list):
         if len(Functions)>0:
             raise Exception()
@@ -16,10 +16,10 @@ def StackFunctions(FunctionList, *Functions, Inverse=False, InputNum=1):
     if not Inverse:
         # Function at head of list is called earlier.
         # return functools.reduce(lambda f, g: lambda x: g(f(x)), Functions, lambda x: x)
-        if InputNum == 0:
+        if InNum == 0:
             _Functions = functools.reduce(lambda f, g: lambda x: g(f(x)), Functions[1:])
             return lambda :_Functions(Functions[0]())
-        elif InputNum == 1:
+        elif InNum == 1:
             return functools.reduce(lambda f, g: lambda x: g(f(x)), Functions)
         else:
             raise Exception("To Be Implemented")

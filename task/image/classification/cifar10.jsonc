@@ -17,10 +17,10 @@
         "Files.Num": 5
     },
     "Class.Num": 10,
-    "Input.Num": 3072,
-    "Input.Shape": [32, 32, 3],
-    "Output.Shape": [10],
-    "Output.Num": 10,
+    "In.Num": 3072,
+    "In.Shape": [32, 32, 3],
+    "Out.Shape": [10],
+    "Out.Num": 10,
     "Statistics":{
         "OnColorChannel":{
             "Mean": [0.4914, 0.4822, 0.4465], 

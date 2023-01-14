@@ -48,7 +48,7 @@ class GradientDescend(DLUtils.module.AbstractModule):
         if LogGrad:
             GradLog = {}
         for Name, Weight in weights.items():
-            # if Name in ["Recurrent.FiringRate2RecurrentInput.Weight"]:
+            # if Name in ["Recurrent.FiringRate2RecurrentIn.Weight"]:
             #     print("aaa")
             if Weight.grad is None:
                 if WarnNoneGrad and Update:

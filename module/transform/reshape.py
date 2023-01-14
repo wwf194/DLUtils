@@ -1,6 +1,6 @@
 import torch
 import torch.nn.functional as F
-from ..AbstractModule import AbstractOperator
+from .. import AbstractOperator
 class Reshape(AbstractOperator):
     def __init__(self, *List):
         super().__init__()
@@ -12,7 +12,7 @@ class Reshape(AbstractOperator):
             else:
                 Shape = List
             Param.Shape.After = Shape
-    def Receive(self, Input):
+    def Receive(self, In):
         return torch.reshape(Input, self.Shape)
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
@@ -25,8 +25,8 @@ class Index2OneHot(AbstractOperator):
         Param = self.Param
         Param._CLASS = "DLUtils.transform.Index2OneHot"
         Param.FeatureNum = FeatureNum
-    def Receive(self, Input):
-        return F.one_hot(Input.long(), num_classes=self.FeatureNum)
+    def Receive(self, In):
+        return F.one_hot(In.long(), num_classes=self.FeatureNum)
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         self.FeatureNum = Param.FeatureNum

@@ -29,6 +29,7 @@ import DLUtils.system as system
 import DLUtils.analysis as analysis
 
 import DLUtils.network as network
+import DLUtils.network.NonLinear as NonLinear
 import DLUtils.module.norm as norm
 import DLUtils.module.transform as transform
 
@@ -76,3 +77,5 @@ import DLUtils.example as example
 
 from .structure import FixedSizeQueuePassiveOutInt32 
 
+
+PackageFolderPath = DLUtils.file.FolderPathOfFile(__file__)

@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from DLUtils.attr import *
-from DLUtils.module.AbstractModule import AbstractModule
 
 class NoiseFromDistribution(DLUtils.module.AbstractModule):
     # def __init__(self, param=None, data=None, **kw):
@@ -25,8 +24,8 @@ class NoiseFromDistribution(DLUtils.module.AbstractModule):
                     self.forward = lambda Input: \
                         DLUtils.math.SampleFromGaussianDistributionTorch(
                             Mean=0.0,
-                            Std=torch.std(Input.detach()).item() * param.StdRatio,
-                            Shape=tuple(Input.size()),
+                            Std=torch.std(In.detach()).item() * param.StdRatio,
+                            Shape=tuple(In.size()),
                         ).to(self.GetTensorLocation())
                 elif param.Distribution in ["Laplacian"]:
                     # to be implemented

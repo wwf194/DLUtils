@@ -74,7 +74,7 @@ def t_ENDL(t):
 #     input is the input text string
 #     token is a token instance
 def find_column(input, token):
-    line_start = input.rfind('\n', 0, token.lexpos) + 1
+    line_start = In.rfind('\n', 0, token.lexpos) + 1
     return (token.lexpos - line_start) + 1
 
 # This method will be called when faced with unmatchable TOKEN

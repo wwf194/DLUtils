@@ -6,7 +6,6 @@ import torch.nn.functional as F
 import DLUtils
 from DLUtils.attr import *
 
-from DLUtils.module.AbstractModule import AbstractModule
 class SignalHolder(DLUtils.module.AbstractModule):
     # def __init__(self, param=None, data=None, **kw):
     #     kw.setdefault("HasTensor", False)

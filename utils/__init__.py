@@ -569,6 +569,18 @@ def Dict2GivenType(Dict, Type):
     else:
         raise Exception(Type)
 
+def ToSaveFormat(Data):
+    if isinstance(Data, torch.Tensor):
+        return ToNpArray(Data)
+    else:
+        return Data
+
+def ToRunFormat(Data):
+    if isinstance(Data, np.ndarray):
+        return ToTorchTensor(Data)
+    else:
+        return Data
+
 def ToNpArray(data, DataType=np.float32):
     if isinstance(data, np.ndarray):
         return data

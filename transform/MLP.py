@@ -49,8 +49,8 @@ class MLP(AbstractTransformWithTensor):
                 EnsureAttr(LayerParam.Subtype,   param.Layers.Subtype)
                 EnsureAttr(LayerParam.NonLinear, param.Neurons.NonLinear)
                 SetAttr(LayerParam.FullName,     param.FullName + "." + "Layer%d"%LayerIndex)
-                SetAttr(LayerParam.Input.Num,    param.Layers.Neurons.Num[LayerIndex])
-                SetAttr(LayerParam.Output.Num,   param.Layers.Neurons.Num[LayerIndex + 1])
+                SetAttr(LayerParam.In.Num,    param.Layers.Neurons.Num[LayerIndex])
+                SetAttr(LayerParam.Out.Num,   param.Layers.Neurons.Num[LayerIndex + 1])
 
                 if LayerParam.Subtype in ["NonLinear"]:
                     LayerParam.Subtype = "NonLinearLayer" # To avoid confusion between a nonlinear layer and a nonlinear function                                                                                                                                                                                                                                                                                                  
@@ -83,8 +83,8 @@ class MLP(AbstractTransformWithTensor):
     def SetNeuronsNum(self):
         param = self.param
         NeuronsNum = param.Layers.Neurons.Num
-        NeuronsNum[0] = param.Neurons.Input.Num
-        NeuronsNum[-1] = param.Neurons.Output.Num
+        NeuronsNum[0] = param.Neurons.In.Num
+        NeuronsNum[-1] = param.Neurons.Out.Num
         Index = 0
         while Index < len(NeuronsNum):
             #if NeuronsNum[Index] in ["Auto", "auto"]:

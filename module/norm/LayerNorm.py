@@ -38,17 +38,17 @@ class LayerNorm(DLUtils.module.AbstractNetwork):
         return self.A * (X - XMean) / (XStd + self.eps) + self.B
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
-        assert hasattr(Param, "FeatureNum")
+        assert Param.Feature.hasattr("Num")
         if Param.AffineTransform.setdefault("Enable", True):
             Param.Tensor.add("A")
             Param.Tensor.add("B")
             if not Param.Data.hasattr("A"):
-                A = np.ones(Param.FeatureNum)
-                self.AddTrainParam("A", A)
+                A = np.ones(Param.Feature.Num)
+                self.SetTrainParam(A=A)
                 self.Log("LayerNorm.Init: initing A in affine transform to all ones")
             if not Param.Data.hasattr("B") is None:
-                B = np.zeros((Param.FeatureNum))
-                self.AddTrainParam("B", B)
+                B = np.zeros((Param.Feature.Num))
+                self.SetTrainParam(B=B)
                 self.Log("LayerNorm.Init: initing B in affine transform to all zeros")
         else:
             self.A = 1.0

@@ -1,38 +1,31 @@
 import DLUtils
 import numpy as np
-from ..module.AbstractModule import AbstractNetwork
+from ..module import AbstractNetwork
 
 class ModuleSequence(AbstractNetwork):
-    def __init__(self, ModuleList=None, Log=None):
+    def __init__(self, ModuleList=None, Log=None, **Dict):
         super().__init__(Log)
         if ModuleList is None:
             ModuleList = []
         assert isinstance(ModuleList, list)
         if ModuleList is not None:
             self.SetModuleList(ModuleList)
-        Param = self.Param
-        Param._CLASS = "DLUtils.network.ModuleSequence"
+        else:
+            self.ModuleList = []
+        self.SetParam(**Dict)
     def LoadParam(self, Param):
         super().LoadParam(Param)
         Param = self.Param
-        if Param.hasattr("Module.Num"):
-            self.ModuleNum = Param.Module.Num
         self.ModuleList = []
         for Name, SubModuleParam in Param.SubModules.items():
             self.ModuleList.append(self.SubModules[Name])
-        self.ModuleNum = len(self.ModuleList)
+        Param.Module.Num = self.ModuleNum = len(self.ModuleList)
         return self
     def SetModuleList(self, ModuleList):
         Param = self.Param
         if isinstance(ModuleList, list):
             for Index, SubModule in enumerate(ModuleList):
-                self.AddSubModule(
-                    f"L{Index}", SubModule
-                )
-                # Key = str(Index)
-                # self.SubModules[Key] = SubModule
-                # setattr(Param.SubModules, Key, SubModule.Param)
-                # SubModule.Param._PATH = Param._PATH + "." + Key
+                self.AddSubModule(f"L{Index}", SubModule)
         if isinstance(ModuleList, dict):
             for Name, SubModule in ModuleList.items():
                 self.AddSubModule(
@@ -42,7 +35,22 @@ class ModuleSequence(AbstractNetwork):
         self.ModuleList = ModuleList
         Param.Module.Num = len(ModuleList)
         return self
-    def Receive(self, Input):
+    def AddSubModule(self, Name=None, SubModule=None, **Dict):
+        Param = self.Param
+        ModuleList = self.ModuleList
+        self.ModuleList.append(SubModule)
+        super().AddSubModule(Name, SubModule)
+        self.ModuleNum = Param.Module.Num = len(ModuleList)
+        return self
+    def AppendSubModule(self, SubModule=None):
+        Param = self.Param
+        ModuleList = self.ModuleList
+        Index = len(ModuleList)
+        self.ModuleList.append(SubModule)
+        super().AddSubModule(f"L{Index}", SubModule)
+        self.ModuleNum = Param.Module.Num = len(ModuleList)
+        return self
+    def Receive(self, In):
         for ModuleIndex in range(self.ModuleNum):
             Output = self.ModuleList[ModuleIndex](Input)
             Input = Output
@@ -52,7 +60,7 @@ class ModuleGraph(AbstractNetwork):
     def __init__(self):
         super().__init__()
         Param = self.Param
-        Param._CLASS = "DLUtils.module.ModuleGraph"
+        Param._CLASS = "DLUtitls.module.ModuleGraph"
         Param.RouteList = DLUtils.Param([])
     def AddRoute(self, SubModule, InputList, OutputName):
         Param = self.Param

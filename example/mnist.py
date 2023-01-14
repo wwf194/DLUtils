@@ -36,8 +36,8 @@ def mnist_mlp(SaveDir="test/mnist/mlp"):
     Output = Model.Receive(
         DLUtils.ToTorchTensor(Input)
     )
-    DLUtils.plot.PlotDataAndDistribution2D(Input[0], SavePath="./test/Input.svg")
-    DLUtils.plot.PlotBatchDataAndDistribution1D(Output, SavePath="./test/Output.svg")
+    DLUtils.plot.PlotDataAndDistribution2D(Input[0], SavePath="./test/In.svg")
+    DLUtils.plot.PlotBatchDataAndDistribution1D(Output, SavePath="./test/Out.svg")
 
     Loss = DLUtils.network.ModuleGraph() \
         .AddSubModule("ClassIndex2OneHot", DLUtils.transform.Index2OneHot(10)) \

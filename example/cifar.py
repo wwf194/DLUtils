@@ -1,15 +1,25 @@
 import DLUtils
 
-
-def cifar10_conv_anal(SaveDir="test/cifar10/conv/"):
+def cifar10_conv_anal(SaveDir = None, IsTrain=True):
+    # cifar10_conv()
+    if SaveDir is None:
+        SaveDir = DLUtils.PackageFolderPath + "example/cifar10/conv/"
+    SaveDir = DLUtils.file.StandardizePath(SaveDir)
     Device = "cuda:0"  
     SaveFilePath = DLUtils.file.AfterTrainModelFile(SaveDir + "model/")
     Model = DLUtils.network.ModuleSequence().FromFile(SaveFilePath)
     Model.ToJsonFile(SaveDir + "model/config.jsonc")
-
     TrainSession = DLUtils.TrainSession().FromFile(SaveDir + "TrainSession.dat").Init()
 
-def cifar10_conv(SaveDir="test/cifar10/conv/", IsAnal=False):
+    TrainSession.Anal.AfterTrain(DLUtils.param({
+        "TrainSession": TrainSession
+    }))
+
+def cifar10_conv(SaveDir=None, IsAnal=False):
+    if SaveDir is None:
+        SaveDir = DLUtils.PackageFolderPath + "example/cifar10/conv/"
+    else:
+        SaveDir = DLUtils.file.StandardizePath(SaveDir)
     if IsAnal:
         cifar10_conv_anal(SaveDir)
     DLUtils.file.EnsureDir(SaveDir)
@@ -23,11 +33,11 @@ def cifar10_conv(SaveDir="test/cifar10/conv/", IsAnal=False):
     Model = DLUtils.network.ModuleSequence(
         [
             DLUtils.transform.Norm(0.0, 256.0, -1.0, 1.0),
-            DLUtils.network.ConvLayer2D(Padding=1).SetWeight(
+            DLUtils.network.Conv2D(Padding=1).SetWeight(
                 DLUtils.Conv2DKernel((3, 100, 3, 3), NonLinear="ReLU")
             ).SetBias("zeros"),
             DLUtils.network.AvgPool2D(2),
-            DLUtils.network.ConvLayer2D(Padding=1).SetWeight(
+            DLUtils.network.Conv2D(Padding=1).SetWeight(
                 DLUtils.Conv2DKernel((100, 5, 3, 3), NonLinear="ReLU")
             ).SetBias("zeros"),
             DLUtils.transform.Reshape(-1, 5 * 16 * 16),
@@ -71,9 +81,9 @@ def cifar10_conv(SaveDir="test/cifar10/conv/", IsAnal=False):
         .BindModel(Model) \
         .Init()
 
-    Save = DLUtils.train.EpochBatchTrain.Save().SetParam(EventNum=10).SetAttr(SaveDir=SaveDir)
+    Save = DLUtils.train.EpochBatchTrain.Save().SetParam(EventNum=10, SaveDir=SaveDir)
     Test = DLUtils.train.EpochBatchTrain.Test().SetParam(EventNum="All")
-    Anal = DLUtils.train.EpochBatchTrain.AnalysisAfterTrain().SetAttr(SaveDir=SaveDir)
+    Anal = DLUtils.train.EpochBatchTrain.AnalysisAfterTrain().SetParam(SaveDir=SaveDir)
 
     DLUtils.TrainSession("Epoch-Batch").SetLog(Log) \
         .SetParam(EpochNum=EpochNum, BatchSize=BatchSize) \

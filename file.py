@@ -28,6 +28,15 @@ def MostRecentlyModified(PathList, Num=None):
                 Path = _Path
         return Path
 
+def MostRecentlySavedModel(SaveDir):
+    SaveDir = StandardizePath(SaveDir)
+    FileNameList = ListAllFiles(SaveDir)
+    List = []
+    for Name in FileNameList:
+        if "model" in Name:
+            List.append(Name)
+    return MostRecentlyModified([SaveDir + FileName for FileName in List])  
+
 def AfterTrainModelFile(SaveDir):
     SaveDir = StandardizePath(SaveDir)
     FileNameList = ListAllFiles(SaveDir)
@@ -44,6 +53,8 @@ def FileNameFromPath(FilePath):
 def StandardizePath(Path):
     if Path is None:
         return None
+    # if Path.endswith("/"): # means this is a folder.
+    #     assert not ExistsFile(Path.rstrip("/"))
     if Path.startswith("~"):
         Path = AbsPath("~") + Path[1:]
     if ExistsDir(Path):
@@ -72,6 +83,7 @@ def MoveFile(FilePath, FilePathDest, RaiseIfNonExist=False, Overwrite=True, Rais
             else:
                 warnings.warn(Msg)
     shutil.move(FilePath, FilePathDest)
+    DeleteFile(FilePath)
     return True
 
 def MoveFolder(FolderPath, FolderPathNew, RaiseIfNonExist=False, Overwrite=True):
@@ -218,17 +230,23 @@ def ListAllFilesAndDirs(DirPath):
     return Files, Dirs
 GetAllFilesAndDirs = ListAllFilesAndDirs
 
-def ListFiles(DirPath):
+def ListFilesName(DirPath):
     assert os.path.exists(DirPath), "Non-existing DirPath: %s"%DirPath
     assert os.path.isdir(DirPath), "Not a Dir: %s"%DirPath
     Items = os.listdir(DirPath)
     Files = []
+
     for Item in Items:
         if os.path.isfile(os.path.join(DirPath, Item)):
             Files.append(Item)
     return Files
 
-ListAllFiles = GetAllFiles = ListFiles
+def ListFilesPath(DirPath):
+    DirPath = StandardizePath(DirPath)
+    FileNameList = ListFilesName(DirPath)
+    return [DirPath + FileName for FileName in FileNameList]
+
+ListAllFiles = GetAllFiles = ListFilesName
 
 def ListDirs(DirPath):
     if not os.path.exists(DirPath):
@@ -929,8 +947,20 @@ def IsZipFile(FilePath):
 def Folder2ZipFile(ZipPathList, ZipFilePath):
     return
 
-def File2ZipFile(FilePath, ZipFilePath):
-    return
+def FilesUnderDir2ZipFile(DirPath, ZipFilePath):
+    DirPath = StandardizePath(DirPath)
+    assert ExistsDir(DirPath)
+    FilePathList = ListFilesPath(DirPath)
+    FileList2ZipFile(FilePathList, ZipFilePath)
+    return ZipFilePath
+
+def FileList2ZipFile(FilePathList, ZipFilePath):
+    # Create a ZipFile Object
+    with zipfile.ZipFile(ZipFilePath, 'w') as zipObj:
+        for FilePath in FilePathList:
+            FilePathAbs = AbsPath(FilePath) # turn to absolute path
+            zipObj.write(FilePathAbs, os.path.basename(FilePathAbs))
+    return ZipFilePath
 
 def JsonDict2JsonFile(JsonDict, FilePath):
     JsonStr = JsonDict2Str(JsonDict)

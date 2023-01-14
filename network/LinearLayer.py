@@ -8,14 +8,14 @@ import DLUtils
 
 class LinearLayer(DLUtils.module.AbstractNetwork):
     ClassStr = "LinearLayer"
-    def __init__(self, InputNum=None, OutputNum=None):
+    def __init__(self, InNum=None, OutNum=None):
         super().__init__()
         Param = self.Param
         Param._CLASS = "DLUtils.network.LinearLayer"
-        if InputNum is not None:
-            Param.Input.Num = InputNum
-        if OutputNum is not None:
-            Param.Output.Num = OutputNum
+        if InNum is not None:
+            Param.In.Num = InNum
+        if OutNum is not None:
+            Param.Out.Num = OutNum
     def LoadParam(self, Param):
         super().LoadParam(Param)
         return self
@@ -35,11 +35,11 @@ class LinearLayer(DLUtils.module.AbstractNetwork):
             self.Receive = self.ReceiveMulWAddxb
         else:
             raise Exception(Mode)
-    def ReceiveMulWx(self, Input): #Wx
+    def ReceiveMulWx(self, In): #Wx
         return torch.mm(Input, self.Weight)
-    def ReceiveAddMulWxb(self, Input): # Wx+b
+    def ReceiveAddMulWxb(self, In): # Wx+b
         return torch.mm(Input, self.Weight) + self.Bias
-    def ReceiveMulWAddxb(self, Input): # W(x+b)
+    def ReceiveMulWAddxb(self, In): # W(x+b)
         return torch.mm(Input + self.Bias, self.Weight)
     def SetWeight(self, Weight, Train=True):
         Weight = DLUtils.ToNpArrayOrNum(Weight)
@@ -47,13 +47,13 @@ class LinearLayer(DLUtils.module.AbstractNetwork):
         Data = self.Param.Data
         Data.Weight = Weight
         assert len(Weight.shape) == 2
-        Param.Input.Num = Weight.shape[0]
-        Param.Output.Num = Weight.shape[1]
+        Param.In.Num = Weight.shape[0]
+        Param.Out.Num = Weight.shape[1]
         if Data.HasAttr("Bias") and Param.HasAttr("Mode"):
             if Param.Mode == "Wx+b":
-                assert Param.Output.Num == Data.Weight.shape[1]
+                assert Param.Out.Num == Data.Weight.shape[1]
             else:
-                assert Param.Input.Num == Data.Weight.shape[0]
+                assert Param.In.Num == Data.Weight.shape[0]
         Param.Tensor.add("Weight")
         if Train:
             Param.TrainParam.add("Weight")
@@ -65,9 +65,9 @@ class LinearLayer(DLUtils.module.AbstractNetwork):
         if isinstance(Bias, str):
             assert Param.hasattr("Mode")
             if Param.Mode in ["Wx+b"]:
-                Num = Param.Output.Num
+                Num = Param.Out.Num
             elif Param.Mode in ["W(x+b)"]:
-                Num = Param.Input.Num
+                Num = Param.In.Num
             else:
                 raise Exception()
 

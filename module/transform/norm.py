@@ -1,5 +1,5 @@
 import DLUtils
-from ..AbstractModule import AbstractOperator
+from .. import AbstractOperator
 class Norm(AbstractOperator):
     def __init__(self, Min1=None, Max1=None, Min2=None, Max2=None):
         super().__init__()
@@ -9,7 +9,7 @@ class Norm(AbstractOperator):
         Param.Max1 = Max1
         Param.Min2 = Min2
         Param.Max2 = Max2
-    def Receive(self, Input):
+    def Receive(self, In):
         Output = (Input - self.Min1) * self.Scale + self.Min2
         return Output
     def Init(self, IsSuper=False, IsRoot=True):
@@ -35,11 +35,11 @@ class NormOnColorChannel(AbstractOperator):
             Param.After.Min = Mean1
         if Std1 is not None:
             Param.After.Std = Std1
-    def _ReceiveMean0Std1(self, Input):
+    def _ReceiveMean0Std1(self, In):
         # Input : [BatchSize, Channel, Width, Height]
         Output = (Input - self.Mean0[None, :, None, None]) / self.Std0[None, :, None, None]
         return Output
-    def _Receive(self, Input):
+    def _Receive(self, In):
         return Output
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param

@@ -3,12 +3,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import DLUtils
-from DLUtils.transform.SingleLayer import SingleLayer
+# from DLUtils.transform.SingleLayer import SingleLayer
 #from .AbstractModule import AbstractNetwork
 from .LinearLayer import LinearLayer
 class NonLinearLayer(LinearLayer):
-    def __init__(self, InputNum=None, OutputNum=None):
-        super().__init__(InputNum=InputNum, OutputNum=OutputNum)
+    def __init__(self, InNum=None, OutNum=None):
+        super().__init__(InNum=InNum, OutNum=OutNum)
         Param = self.Param
         Param._CLASS = "DLUtils.network.NonLinearLayer"
     def SetMode(self, Mode):
@@ -42,11 +42,11 @@ class NonLinearLayer(LinearLayer):
     def SetNonLinearMethod(self):
         self.NonLinear = self.SubModules.NonLinear
         return self
-    def ReceiveFAddMulWxb(self, Input):
+    def ReceiveFAddMulWxb(self, In):
         return self.NonLinear(torch.mm(Input + self.Bias, self.Weight))
-    def ReceiveAddFMulWxb(self, Input):
+    def ReceiveAddFMulWxb(self, In):
         return self.NonLinear(torch.mm(Input, self.Weight)) + self.Bias
-    def ReceiveFMulWAddxb(self, Input):
+    def ReceiveFMulWAddxb(self, In):
         return self.NonLinear(torch.mm(Input, self.Weight)) + self.Bias
     # SetWeight(...) # inherit
     # SetBias(...) # inherit

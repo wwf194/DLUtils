@@ -402,7 +402,7 @@ class LRParser:
         symstack.append(sym)
         state = 0
         while True:
-            # Get the next symbol on the input.  If a lookahead symbol
+            # Get the next symbol on the In.  If a lookahead symbol
             # is already set, we just use that. Otherwise, we'll pull
             # the next token off of the lookaheadstack or from the lexer
 
@@ -619,7 +619,7 @@ class LRParser:
                             else:
                                 sys.stderr.write('yacc: Syntax error, token=%s' % errtoken.type)
                         else:
-                            sys.stderr.write('yacc: Parse error in input. EOF\n')
+                            sys.stderr.write('yacc: Parse error in In. EOF\n')
                             return
 
                 else:
@@ -746,7 +746,7 @@ class LRParser:
         symstack.append(sym)
         state = 0
         while True:
-            # Get the next symbol on the input.  If a lookahead symbol
+            # Get the next symbol on the In.  If a lookahead symbol
             # is already set, we just use that. Otherwise, we'll pull
             # the next token off of the lookaheadstack or from the lexer
 
@@ -925,7 +925,7 @@ class LRParser:
                             else:
                                 sys.stderr.write('yacc: Syntax error, token=%s' % errtoken.type)
                         else:
-                            sys.stderr.write('yacc: Parse error in input. EOF\n')
+                            sys.stderr.write('yacc: Parse error in In. EOF\n')
                             return
 
                 else:
@@ -1052,7 +1052,7 @@ class LRParser:
         symstack.append(sym)
         state = 0
         while True:
-            # Get the next symbol on the input.  If a lookahead symbol
+            # Get the next symbol on the In.  If a lookahead symbol
             # is already set, we just use that. Otherwise, we'll pull
             # the next token off of the lookaheadstack or from the lexer
 
@@ -1217,7 +1217,7 @@ class LRParser:
                             else:
                                 sys.stderr.write('yacc: Syntax error, token=%s' % errtoken.type)
                         else:
-                            sys.stderr.write('yacc: Parse error in input. EOF\n')
+                            sys.stderr.write('yacc: Parse error in In. EOF\n')
                             return
 
                 else:

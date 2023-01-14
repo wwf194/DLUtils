@@ -53,9 +53,12 @@
 			"data_batch_1": {
 				"MD5": "c99cafc152244af753f735de768cd75f",
 				"Volume": "29.60 MB"
+			},
+			"cifar-10-python(DOT)tar(DOT)gz": {
+				"MD5": "c58f30108f718f92721af3b95e74349a",
+				"Volume": "162.60 MB"
 			}
 		},
-		"Folders.example": {
-		}
+		"Folders.example": {}
 	}
 }

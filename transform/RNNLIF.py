@@ -51,14 +51,14 @@ class RNNLIF(AbstractTransformWithTensor):
 
 
         return self
-    def SetNeuronsNum(self, InputNum, OutputNum, HiddenNeuronsNum=None):
+    def SetNeuronsNum(self, InNum, OutNum, HiddenNeuronsNum=None):
         param = self.param
-        SetAttrs(param, "Neurons.Input.Num", value=InputNum)
-        SetAttrs(param, "Neurons.Output.Num", value=OutputNum)
+        SetAttrs(param, "Neurons.In.Num", value=InNum)
+        SetAttrs(param, "Neurons.Out.Num", value=OutNum)
     def GenerateZeroInitState(self, RefInput):
         data = self.data
         cache = self.cache
-        BatchSize = RefInput.size(0)
+        BatchSize = RefIn.size(0)
         InitState = torch.zeros((BatchSize, cache.NeuronNum * 2), device=self.GetTensorLocation(), requires_grad=False)
         return InitState
     def SetIterationTime(self):
@@ -77,9 +77,9 @@ class RNNLIF(AbstractTransformWithTensor):
         input = TrainData.input
         outputTarget = TrainData.outputTarget
 
-        # inputInit = input.inputInit
-        # inputSeries = input.inputSeries
-        # IterationTime = input.IterationTime
+        # inputInit = In.inputInit
+        # inputSeries = In.inputSeries
+        # IterationTime = In.IterationTime
         outputs = Dynamics.Run(input)
 
         log.recurrentInput    = outputs.recurrentInputSeries

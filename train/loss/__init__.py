@@ -69,10 +69,10 @@ def BuildModule(param, **kw):
 GetLossMethod = BuildModule
 
 def CrossEntropyLossForTargetProbability(Output, ProbabilityTarget, Method='Average'):
-    # Output: [SampleNum, OutputNum]
-    # ProbabilitiesTarget: [SampleNum, OutputNum], must be positive, and sum to 1 on axis 1.
-    LogProbabilities = -F.log_softmax(Output, dim=1) # [SampleNum, OutputNum]
-    BatchSize = Output.shape[0]
+    # Output: [SampleNum, OutNum]
+    # ProbabilitiesTarget: [SampleNum, OutNum], must be positive, and sum to 1 on axis 1.
+    LogProbabilities = -F.log_softmax(Output, dim=1) # [SampleNum, OutNum]
+    BatchSize = Out.shape[0]
     CrossEntropy = torch.sum(LogProbabilities * ProbabilityTarget, axis=1) # [SampleNum]
     if Method == 'Average':
         CrossEntropy = torch.mean(CrossEntropy)

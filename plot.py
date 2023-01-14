@@ -1239,7 +1239,7 @@ def PlotLineChart(ax=None, Xs=None, Ys=None,
     return ax
 
 def PlotMultiLineChart(ax=None, XsList=None, YsList=None,
-        Title="Undefined", Labels=None,
+        Title="Untitled", Labels=None,
         ColorList=None, LineWidth=2.0,
         Save=False, SavePath=None, **Dict
     ):
@@ -1262,7 +1262,7 @@ def PlotMultiLineChart(ax=None, XsList=None, YsList=None,
         else:
             Label = Labels[Index]
         PlotLineChart(
-            ax, Xs, Ys,
+            ax, Xs=Xs, Ys=Ys,
             Label=Label,
             Color=ColorList[Index],
             LineWidth=LineWidth, Save=False,
@@ -1274,8 +1274,8 @@ def PlotMultiLineChart(ax=None, XsList=None, YsList=None,
     if SetTicks:
         XTicks = Dict.setdefault("XTicks", "X")
         YTicks = Dict.setdefault("YTicks", "Y")
-        SetXTicksAndRange(ax, Xs=Xs, DimNum=2, **Dict)
-        SetYTicksAndRange(ax, Ys=Ys, DimNum=2, **Dict)
+        SetXTicksAndRange(ax, Xs=XsList, DimNum=2, **Dict)
+        SetYTicksAndRange(ax, Ys=YsList, DimNum=2, **Dict)
     SetXYLabelForAx(ax, XLabel, YLabel)
     SetTitleForAx(ax, Title)
 

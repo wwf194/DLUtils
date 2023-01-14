@@ -3,28 +3,28 @@ import numpy as np
 from enum import Enum
 import math
 
-def Conv2DKernel(Shape, **Dict):
-    # Shape: [InputNum, OutputNum, KernelWidth, KernelHeight]
-    GroupNum = Dict.setdefault("GroupNum", 1)
-    # torch
-    Max = GroupNum / (Shape[1] * Shape[2] * Shape[3])
+def Conv2DKernel(Shape, GroupNum=1, **Dict):
+    # Shape: [InNum, OutNum, KernelHeight, KernelWidth]
+    # torch: w ~ U(-sqrt(k), sqrt(k)). k = GroupNum / (InNum * KernelWidth * KernelHeight)
+    Max = GroupNum / (Shape[0] * Shape[2] * Shape[3])
     Min = - Max
     assert Shape[0] % GroupNum == 0
+    assert Shape[1] % GroupNum == 0
     return SampleFromUniformDistribution((Shape[1], Shape[0] // GroupNum, Shape[2], Shape[3]), Min, Max)
 
 def SampleFromKaimingUniform(Shape, NonLinearFunction="ReLU", **Dict):
     # Y = f(WX). Keep variance of forward signal or backward gradient.
     assert len(Shape) == 2
-    InputNum = Shape[0]
-    OutputNum = Shape[1]
+    InNum = Shape[0]
+    OutNum = Shape[1]
     if NonLinearFunction in ["ReLU", "relu"]:
         Priority = Dict.setdefault("Priority", "forward")
         if Priority in ["forward", "Forward"]:
-            Max = math.sqrt(6.0 / InputNum)
+            Max = math.sqrt(6.0 / InNum)
         elif Priority in ["backward", "Backward"]:
-            Max = math.sqrt(6.0 / OutputNum)
+            Max = math.sqrt(6.0 / OutNum)
         elif Priority in ["all"," ForwardAndBackward"]:
-            Average = 2.0 / (InputNum + OutputNum)
+            Average = 2.0 / (InNum + OutNum)
             Max = math.sqrt(6.0 / Average)
         else:
             raise Exception()
@@ -36,16 +36,16 @@ def SampleFromKaimingUniform(Shape, NonLinearFunction="ReLU", **Dict):
 def SampleFromKaimingNormal(Shape, NonLinearFunction="ReLU", **Dict):
     # Y = f(WX). Keep variance of forward signal or backward gradient.
     assert len(Shape) == 2
-    InputNum = Shape[0]
-    OutputNum = Shape[1]
+    InNum = Shape[0]
+    OutNum = Shape[1]
     if NonLinearFunction in ["ReLU", "relu"]:
         Priority = Dict.setdefault("Priority", "all")
         if Priority in ["forward", "Forward"]:
-            Std = math.sqrt(2.0 / InputNum)
+            Std = math.sqrt(2.0 / InNum)
         elif Priority in ["backward", "Backward"]:
-            Std = math.sqrt(2.0 / OutputNum)
-        elif Priority in ["all"," ForwardAndBackward"]:
-            Average = 2.0 / (InputNum + OutputNum)
+            Std = math.sqrt(2.0 / OutNum)
+        elif Priority in ["all","ForwardAndBackward"]:
+            Average = 2.0 / (InNum + OutNum)
             Std = math.sqrt(2.0 / Average)
         else:
             raise Exception()
@@ -56,15 +56,15 @@ def SampleFromKaimingNormal(Shape, NonLinearFunction="ReLU", **Dict):
 def SampleFromXaiverUniform(Shape, **Dict):
     # Y = WX. Keep variance of forward signal or backward gradient.
     assert len(Shape) == 2
-    InputNum = Shape[0]
-    OutputNum = Shape[1]
+    InNum = Shape[0]
+    OutNum = Shape[1]
     Priority = Dict.setdefault("Priority", "all")
     if Priority in ["forward", "Forward"]:
-        Max = math.sqrt(3.0 / InputNum)
+        Max = math.sqrt(3.0 / InNum)
     elif Priority in ["backward", "Backward"]:
-        Max = math.sqrt(3.0 / OutputNum)
+        Max = math.sqrt(3.0 / OutNum)
     elif Priority in ["all"," ForwardAndBackward"]:
-        Average = (InputNum + OutputNum) / 2.0
+        Average = (InNum + OutNum) / 2.0
         Max = math.sqrt(3.0 / Average)
     else:
         raise Exception()
@@ -74,15 +74,15 @@ def SampleFromXaiverUniform(Shape, **Dict):
 def SampleFromXaiverNormal(Shape, NonLinearFunction, **Dict):
     # Y = WX. Keep variance of forward signal or backward gradient.
     assert len(Shape) == 2
-    InputNum = Shape[0]
-    OutputNum = Shape[1]
+    InNum = Shape[0]
+    OutNum = Shape[1]
     Priority = Dict.get("Priority")
     if Priority in ["forward", "Forward"]:
-        Std = math.sqrt(1.0 / InputNum)
+        Std = math.sqrt(1.0 / InNum)
     elif Priority in ["backward", "Backward"]:
-        Std = math.sqrt(1.0 / OutputNum)
+        Std = math.sqrt(1.0 / OutNum)
     elif Priority in ["all"," ForwardAndBackward"]:
-        Average = (InputNum + OutputNum) / 2.0
+        Average = (InNum + OutNum) / 2.0
         Std = math.sqrt(1.0 / Average)
     else:
         raise Exception()

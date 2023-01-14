@@ -241,14 +241,17 @@ class Param(param):
             elif isinstance(_CONTENT, list):
                 self.SetAttr("_SUBTYPE", NODE_SUBTYPE.LIST)
                 self.from_list(_CONTENT)
+            elif isinstance(_CONTENT, Param):
+                self.FromParam(_CONTENT)
             else:
                 raise Exception()   
     def FromParam(self, Node):
         for Key, Item in Node.__dict__.items():
-            self.SetAttr(Key, Item)
-        #self.SetAttr("__dict__", Node.__dict__)
+            if Key == "_DICT":
+                self.SetAttr("_DICT", dict(Item))
+            else:
+                self.SetAttr(Key, Item)
         return
-
     def AddComment(self, Comment, Type=None):
         CommentList = self.SetDefault("_COMMENT", [])
         if Type is None:
@@ -335,6 +338,17 @@ class Param(param):
         Node = _Tree2Param(Tree)
         self.FromParam(Node)
         return self    
+    def hasattr(self, Key):
+        KeyList = Key.split(".")
+        Base = self
+        for Key in KeyList:
+            if Key in Base._DICT:
+                Base = Base.getattr(Key)
+            else:
+                return False
+        if self.Get("_IS_FALSE") is True:
+            self.DestroyAlongSpine()
+        return True
     def setattr(self, Key, Value):
         self._DICT[Key] = Value
         if self.Get("_IS_FALSE") is True:

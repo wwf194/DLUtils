@@ -15,15 +15,15 @@ class SelfAttention1D(DLUtils.module.AbstractModule):
         data  = self.data
         cache = self.cache
 
-        assert HasAttrs(param, "Input.Num")
-        assert HasAttrs(param, "Output.Num")
-        EnsureAttrs(param, "Attention.Feature.Num", default=param.Input.Num)
-        SetAttrs(param, "Weight.Input2Query.Size", value=[param.Input.Num, param.Attention.Feature.Num])
-        SetAttrs(param, "Weight.Input2Key.Size",   value=[param.Input.Num, param.Attention.Feature.Num])
-        if HasAttrs(param, "Output.Num"):
-            SetAttrs(param, "Weight.Input2Value.Size", value=[param.Input.Num, param.Output.Num])
+        assert HasAttrs(param, "In.Num")
+        assert HasAttrs(param, "Out.Num")
+        EnsureAttrs(param, "Attention.Feature.Num", default=Param.In.Num)
+        SetAttrs(param, "Weight.Input2Query.Size", value=[Param.In.Num, param.Attention.Feature.Num])
+        SetAttrs(param, "Weight.Input2Key.Size",   value=[Param.In.Num, param.Attention.Feature.Num])
+        if HasAttrs(param, "Out.Num"):
+            SetAttrs(param, "Weight.Input2Value.Size", value=[Param.In.Num, Param.Out.Num])
         elif HasAttrs(param, "Weight.Input2Value.Size"):
-            SetAttrs(param, "Output.Num", value=param.Weight.Input2Value.Size[1])
+            SetAttrs(param, "Out.Num", value=param.Weight.Input2Value.Size[1])
         else:
             raise Exception()
 
@@ -54,12 +54,12 @@ class SelfAttention1D(DLUtils.module.AbstractModule):
         Data = Data.permute(0, 2, 1, 3)
         return Data
     def forward(self, Input, log):
-        # Input: [BatchSize, TokenNum, InputNum]
+        # Input: [BatchSize, TokenNum, InNum]
         data = self.data
         cache = self.cache
         Query = torch.mm(Input, data.Input2Query) # [BatchSize, TokenNum, AttentionFeatureNum]
         Key = torch.mm(Input, data.Input2Key)     # [BatchSize, TokenNum, AttentionFeatureNum]
-        Value = torch.mm(Input, data.Input2Value) # [BatchSize, TokenNum, OutputNum]
+        Value = torch.mm(Input, data.Input2Value) # [BatchSize, TokenNum, OutNum]
 
         self.LogCache("Attention.Key", Key, "Attention", log=log)
         self.LogCache("Attention.Query", Query, "Attention", log=log)
@@ -89,7 +89,7 @@ class SelfAttention1D(DLUtils.module.AbstractModule):
         else:
             Attention = torch.bmm(Query, Key.permute(0, 2, 1)) ** cache.AttentionFeatureNum # [BatchSize, TokenNum, TokenNum]
             Attention = F.softmax(Attention, dim=2) # [BatchSize, TokenNum, TokenNum]
-            Output = torch.bmm(Attention, Value) # [BatchSize, TokenNum, OutputNum]
+            Output = torch.bmm(Attention, Value) # [BatchSize, TokenNum, OutNum]
 
             self.LogCache("Attention", Attention, "Attention", log=log)
             self.LogCache("Output", Output, "Activity", log=log)

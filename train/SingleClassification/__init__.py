@@ -43,7 +43,7 @@ class EvaluationLogSingleClassification(EvaluationLog):
         EpochLog.NumTotal.append(Num)
         EpochLog.NumCorrect.append(NumCorrect)
         EpochLog.RateCorrectList.append(1.0 * NumCorrect / Num)
-        EpochLog.Loss.append(Evaluation.Loss.item())
+        EpochLog.LossList.append(Evaluation.Loss.item())
         self.BatchNum += 1
         self.OnlineMonitorNumCorrectList.append(NumCorrect)
         self.OnlineMonitorNumTotalList.append(Num)
@@ -56,21 +56,39 @@ class EvaluationLogSingleClassification(EvaluationLog):
     def CorrectRateEpoch(self, IsTrain=True):
         Param = self.Param
         if IsTrain:
-            if Param.Epochs.Train.hasattr("CorrectRate"):
-                return Param.Epochs.Train.CorrectRate
+            if Param.Epochs.Train.hasattr("RateCorrectList"):
+                return Param.Epochs.Train.RateCorrect
             else:
-                CorrectRateList = Param.Epochs.Train.CorrectRateList = []
+                RateCorrectList = Param.Epochs.Train.RateCorrectList = []
                 for EpochIndex in Param.Epochs.Train.IndexList:
-                    CorrectRateList.append(Param.getattr("Epoch%d"%EpochIndex).RateCorrect)
-            return CorrectRateList
+                    RateCorrectList.append(Param.getattr("Epoch%d"%EpochIndex).RateCorrect)
+            return list(RateCorrectList)
         else:
-            if Param.Epochs.Test.hasattr("CorrectRate"):
-                return Param.Epochs.Test.CorrectRate
+            if Param.Epochs.Test.hasattr("RateCorrectList"):
+                return Param.Epochs.Test.RateCorrect
             else:
-                CorrectRateList = Param.Epochs.Test.CorrectRateList = []
+                RateCorrectList = Param.Epochs.Test.RateCorrectList = []
                 for EpochIndex in Param.Epochs.Test.IndexList:
-                    CorrectRateList.append(Param.getattr("TestEpoch%d"%EpochIndex).RateCorrect)
-            return CorrectRateList
+                    RateCorrectList.append(Param.getattr("TestEpoch%d"%EpochIndex).RateCorrect)
+            return list(RateCorrectList)
+    def LossEpoch(self, IsTrain=True):
+        Param = self.Param
+        if IsTrain:
+            if Param.Epochs.Train.hasattr("LossList"):
+                return Param.Epochs.Train.LossList
+            else:
+                LossList = Param.Epochs.Train.LossList = []
+                for EpochIndex in Param.Epochs.Train.IndexList:
+                    LossList.append(Param.getattr("Epoch%d"%EpochIndex).Loss)
+            return LossList
+        else:
+            if Param.Epochs.Test.hasattr("LossList"):
+                return Param.Epochs.Test.LossList
+            else:
+                LossList = Param.Epochs.Test.LossList = []
+                for EpochIndex in Param.Epochs.Test.IndexList:
+                    LossList.append(Param.getattr("TestEpoch%d"%EpochIndex).Loss)
+            return LossList
     def BeforeEpoch(self, Dict, EpochLogName=None, IsTrain=True):
         Param = self.Param
         if IsTrain:
@@ -85,6 +103,7 @@ class EvaluationLogSingleClassification(EvaluationLog):
         EpochLog.NumCorrect = []
         EpochLog.NumTotal = []
         EpochLog.RateCorrectList = []
+        EpochLog.LossList = []
         self.EpochLog = EpochLog
         self.BatchNum = 0
         return self
@@ -99,6 +118,7 @@ class EvaluationLogSingleClassification(EvaluationLog):
         EpochLog = self.EpochLog
         EpochLog.BatchNum = self.BatchNum
         EpochLog.RateCorrect = 1.0 * sum(EpochLog.NumCorrect) / sum(EpochLog.NumTotal)
+        EpochLog.Loss = 1.0 * sum(EpochLog.LossList) / len(EpochLog.LossList)
         return self
     def AfterTestEpoch(self, Dict):
         self.AfterEpoch(Dict)

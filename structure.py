@@ -54,10 +54,10 @@ class IntRange(DLUtils.module.AbstractModule):
     def __init__(self, Logger=None):
         super().__init__(Logger)
         Param = self.Param
+        Param._CLASS = "DLUtils.structure.IntRange"
         self.Start = None
         self.Next = None
         self.append = self._appendFirst
-        Param._CLASS = "DLUtils.structure.IntRange"
     def _appendFirst(self, Num):
         self.Start = Num
         self.Next = Num + 1
@@ -67,27 +67,23 @@ class IntRange(DLUtils.module.AbstractModule):
         if Num == self.Next:
             self.Next += 1
         return self
-    def _ExtractParam(self):
-        Param = DLUtils.Param()
-        Param.Range.Start = self.Start
-        if self.Next is None:
-            Param.Range.End = None
-        else:
-            Param.Range.End = self.Next - 1
-        Param.Range.IncludeRight = True
-        # Param.Type = "IntRange"
-        self.Param = Param
-        return Param
-    def ExtractParam(self, *List, **Dict):
-        self._ExtractParam()
+    def ExtractParam(self, *List, RetainSelf=True, **Dict):
         Param = self.Param
-        return DLUtils.Param([Param.Range.Start, Param.Range.End])
+        Start = self.Start
+        if self.Next is None:
+            End = None
+        else:
+            End = self.Next - 1
+        Param.Range.Start = Start
+        Param.Range.End = End
+        Param.Range.IncludeRight = True
+        return super().ExtractParam(RetainSelf=RetainSelf)
     def LoadParam(self, Param):
         return super().LoadParam(Param)
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
-        self.Start = Param[0]
-        self.Next = Param[1]
+        self.Start = Param.Range.Start
+        self.Next = Param.Range.End
         self.append = self._appendNext
         return super().Init(IsSuper=True, IsRoot=IsRoot)
     def Extract(self):
@@ -96,7 +92,7 @@ class IntRange(DLUtils.module.AbstractModule):
         else:
             return [self.Start, self.End]
 
-def CheckRoutingsInputOutputNum(Router):
+def CheckRoutingsInputOutNum(Router):
     for Index, Routing in enumerate(Router.Routings):
         if isinstance(Routing.Module, DLUtils.PyObj):
             RoutingInNum = len(Routing.In)

@@ -17,6 +17,8 @@ import DLUtils.train.loss as loss
 import DLUtils.train.EpochBatchTrain as EpochBatchTrain
 from .EpochBatchTrain import EpochBatchTrainSession
 
+import DLUtils.train.SingleClassification as SingleClassification
+
 def TrainSession(Type="EpochBatchTrain"):
     if Type in ["EpochBatchTrain", "Epoch-Batch"]:
         return EpochBatchTrainSession()

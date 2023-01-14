@@ -349,10 +349,17 @@ class EpochBatchTrainSession(DLUtils.module.AbstractModule):
                 Index = IndexNext
                 EpochIndex += 1.0
         return BatchIndexFloat
-    def ToFile(self, SaveDir):
-        Param = self.Param
+    def ToFile(self, SaveDir, RetainSelf=True):
+        Param = DLUtils.Param(self.Param)
+        if not RetainSelf:
+            self.RemoveSubModule("TrainData")
+            self.RemoveSubModule("TestData")
         for Name, SubModule in self.SubModules.items():
-            Param.setattr(Name, SubModule.ExtractParam())
+            if Name in ["TrainData", "TestData"]:
+                Param.SubModules.delattr(Name)
+                continue
+            else:
+                Param.SubModules.setattr(Name, SubModule.ExtractParam())
         Param.ToFile(SaveDir + "TrainSession.dat")
         return self
 from .Component import \

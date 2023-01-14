@@ -18,10 +18,10 @@ class SingleLayer(AbstractTransformWithTensor):
         EnsureAttrs(param, "IsExciInhi", default=False)
 
         if cache.IsInit:
-            if not HasAttrs(param, "Output.Num") or not HasAttrs(param, "Input.Num"):
+            if not HasAttrs(param, "Out.Num") or not HasAttrs(param, "In.Num"):
                 if HasAttrs(param, "Weight.Size"):
-                    SetAttrs(param, "Input.Num", param.Weight.Size[0])
-                    SetAttrs(param, "Output.Num", param.Weight.Size[1])
+                    SetAttrs(param, "In.Num", param.Weight.Size[0])
+                    SetAttrs(param, "Out.Num", param.Weight.Size[1])
                 else:
                     raise Exception()
         return self
@@ -43,7 +43,7 @@ class SingleLayer(AbstractTransformWithTensor):
         data = self.data
         cache = self.cache
         if cache.IsInit:
-            EnsureAttrs(param, "Weight.Size", value=[param.Input.Num, param.Output.Num])
+            EnsureAttrs(param, "Weight.Size", value=[Param.In.Num, Param.Out.Num])
             EnsureAttrs(param, "Weight.Init", default=DLUtils.PyObj(
                 {"Method":"KaimingUniform", "Coefficient":1.0})
             )
@@ -99,7 +99,7 @@ class SingleLayer(AbstractTransformWithTensor):
             cache.SelfConnectionMask = DLUtils.NpArray2Tensor(SelfConnectionMask)
             cache.TrainParam.append([cache, "SelfConnectionMask", cache.SelfConnectionMask])
             GetWeightFunction.append(lambda Weight:Weight * cache.SelfConnectionMask)
-        self.GetWeight = DLUtils.StackFunction(GetWeightFunction, InputNum=0)
+        self.GetWeight = DLUtils.StackFunction(GetWeightFunction, InNum=0)
         return
     def SetTrainWeight(self):
         data = self.data
@@ -149,7 +149,7 @@ class SingleLayer(AbstractTransformWithTensor):
             cache.PlotWeight[Name + "Bias"] = self.GetBias
 
         return cache.PlotWeight
-    def __call__(self, Input):
+    def __call__(self, In):
         Output = self.forward(Input)
         return Output
 __MainClass__ = SingleLayer

@@ -80,7 +80,7 @@ class NonLinearLayer(SingleLayer):
         if param.Subtype in ["f(Wx+b)"]:
             if cache.IsInit:
                 SetAttrs(param, "Bias", True)
-                SetAttrs(param, "Bias.Size", param.Output.Num)
+                SetAttrs(param, "Bias.Size", Param.Out.Num)
             self.SetWeight()
             self.SetBias()
             self.NonLinear = DLUtils.transform.GetNonLinearMethod(param.NonLinear)
@@ -88,7 +88,7 @@ class NonLinearLayer(SingleLayer):
         elif param.Subtype in ["f(Wx)+b"]:
             if cache.IsInit:
                 SetAttrs(param, "Bias", True)
-                SetAttrs(param, "Bias.Size", param.Output.Num)
+                SetAttrs(param, "Bias.Size", Param.Out.Num)
             self.SetWeight()
             self.SetBias()
             self.NonLinear = DLUtils.transform.GetNonLinearMethod(param.NonLinear)
@@ -102,7 +102,7 @@ class NonLinearLayer(SingleLayer):
         elif param.Subtype in ["f(W(x+b))"]:
             if cache.IsInit:
                 SetAttrs(param, "Bias", True)
-                SetAttrs(param, "Bias.Size", param.Input.Num)
+                SetAttrs(param, "Bias.Size", Param.In.Num)
             self.SetWeight()
             self.SetBias()
             self.forward = lambda x:self.NonLinear(torch.mm(x, self.GetWeight()) + data.Bias)       

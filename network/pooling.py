@@ -2,15 +2,19 @@ import DLUtils
 
 import torch
 import torch.nn.functional as F
-class AvgPool2D(DLUtils.module.AbstractNetwork):
-    def __init__(self, KernelSize=None, **Dict):
+
+class MaxPool2D(DLUtils.module.AbstractNetwork):
+    def __init__(self, **Dict):
         super().__init__()
-        Param = self.Param
-        Param._CLASS = "DLUtils.network.AvgPool2D"
-        self.SetParam(KernelSize=KernelSize, **Dict)
-    def Receive(self, Input):
+        self.SetParam(**Dict)
+    def Receive(self, In):
         # X: [BatchSize, FeatureNum]
-        Output = F.avg_pool2d(input=Input, kernel_size=self.KernelSize, padding=self.Padding, stride=self.Stride)
+        Output = F.max_pool2d(
+            input=In, 
+            kernel_size=self.KernelSize, 
+            padding=self.Padding, 
+            stride=self.Stride
+        )
         return Output
     def SetParam(self, **Dict):
         Param = self.Param
@@ -27,7 +31,6 @@ class AvgPool2D(DLUtils.module.AbstractNetwork):
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         self.Padding = Param.setdefault("Padding", 0)
-        
         if Param.Kernel.hasattr("Size"):
             if Param.Kernel.hasattr("Width"):
                 assert Param.Kernel.Width == Param.Kernel.Size
@@ -44,6 +47,25 @@ class AvgPool2D(DLUtils.module.AbstractNetwork):
             self.Stride = Param.setdefault("Stride", self.KernelSize)
         else:
             raise Exception()
+        return super().Init(IsSuper=True, IsRoot=False)
 
-        
-        return super().Init(IsSuper, IsRoot)
+class AvgPool2D(MaxPool2D):
+    def __init__(self, **Dict):
+        super().__init__()
+        self.SetParam(**Dict)
+    def Receive(self, In):
+        # X: [BatchSize, FeatureNum]
+        Output = F.avg_pool2d(input=In, kernel_size=self.KernelSize, padding=self.Padding, stride=self.Stride)
+        return Output
+    def SetParam(self, **Dict):
+        Param = self.Param
+        KernelSize = Dict.pop("KernelSize", None)
+        if KernelSize is not None:
+            Param.Kernel.Size = KernelSize
+        KernelWidth = Dict.pop("KernelWidth", None)
+        if KernelWidth is not None:
+            Param.Kernel.Width = KernelWidth
+        KernelHeight = Dict.pop("KernelHeight", None)
+        if KernelHeight is not None:
+            Param.Kernel.Height = KernelHeight
+        return super().SetParam(**Dict)

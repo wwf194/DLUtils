@@ -10,7 +10,7 @@ class Dropout(DLUtils.module.AbstractNetwork):
         Param._CLASS = "DLUtils.norm.Dropout"
         if Rate is not None:
             Param.Rate = Rate
-    def ReceiveTrain(self, Input):
+    def ReceiveTrain(self, In):
         # X: [BatchSize, FeatureNum]
         Input = F.dropout(Input, self.Rate)
         return Input
