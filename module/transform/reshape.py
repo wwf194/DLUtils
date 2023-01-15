@@ -13,7 +13,7 @@ class Reshape(AbstractOperator):
                 Shape = List
             Param.Shape.After = Shape
     def Receive(self, In):
-        return torch.reshape(Input, self.Shape)
+        return torch.reshape(In, self.Shape)
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         self.Shape = Param.Shape.After

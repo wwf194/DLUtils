@@ -1,7 +1,7 @@
 import torch
 import numpy as np
-
 import DLUtils
+
 class UNet(DLUtils.module.AbstractNetwork):
     def __init__(self, **Dict):
         """
@@ -29,71 +29,60 @@ class UNet(DLUtils.module.AbstractNetwork):
         self.SetParam(**Dict)
     def SetParam(self, **Dict):
         Param = self.Param
+        _Dict = {}
         for Key, Value in Dict.items():
-            if Key in ["InNum", "InputNum"]:
-                Param.Channel.In.Num = Value
-            elif Key in ["OutNum", "OutputNum"]:
-                Param.Channel.Out.Num = Value
-            elif Key in ["BatchNorm"]:
+            if Key in ["BatchNorm"]:
                 Param.BatchNorm.Enable = bool(Value)
             elif Key in ["Block.Num", "BlockNum"]:
                 Param.Block.Num = Value
             else:
-                raise Exception()
-        return super().SetParam(**Dict)
+                _Dict[Key] = Value
+        return super().SetParam(**_Dict)
     def Receive(self, Image):
         # Image: [BatchSize, ChannelNum, Width, Height]
         return self
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         Param.Block.setdefault("Num", 5)
-        Param.Channel.Base.setdefault("Num", 64)
+        BaseNum = Param.Base.setdefault("Num", 64)
         if not self.IsLoad():
-            DownSamplePath = UNetDownPath()
-            InNum = Param.Channel.In.Num
-            OutNum = Param.Channel.Base.Num
-            Param.Channel.NumList = []
-            for Index in range(Param.Block.Num):
-                DownSamplePath.AddSubModule(
-                    "Block%d"%Index,
-                    UNetDownSampleBlock(
-                        InNum=InNum, OutNum=OutNum,
-                        Padding="KeepFeatureMapHeightWidth",
-                        KernelSize=3, BatchNorm=True
-                    )
-                )
-                InNum = OutNum
-                OutNum = InNum * 2
-            UpSamplePath = UNetUpPath()
-            OutNum = InNum // 2
-            for Index in range(Param.Block.Num):
-                UpSamplePath.AddSubModule(
-                    "Block%d"%Index,
-                    UNetUpSampleBlock(
-                        InNum=InNum, OutNum=OutNum,
-                        Padding=1, KernelSize=2
-                    )
-                )
-                InChannelNum = OutNum
-                InNum = OutNum
-                OutNum = InNum // 2
+            DownPath = UNetDownPath().SetParam(
+                InNum = Param.In.Num,
+                BaseNum = BaseNum,
+                BlockNum = Param.Block.Num + 1,
+                OutNum = Param.Out.Num    
+            )
+            MidNum = Param.Base.Num * (2 ** Param.Block.Num)
+            UpPath = UNetUpPath().SetParam(
+                InNum = MidNum,
+                BlockNum = Param.Block.Num,
+                OutNum = BaseNum  
+            )
+
             OutputLayer = DLUtils.network.Conv2D(
-                InNum=OutNum, OutNum=Param.Out.Num,
+                InNum=BaseNum, OutNum=Param.Out.Num,
                 Padding="KeepFeatureMapHeightWidth",
                 KernelSize=3
             )
             self.AddSubModule(
-                DownSamplePath=DownSamplePath, 
-                UpSamplePath=UpSamplePath,
+                DownPath=DownPath, 
+                UpPath=UpPath,
                 OutputLayer=OutputLayer
             )
-        super().Init(IsSuper=True, IsRoot=IsRoot)
+        return super().Init(IsSuper=True, IsRoot=IsRoot)
     def Receive(self, In):
-        Mid = self.DownSamplePath(In)
+        """
+        In : Images of shape [BatchNum, ChannelNum, Height, Width]
+        """
+        Mid = self.DownPath(In)
         SkipInList = Mid["SkipOut"]
-        SkipInList = reversed(SkipInList)
-        DownIn = Mid["Down"]
-        Out = self.UpSamplePath(DownIn=DownIn, SkipInList=SkipInList)
+        SlipInListReversed = list(reversed(SkipInList))
+
+        # DownIn = Mid["Down"]
+        Out = self.UpPath(
+            DownIn=SlipInListReversed[0], 
+            SkipInList=SlipInListReversed[1:]
+        )
         Out = self.OutputLayer(Out)
         return Out
 
@@ -110,14 +99,47 @@ class UNetDownPath(ModuleSequence):
             "SkipOut": SkipOut,
             "Down": Down
         }
+    def Init(self, IsSuper=False, IsRoot=True):
+        if not self.IsLoad():
+            Param = self.Param
+            InNum = Param.In.Num
+            OutNum = Param.Base.Num
+            Param.NumList = []
+            for Index in range(Param.Block.Num):
+                self.AddSubModule(
+                    "Block%d"%Index,
+                    UNetDownSampleBlock(
+                        InNum=InNum, OutNum=OutNum,
+                        Padding="KeepFeatureMapHeightWidth",
+                        KernelSize=3, BatchNorm=True
+                    )
+                )
+                InNum = OutNum
+                OutNum = InNum * 2
+        return super().Init(IsSuper=False, IsRoot=IsRoot)
 class UNetUpPath(ModuleSequence):
     def Receive(self, DownIn, SkipInList):
         for Index, Block in enumerate(self.ModuleList):
             SkipIn = SkipInList[Index] # Already reversed
-            Up = Block(DownIn=Up, SkipIn=SkipIn)
+            Up = Block(DownIn=DownIn, SkipIn=SkipIn)
             DownIn = Up
         return Up
-
+    def Init(self, IsSuper=False, IsRoot=True):
+        if not self.IsLoad():
+            Param = self.Param
+            InNum = Param.In.Num
+            OutNum = InNum // 2
+            for Index in range(Param.Block.Num):
+                self.AddSubModule(
+                    "Block%d"%Index,
+                    UNetUpSampleBlock(
+                        InNum=InNum, OutNum=OutNum,
+                        Padding=1, KernelSize=2
+                    )
+                )
+                InNum = OutNum
+                OutNum = InNum // 2
+        return super().Init(IsSuper=True, IsRoot=IsRoot)
 class UNetDownSampleBlock(DLUtils.module.AbstractNetwork):
     def __init__(self, **Dict):
         super().__init__()
@@ -126,18 +148,12 @@ class UNetDownSampleBlock(DLUtils.module.AbstractNetwork):
         Param = self.Param
         _Dict = {}
         for Key, Value in Dict.items():    
-            if Key in ["InNum", "In.Num"]:
-                Param.Kernel.In.Num = Value
-            elif Key in ["OutNum", "Out.Num"]:
-                Param.Kernel.Out.Num = Value
-            elif Key in ["KernelSize", "Kernel.Size"]:
+            if Key in ["KernelSize", "Kernel.Size"]:
                 Param.Kernel.Size = Value
             elif Key in ["Padding"]:
                 Param.Padding = Value
             elif Key in ["Stride"]:
                 Param.Stride = Value
-            elif Key in ["GroupNum", "NumGroup", "Group.Num"]:
-                Param.Group.Num = Value
             elif Key in ["BatchNorm"]:
                 Param.BatchNorm.Enable = bool(Value)
             else:
@@ -170,7 +186,12 @@ class UNetDownSampleBlock(DLUtils.module.AbstractNetwork):
             ).AddSubModule(
                 "NonLinear1", 
                 DLUtils.NonLinear.ReLU()
-            ).AddSubModule(
+            )
+            if Param.BatchNorm.Enable:
+                Conv.AddSubModule(
+                    "Norm1", DLUtils.norm.BatchNorm2D(FeatureNum=Param.Out.Num)
+                )
+            Conv.AddSubModule(
                 "Conv2", DLUtils.network.Conv2D(
                     Param.Out.Num, Param.Out.Num,
                     KernelSize=Param.Kernel.Size,
@@ -181,9 +202,8 @@ class UNetDownSampleBlock(DLUtils.module.AbstractNetwork):
             )
             if Param.BatchNorm.Enable:
                 Conv.AddSubModule(
-                    "Norm", DLUtils.norm.BatchNorm2D()
+                    "Norm2", DLUtils.norm.BatchNorm2D(FeatureNum=Param.Out.Num)
                 )
-            
             self.AddSubModule("Conv", Conv)
             self.AddSubModule("DownPool", DLUtils.network.MaxPool2D(KernelSize=2))
         if not hasattr(self, "Norm"):
@@ -195,18 +215,12 @@ class UNetUpSampleBlock(ModuleSequence):
         Param = self.Param
         _Dict = {}
         for Key, Value in Dict.items():    
-            if Key in ["InNum", "In.Num"]:
-                Param.Kernel.In.Num = Value
-            elif Key in ["OutNum", "Out.Num"]:
-                Param.Kernel.Out.Num = Value
-            elif Key in ["KernelSize", "Kernel.Size"]:
+            if Key in ["KernelSize", "Kernel.Size"]:
                 Param.Kernel.Size = Value
             elif Key in ["Padding"]:
                 Param.Padding = Value
             elif Key in ["Stride"]:
                 Param.Stride = Value
-            elif Key in ["GroupNum", "NumGroup", "Group.Num"]:
-                Param.Group.Num = Value
             else:
                 _Dict[Key] = Value
         super().SetParam(**_Dict)
@@ -231,14 +245,37 @@ class UNetUpSampleBlock(ModuleSequence):
         Param.setdefault("Padding", 1)
         if not self.IsLoad():
             self.AddSubModule(
-                "UpSample", DLUtils.network.Conv2D(
+                "UpSample", DLUtils.network.UpConv2D(
+                    # OutNum == InNum // 2
                     Param.In.Num, Param.Out.Num,
                     KernelSize=Param.Kernel.Size,
                     Stride=Param.Stride,
-                    Padding = Param.Padding
+                    Padding=Param.Padding
                 )
             )
+            Param.Conv.setdefault("Stride", 1)
             self.AddSubModule(
-                "Conv", DLUtils.network.Conv2D(Param.In.Num, Param.Out.Num)
+                "Conv", DLUtils.network.Conv2D(
+                    # OutNum == InNum // 2
+                    Param.In.Num, Param.Out.Num,
+                    KernelSize=Param.Kernel.Size,
+                    Stride=Param.Conv.Stride,
+                    Padding=Param.Padding
+                )
             )
+            Param.delattr("Conv")
         return super().Init(IsSuper, IsRoot)
+
+_SetParamMap = DLUtils.IterableKeyToElement({
+    ("In", "InNum", "In.Num"): "In.Num",
+    ("Out", "OutNum", "Out.Num"): "Out.Num",
+    ("GroupNum", "NumGroup", "Group.Num"): "Group.Num",
+    "BlockNum": "Block.Num",
+    "BaseNum": "Base.Num",
+
+})
+UNet.SetParamMap = _SetParamMap
+UNetDownPath.SetParamMap = _SetParamMap
+UNetUpPath.SetParamMap = _SetParamMap
+UNetDownSampleBlock.SetParamMap = _SetParamMap
+UNetUpSampleBlock.SetParamMap = _SetParamMap

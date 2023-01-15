@@ -1369,3 +1369,15 @@ from DLUtils.format import *
 # SystemType = DLUtils.system.GetSystemType()
 # def GetSystemType():
 #     return SystemType
+
+def RandomImage(Height=512, Width=512, ChannelNum=3, 
+        BatchNum=10, DataType="TorchTensor"):
+    return
+
+def IterableKeyToElement(Dict):
+    for Key, Value in dict(Dict).items():
+        if isinstance(Key, tuple) or isinstance(Key, set):
+            for _Key in Key:
+                Dict[_Key] = Value
+            Dict.pop(Key)
+    return Dict

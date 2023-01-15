@@ -12,10 +12,10 @@ class Dropout(DLUtils.module.AbstractNetwork):
             Param.Rate = Rate
     def ReceiveTrain(self, In):
         # X: [BatchSize, FeatureNum]
-        Input = F.dropout(Input, self.Rate)
-        return Input
-    def ReceiveTest(Input):
-        return Input
+        In = F.dropout(In, self.Rate)
+        return In
+    def ReceiveTest(In):
+        return In
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         if not hasattr(Param.Rate):

@@ -4,7 +4,7 @@ from .LinearLayer import LinearLayer
 from .NonLinearLayer import NonLinearLayer
 from .ModuleSquence import ModuleSequence, ModuleGraph
 from .ResLayer import ResLayer
-from .ConvLayer import Conv2D
+from .ConvLayer import Conv2D, UpConv2D
 from .NonLinear import ReLU, NonLinearModule
-from .UNet import UNet
+from .unet import UNet, UNetDownPath, UNetDownSampleBlock, UNetUpPath, UNetUpSampleBlock
 from .pooling import MaxPool2D, AvgPool2D

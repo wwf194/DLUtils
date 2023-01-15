@@ -350,10 +350,51 @@ class Param(param):
             self.DestroyAlongSpine()
         return True
     def setattr(self, Key, Value):
-        self._DICT[Key] = Value
-        if self.Get("_IS_FALSE") is True:
-            self.SubstantiateAlongSpine(NODE_TYPE.SPINE, NODE_SUBTYPE.DICT)
-        return self
+        if isinstance(Key, list):
+            KeyList = Key
+        elif isinstance(Key, str):
+            KeyList = Key.split(".")
+        else:
+            raise Exception()
+        
+        if len(KeyList) == 1:
+            self._DICT[KeyList[0]] = Value
+            if self.Get("_IS_FALSE") is True:
+                self.SubstantiateAlongSpine(NODE_TYPE.SPINE, NODE_SUBTYPE.DICT)
+            return self
+        else:
+            KeyCurrent = KeyList[0]
+            if self.hasattr(KeyCurrent):
+                SubNode = self.getattr(KeyCurrent)
+                if isinstance(SubNode, Param):
+                    pass
+                elif isinstance(SubNode, param):
+                    if len(KeyList[1:]) > 1:
+                        SubNode = Param().FromParam(SubNode)
+                    else:
+                        pass
+                else: # LeafNode
+                    Leaf = SubNode
+                    SubNode = self.setemptyattr(KeyCurrent)
+                    SubNode._LEAF = Leaf
+            else:
+                SubNode = self.setemptyattr(KeyCurrent)
+            SubNode.setattr(KeyList[1:], Value)
+    def getattr(self, Key):
+        if isinstance(Key, list):
+            KeyList = Key
+        elif isinstance(Key, str):
+            KeyList = Key.split(".")
+        else:
+            raise Exception()
+        
+        if len(KeyList) == 1:
+            return self._DICT[KeyList[0]]
+        else:
+            KeyCurrent = KeyList[0]
+            SubNode = self.getattr(KeyCurrent)
+            assert isinstance(SubNode, param)
+        return SubNode.getattr(KeyList[1:])
     def setemptyattr(self, Key):
         if self.Get("_IS_FALSE") is True:
             self.SubstantiateAlongSpine(NODE_TYPE.SPINE, NODE_SUBTYPE.DICT)

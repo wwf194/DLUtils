@@ -70,8 +70,6 @@ def BuildExternalModule(param, **kw):
         return ExternalModules[Type](**kw)
     else:
         return None
-    
-
 
 class LogComponent:
     # method for class
@@ -115,7 +113,7 @@ class AbstractModule(LogComponent):
         if Log is not None:
             self._Log = Log
     def __call__(self, *List, **Dict):
-        return self.Receive(*List, **Dict)
+        return self.CallMethod(*List, **Dict)
     def ExtractParam(self, RetainSelf=True):
         if hasattr(self, "Param"):
             Param = self.Param
@@ -142,8 +140,15 @@ class AbstractModule(LogComponent):
         return self
     def SetParam(self, **Dict):
         Param = self.Param
-        for Key, Value in Dict.items():
-            Param.setattr(Key, Value)
+        if hasattr(self, "SetParamMap"):
+            for Key, Value in Dict.items():
+                if Key in self.SetParamMap:
+                    Param.setattr(self.SetParamMap[Key], Value)
+                else:
+                    Param.setattr(Key, Value)
+        else:
+            for Key, Value in Dict.items():
+                Param.setattr(Key, Value)
         # setattr(self, Key, Value)
         return self
     def SetAttr(self, **Dict):
@@ -236,13 +241,42 @@ class AbstractModule(LogComponent):
             })
         return self
     def Init(self, IsSuper=False, IsRoot=True):
-        for Name, SubModule in self.SubModules.items():
-            SubModule.Init(IsSuper=False, IsRoot=False)
-            setattr(self, Name, SubModule)
+        if self.IsLoad():
+            for Name, SubModule in self.SubModules.items():
+                SubModule.Init(IsSuper=False, IsRoot=False)
+                setattr(self, Name, SubModule)
+        else:
+            if IsRoot:
+                self.Param._PATH = "Root"
+            for Name, SubModule in self.SubModules.items():
+                if hasattr(SubModule, "Param"):
+                    SubModule.Param._PATH = self.Param._PATH + "." + Name
+                SubModule.Init(IsSuper=False, IsRoot=False)
+                setattr(self, Name, SubModule)
         self.SetEventDict()
         if hasattr(self, "_Log"):
             self.SetLogRecur(self.Log)
         self.SetConnectEvents()
+
+        self.SetTrain()
+
+        if hasattr(self, "Receive"):
+            self.CallMethod = self.Receive
+        elif hasattr(self, "forward"):
+            self.CallMethod = self.forward
+        else:
+            # raise Exception()
+            pass
+        if not hasattr(self, "Receive"):
+            if hasattr(self, "__call__"):
+                self.Receive = self.__call__
+            elif hasattr(self, "forward"):
+                self.Receive = self.forward
+            else:
+                # raise Exception()
+                pass
+        if IsRoot:
+            self.SetTest()
         return self
     def LogWithSelfInfo(self, Content, Type="Unknown"):
         self.Log(f"{self.PathStr()}({self.ClassStr()}): {Content}", Type=Type)
@@ -352,6 +386,18 @@ class AbstractModule(LogComponent):
         return hasattr(self, "_IsLoad") and self._IsLoad
     def HandleTensorBySelf(self):
         return hasattr(self, "_HandleTensorBySelf") and self._HandleTensorBySelf
+    def SetTrain(self, Recur=True):
+        if Recur:
+            for SubModule in self.SubModules.values():
+                if hasattr(SubModule, "SetTrain"):
+                    SubModule.SetTrain(Recur=True)
+        return self
+    def SetTest(self, Recur=True):
+        if Recur:
+            for SubModule in self.SubModules.values():
+                if hasattr(SubModule, "SetTrain"):
+                    SubModule.SetTest(Recur=True)
+        return self
 
 EmptyModule = AbstractModule
 class AbstractOperator(AbstractModule):
@@ -369,19 +415,32 @@ class AbstractNetwork(AbstractModule):
         Param.Tensor = set()
         Param.TrainParam = set()
         self.SetParam(**Dict)
-    def SetTrainParam(self, **Dict):
+    def SetTrainParam(self, Name=None, TrainParam=None, **Dict):
+        if Name is not None:
+            assert TrainParam is not None
+            self._SetTrainParam(Name, TrainParam)
+        for _Name, _TrainParam in Dict.items():
+            self._SetTrainParam(_Name, _TrainParam)
+        return self
+    def _SetTrainParam(self, Name, TrainParam):
         Param = self.Param
         #if isinstance(Param, torch.Tensor):
-        Param.requires_grad = True
-        for Name, TrainParam in Dict.items():
-            self.SetTensor(Name, TrainParam)
-            Param.TrainParam.add(Name)
+        if hasattr(TrainParam, "requires_grad"):
+            TrainParam.requires_grad = True
+        self.SetTensor(Name, TrainParam)
+        Param.TrainParam.add(Name)
         return self
-    def SetTensor(self, **Dict):
-        for Name, Tensor in Dict.items():
-            Param = self.Param
-            Param.Data.setattr(Name, Tensor)
-            Param.Tensor.add(Name)
+    def SetTensor(self, Name=None, Tensor=None, **Dict):
+        if Name is not None:
+            assert Tensor is not None
+            self._SetTensor(Name, Tensor)
+        for _Name, _Tensor in Dict.items():
+            self._SetTensor(_Name, _Tensor)
+        return self
+    def _SetTensor(self, Name, Tensor):
+        Param = self.Param
+        Param.Data.setattr(Name, Tensor)
+        Param.Tensor.add(Name)
         return self
     def AddTrainParamName(self, Name):
         Param = self.Param
@@ -402,7 +461,9 @@ class AbstractNetwork(AbstractModule):
         if not self.HandleTensorBySelf():
             if Param.hasattr("Tensor"):
                 for Name in Param.Tensor:
-                    Tensor = DLUtils.ToTorchTensorOrNum(getattr(Param.Data, Name))
+                    assert Param.Data.hasattr(Name)
+                    Data = Param.Data.getattr(Name)
+                    Tensor = DLUtils.ToTorchTensorOrNum(Data)
                     if hasattr(self, "Device"):
                         TensorNew = Tensor.to(self.Device).detach()
                         TensorNew.requires_grad = Tensor.requires_grad
@@ -520,7 +581,6 @@ class AbstractNetwork(AbstractModule):
         super().Init(True, IsRoot=IsRoot)
 
         self.UpdateTensorFromDict()
-        assert hasattr(self, "Receive")
         if IsRoot:
             self.Log(f"{Param._CLASS}: initialization finished.", Type="initialization")
         return self
@@ -529,17 +589,18 @@ class AbstractNetwork(AbstractModule):
             Event(Model=self, Param=self.ExtractTrainParam())
     def parameters(self):
         return 
+    
 
 class TorchModuleWrapper(AbstractNetwork):
     def __init__(self, *List, **Dict):
         self._HandleTensorBySelf = True
         super().__init__(*List, **Dict)
-    def SetTest(self):
+    def SetTest(self, Recur=True):
         self.module.eval()
-        return super().SetTest()
-    def SetTrain(self):
+        return super().SetTest(Recur=Recur)
+    def SetTrain(self, Recur=True):
         self.module.train()
-        return super().SetTrain()
+        return super().SetTrain(Recur=Recur)
     def SetDevice(self, Device=None, IsRoot=True):
         self.module = self.module.to(Device)
         return super().SetDevice(Device, IsRoot)
@@ -547,10 +608,10 @@ class TorchModuleWrapper(AbstractNetwork):
         #raise Exception() # must be implemented by child class
         Param = self.Param
         Dict = self.module.state_dict()
-        if hasattr(self, "StateDictMapping"):
-            for Key, Value in self.StateDictMapping.items():
-                assert Key in Dict
-                if hasattr(Param, Key):
+        if hasattr(self, "StateDictMap"):
+            for Key, Value in self.StateDictMap.items():
+                assert Value in Dict
+                if Param.hasattr(Key):
                     Dict[Value] = DLUtils.ToRunFormat(Param.getattr(Key)) 
         self.module.load_state_dict(Dict)
     def UpdateDictFromTensor(self, Recur=False):
@@ -559,9 +620,9 @@ class TorchModuleWrapper(AbstractNetwork):
     def UpdateParamFromModule(self):
         Param = self.Param
         Dict = self.module.state_dict()
-        if hasattr(self, "StateDictMapping"):
-            for Key, Value in self.StateDictMapping.items():
-                if Key in Dict:
+        if hasattr(self, "StateDictMap"):
+            for Key, Value in self.StateDictMap.items():
+                if Value in Dict:
                     Param.setattr(Key, DLUtils.ToSaveFormat(Dict[Value]))
         self.module.load_state_dict(Dict)
     def UpdateTensorFromDict(self, Recur=False):

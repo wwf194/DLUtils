@@ -10,7 +10,7 @@ class Norm(AbstractOperator):
         Param.Min2 = Min2
         Param.Max2 = Max2
     def Receive(self, In):
-        Output = (Input - self.Min1) * self.Scale + self.Min2
+        Output = (In - self.Min1) * self.Scale + self.Min2
         return Output
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param

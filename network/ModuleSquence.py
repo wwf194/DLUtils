@@ -52,9 +52,9 @@ class ModuleSequence(AbstractNetwork):
         return self
     def Receive(self, In):
         for ModuleIndex in range(self.ModuleNum):
-            Output = self.ModuleList[ModuleIndex](Input)
-            Input = Output
-        return Output
+            Out = self.ModuleList[ModuleIndex](In)
+            In = Out
+        return Out
 
 class ModuleGraph(AbstractNetwork):
     def __init__(self):

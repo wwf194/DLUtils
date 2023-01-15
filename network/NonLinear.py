@@ -15,4 +15,4 @@ class ReLU(DLUtils.module.AbstractNetwork):
         Param._CLASS = "DLUtils.network.ReLU"
         Param.Type = "ReLU"
     def Receive(self, In):
-        return torch.relu(Input)
+        return torch.relu(In)

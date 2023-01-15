@@ -4,16 +4,45 @@ from enum import Enum
 import math
 
 def Conv2DKernel(Shape, GroupNum=1, **Dict):
-    # Shape: [InNum, OutNum, KernelHeight, KernelWidth]
-    # torch: w ~ U(-sqrt(k), sqrt(k)). k = GroupNum / (InNum * KernelWidth * KernelHeight)
+    """
+    Shape: [InNum, OutNum, KernelHeight, KernelWidth]
+    torch: w ~ U(-sqrt(k), sqrt(k))
+        where k = GroupNum / (InNum * KernelWidth * KernelHeight)
+    """
     Max = GroupNum / (Shape[0] * Shape[2] * Shape[3])
     Min = - Max
     assert Shape[0] % GroupNum == 0
     assert Shape[1] % GroupNum == 0
     return SampleFromUniformDistribution((Shape[1], Shape[0] // GroupNum, Shape[2], Shape[3]), Min, Max)
 
+def Conv2DBias(Shape, GroupNum=1, **Dict):
+    """
+    Shape: [InNum, OutNum, KernelHeight, KernelWidth]
+    pytorch: w ~ U(-sqrt(k), sqrt(k)). k = GroupNum / (InNum * KernelWidth * KernelHeight)
+    """
+    Max = math.sqrt(GroupNum / (Shape[0] * Shape[2] * Shape[3]))
+    Min = - Max
+    assert Shape[0] % GroupNum == 0
+    assert Shape[1] % GroupNum == 0
+    return SampleFromUniformDistribution((Shape[1], Shape[0] // GroupNum, Shape[2], Shape[3]), Min, Max)
+
+def UpConv2DKernel(Shape, GroupNum=1, **Dict):
+    """
+    Shape: [InNum, OutNum, KernelHeight, KernelWidth]
+        where k = GroupNum / (OutNum * KernelWidth * KernelHeight)
+    pytorch: w ~ U(-sqrt(k), sqrt(k))
+    """
+    Max = math.sqrt(GroupNum / (Shape[1] * Shape[2] * Shape[3]))
+    Min = - Max
+    assert Shape[0] % GroupNum == 0
+    assert Shape[1] % GroupNum == 0
+    # Weight: [InNum, OutNum // GroupNum, KernelHeight, KernelWidth]
+    return SampleFromUniformDistribution((Shape[0], Shape[1] // GroupNum, Shape[2], Shape[3]), Min, Max)
+
 def SampleFromKaimingUniform(Shape, NonLinearFunction="ReLU", **Dict):
-    # Y = f(WX). Keep variance of forward signal or backward gradient.
+    """
+    Y = f(WX). Keep variance of forward signal or backward gradient.
+    """
     assert len(Shape) == 2
     InNum = Shape[0]
     OutNum = Shape[1]

@@ -18,18 +18,25 @@ class Conv2D(DLUtils.module.AbstractNetwork):
         for Key, Value in Dict.items():    
             if Key in ["In", "InNum", "In.Num"]:
                 Param.In.Num = Value
+                assert isinstance(Value, int)
             elif Key in ["Out", "OutNum", "Out.Num", "OutputNum"]:
                 Param.Out.Num = Value
+                assert isinstance(Value, int)
             elif Key in ["KernelSize", "Kernel.Size"]:
                 Param.Kernel.Size = Value
+                assert isinstance(Value, int)
             elif Key in ["Padding"]:
                 Param.Padding = Value
+                assert isinstance(Value, int) or Value in ["KeepFeatureMapHeightWidth"]
             elif Key in ["Stride"]:
                 Param.Stride = Value
+                assert isinstance(Value, int)
             elif Key in ["GroupNum", "NumGroup", "Group.Num"]:
                 Param.Group.Num = Value
+                assert isinstance(Value, int)
             else:
                 _Dict[Key] = Value
+        assert len(_Dict) == 0 
         super().SetParam(**_Dict)
         return self
     def SetTrainParam(self, **Dict):
@@ -45,27 +52,29 @@ class Conv2D(DLUtils.module.AbstractNetwork):
                 Bias = Dict.get("Bias")
                 super().SetTrainParam(Kernel=Value)
             elif Name in ["Bias", "bias"]:
-                super().SetTrainParam(Bias=Bias)
+                super().SetTrainParam(Bias=Value)
             else:
                 raise Exception()
             return self
     def Receive(self, In):
-        Output = F.conv2d(
-            input=In, weight=self.Weight, bias=self.Bias,
+        Out = F.conv2d(
+            input=In, weight=self.Kernel, bias=self.Bias,
             stride=self.Stride,
             padding=self.Padding,
             dilation=self.Dilation,
             groups=self.GroupNum
         )
-        Output = self.NonLinear(Output)
+        Output = self.NonLinear(Out)
         return Output
-    def SetWeight(self, Weight):
+    def SetKernel(self, Kernel):
         Param = self.Param
-        self.SetTrainParam(Weight=Weight) # [In, Out, KernelWidth, KernelHeight]
-        Param.Kernel.In.Num = Weight.shape[1]
-        Param.Out.Num = Weight.shape[0]
-        Param.Kernel.Height = Weight.shape[2] # Height at dim 2
-        Param.Kernel.Width = Weight.shape[3] # Width at dim 3
+        self.SetTrainParam(Kernel=Kernel) # [OutNum, InNum // GroupNum, KernelWidth, KernelHeight]
+        Param.Kernel.In.Num = Kernel.shape[1]
+        Param.In.Num = Param.Kernel.In.Num * Param.Group.Num
+        Param.Out.Num = Kernel.shape[0]
+        Param.Kernel.Out.Num = Param.Out.Num // Param.Group.Num
+        Param.Kernel.Height = Kernel.shape[2] # Height at dim 2
+        Param.Kernel.Width = Kernel.shape[3] # Width at dim 3
         return self
     def SetBias(self, Bias):
         Param = self.Param
@@ -88,18 +97,11 @@ class Conv2D(DLUtils.module.AbstractNetwork):
         if not IsSuper:
             Param = self.Param
             if not self.IsLoad():
-                if not Param.Data.hasattr("Bias"):
-                    Param.Data.Bias = 0.0
-                self.Stride = Param.setdefault("Stride", 1)
+                Param.setdefault("Stride", 1)
                 Padding = Param.setdefault("Param", "KeepFeatureMapHeightWidth")
-                if Padding in ["KeepFeatureMapHeightWidth"]:
-                    self.Padding = "same"
-                elif isinstance(Padding, int):
-                    self.Padding = Padding
-                else:
-                    raise Exception()
-                self.Dilation = Param.setdefault("Dilation", 1)
-                self.GroupNum = Param.Group.setdefault("Num", 1)
+
+                Param.setdefault("Dilation", 1)
+                Param.Group.setdefault("Num", 1)
                 
                 if Param.Kernel.hasattr("Size"):
                     if not Param.Kernel.hasattr("Height"):
@@ -121,15 +123,9 @@ class Conv2D(DLUtils.module.AbstractNetwork):
                 Param.Kernel.In.Num = Param.In.Num // Param.Group.Num
                 Param.NonLinear.setdefault("Enable", False)
 
-                if Param.NonLinear.Enable:
-                    assert Param.SubModules.hasattr("NonLinear")
-                else:
-                    self.NonLinear = lambda x:x
-
-
-                if not Param.Data.hasattr("Weight"):
+                if not Param.Data.hasattr("Kernel"):
                     # [OutNum // GroupNum, InpNum, KernelHeight, KernelWidth]
-                    self.SetWeight(
+                    self.SetKernel(
                         DLUtils.Conv2DKernel(
                             (
                                 Param.In.Num, Param.Out.Num, 
@@ -144,18 +140,39 @@ class Conv2D(DLUtils.module.AbstractNetwork):
                 if Param.Bias.Enable:
                     if not Param.Data.hasattr("Bias"):
                         self.SetTrainParam(Bias=torch.zeros(Param.Out.Num))
-                    else:
-                        assert "Bias" in self.TensorList
+                    assert "Bias" in Param.Tensor
             if Param.Bias.Enable:
                 pass
             else:
                 self.Bias = 0.0
+        
+            Padding = Param.Padding
+            if Padding in ["KeepFeatureMapHeightWidth"]:
+                self.Padding = "same"
+            elif isinstance(Padding, int):
+                self.Padding = Padding
+            else:
+                raise Exception()
+            self.Dilation = Param.Dilation
+            self.GroupNum = Param.Group.Num
+            self.Stride = Param.Stride
+
+            if Param.NonLinear.Enable:
+                assert Param.SubModules.hasattr("NonLinear")
+            else:
+                self.NonLinear = lambda x:x
+
         return super().Init(IsSuper=True, IsRoot=IsRoot)
 
 class UpConv2D(Conv2D):
+    def __init__(self, InNum=None, OutNum=None, **Dict):
+        super().__init__(InNum, OutNum, **Dict)
     def Receive(self, In):
+        """
+        In: [BatchNum, ChannelNum, Height, Width]
+        """
         Output = F.conv_transpose2d(
-            input=In, weight=self.Weight, bias=self.Bias,
+            input=In, weight=self.Kernel, bias=self.Bias,
             stride=self.Stride,
             padding=self.Padding,
             dilation=self.Dilation,
@@ -163,31 +180,81 @@ class UpConv2D(Conv2D):
         )
         Output = self.NonLinear(Output)
         return Output
-    def Init(self, IsSuper=False, IsRoot=True):
+    def SetKernel(self, Kernel):
         Param = self.Param
-        if not Param.Data.hasattr("Bias"):
-            Param.Data.Bias = 0.0
-        self.Stride = Param.setdefault("Stride", 1)
-        Padding = Param.setdefault("Param", 1)
-        if isinstance(Padding, int):
-            self.Padding = Padding
-        else:
-            raise Exception()
-        self.Dilation = Param.setdefault("Dilation", 1)
-        self.GroupNum = Param.Group.setdefault("Num", 1)
-        Param.In.Num = Param.Kernel.In.Num * Param.Group.Num
-        Param.Kernel.Out.Num = Param.Out.Num // Param.Group.Num
-        Param.NonLinear.setdefault("Enable", False)
-        
-        if Param.NonLinear.Enable:
-            assert Param.SubModules.hasattr("NonLinear")
-        else:
-            self.NonLinear = lambda x:x
-        # super().Init(IsSuper=True, IsRoot=IsRoot)
-        if hasattr(self, "Bias"):
-            if isinstance(self.Bias, float):
-                assert self.Bias == 0.0
-                self.Bias = None
-        else:
-            self.Bias = None
+        self.SetTrainParam(Kernel=Kernel) # [InNum, OutNum // GroupNum, KernelWidth, KernelHeight]
+        Param.In.Num = Kernel.shape[0]
+        Param.Kernel.In.Num = Param.In.Num // Param.Group.Num
+        Param.Kernel.Out.Num = Kernel.shape[1]
+        Param.Out.Num = Param.Kernel.Out.Num * Param.Group.Num
+        Param.Kernel.Height = Kernel.shape[2] # Height at dim 2
+        Param.Kernel.Width = Kernel.shape[3] # Width at dim 3
+    def Init(self, IsSuper=False, IsRoot=True):
+        if not IsSuper:
+            Param = self.Param
+            if not self.IsLoad():
+                Param.setdefault("Stride", 1)
+                Param.setdefault("Padding", 0)
+
+                Param.setdefault("Dilation", 1)
+                Param.Group.setdefault("Num", 1)
+                
+                if Param.Kernel.hasattr("Size"):
+                    if not Param.Kernel.hasattr("Height"):
+                        Param.Kernel.Height = Param.Kernel.Size
+                    if not Param.Kernel.hasattr("Width"):
+                        Param.Kernel.Width = Param.Kernel.Size
+                else:
+                    assert Param.Kernel.hasattr("Height")
+                    assert Param.Kernel.hasattr("Width")
+                    if Param.Kernel.Height == Param.Kernel.Width:
+                        Param.Kernel.Size = Param.Kernel.Height
+
+                # torch group convolution kernel: 
+                #   [OutNum, InNum // GroupNum, KernelHeight, KernelWidth]
+                #   In dimension during computation will be divided into groups.
+                assert Param.In.Num % Param.Group.Num == 0
+                assert Param.Out.Num % Param.Group.Num == 0
+                Param.Kernel.Out.Num = Param.Out.Num // Param.Group.Num
+                Param.Kernel.In.Num = Param.In.Num // Param.Group.Num
+                Param.NonLinear.setdefault("Enable", False)
+
+
+
+                if not Param.Data.hasattr("Weight"):
+                    # [OutNum // GroupNum, InpNum, KernelHeight, KernelWidth]
+                    self.SetKernel(
+                        DLUtils.UpConv2DKernel(
+                            (
+                                Param.In.Num, Param.Out.Num, 
+                                Param.Kernel.Height, Param.Kernel.Width
+                            ),
+                            GroupNum=Param.Group.Num,
+                            # NonLinear="ReLU"
+                            # default torch weight initialization does not consider NonLinear.
+                        )
+                    )
+                Param.Bias.setdefault("Enable", True)
+                if Param.Bias.Enable:
+                    if not Param.Data.hasattr("Bias"):
+                        self.SetTrainParam(Bias=torch.zeros(Param.Out.Num))
+                        # Param.Tensor.add("Bias")
+                    assert "Bias" in Param.Tensor
+            if Param.Bias.Enable:
+                pass
+            else:
+                self.Bias = 0.0
+
+            Padding = Param.Padding
+            if isinstance(Padding, int):
+                self.Padding = Padding
+            else:
+                raise Exception()
+            self.Dilation = Param.Dilation
+            self.GroupNum = Param.Group.Num
+            self.Stride = Param.Stride
+            if Param.NonLinear.Enable:
+                assert Param.SubModules.hasattr("NonLinear")
+            else:
+                self.NonLinear = lambda x:x
         return super().Init(IsSuper=True, IsRoot=IsRoot)
