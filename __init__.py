@@ -37,9 +37,8 @@ import DLUtils.train as train # module -> train
 import DLUtils.network as network
 import DLUtils.network.NonLinear as NonLinear
 
-
 import DLUtils.task as task
-from .task import Task
+from .task import Task, Dataset
 
 # from .functions import *
 # from .log import *
