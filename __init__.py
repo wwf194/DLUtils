@@ -35,9 +35,7 @@ import DLUtils.module.norm as norm
 import DLUtils.module.transform as transform
 
 import DLUtils.task as task
-from .task import Task
-
-
+from .task import Task, Dataset
 
 # from .functions import *
 # from .log import *
