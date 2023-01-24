@@ -230,8 +230,8 @@ class AbstractModule(LogComponent):
             raise Exception()
         return self._PathStr
     def ClassStr(self):
-        if hasattr(self, "ClassStr"):    
-            return self.ClassStr
+        if hasattr(self, "_ClassStr"):    
+            return self._ClassStr
         else:
             return str(self.__class__)
     def SetEventDict(self):
@@ -265,8 +265,8 @@ class AbstractModule(LogComponent):
         elif hasattr(self, "forward"):
             self.CallMethod = self.forward
         else:
-            # raise Exception()
-            pass
+            raise Exception()
+            # pass
         if not hasattr(self, "Receive"):
             if hasattr(self, "__call__"):
                 self.Receive = self.__call__
@@ -277,6 +277,7 @@ class AbstractModule(LogComponent):
                 pass
         if IsRoot:
             self.SetTest()
+        assert hasattr(self, "CallMethod")
         return self
     def LogWithSelfInfo(self, Content, Type="Unknown"):
         self.Log(f"{self.PathStr()}({self.ClassStr()}): {Content}", Type=Type)
@@ -382,6 +383,8 @@ class AbstractModule(LogComponent):
         if hasattr(self, "ReceiveTest"):
             self.Receive = self.ReceiveTest
         return self
+    def IsInit(self):
+        return not self.IsLoad()
     def IsLoad(self):
         return hasattr(self, "_IsLoad") and self._IsLoad
     def HandleTensorBySelf(self):
@@ -529,30 +532,32 @@ class AbstractNetwork(AbstractModule):
                 else:
                     DimNum = 0
                 if DimNum == 1 or DimNum == 0:
-                    DLUtils.plot.PlotData1D(
-                        Name=WeightName,
-                        Data=Data,
-                        SavePath=SavePath + "." + WeightName + ".svg",
-                        #XLabel="Dimension 0", YLabel="Dimension 0"
-                    )
+                    # DLUtils.plot.PlotData1D(
+                    #     Name=WeightName,
+                    #     Data=Data,
+                    #     SavePath=SavePath + "." + WeightName + ".svg",
+                    #     #XLabel="Dimension 0", YLabel="Dimension 0"
+                    # )
                     DLUtils.plot.PlotDataAndDistribution1D(
                         Name=WeightName,
                         Data=Data,
                         SavePath=SavePath + "." + WeightName + " - Distribution.svg",
-                        XLabel="Dimension 0", YLabel="Dimension 0"
+                        XLabel="Dimension 0", YLabel="Dimension 0",
+                        Title=f"Shape {Data.shape[0]}"
                     )
                 elif DimNum == 2:
-                    DLUtils.plot.PlotData2D(
-                        Name=WeightName,
-                        Data=Data,
-                        SavePath=SavePath + "." + WeightName + ".svg",
-                        XLabel="Output Dimension", YLabel="Input Dimension"
-                    )
+                    # DLUtils.plot.PlotData2D(
+                    #     Name=WeightName,
+                    #     Data=Data,
+                    #     SavePath=SavePath + "." + WeightName + ".svg",
+                    #     XLabel="Output Dimension", YLabel="Input Dimension"
+                    # )
                     DLUtils.plot.PlotDataAndDistribution2D(
                         Name=WeightName,
                         Data=Data,
                         SavePath=SavePath + "." + WeightName + " - Distribution.svg",
-                        XLabel="Output Dimension", YLabel="Input Dimension"
+                        XLabel="Output Dimension", YLabel="Input Dimension",
+                        TitlePlot=f"Shape {Data.shape[0], Data.shape[1]}"
                     )
             self.PlotWeightRecur(SaveDir, SaveName)
         return self

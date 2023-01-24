@@ -39,14 +39,14 @@ def UpConv2DKernel(Shape, GroupNum=1, **Dict):
     # Weight: [InNum, OutNum // GroupNum, KernelHeight, KernelWidth]
     return SampleFromUniformDistribution((Shape[0], Shape[1] // GroupNum, Shape[2], Shape[3]), Min, Max)
 
-def SampleFromKaimingUniform(Shape, NonLinearFunction="ReLU", **Dict):
+def SampleFromKaimingUniform(Shape, NonLinear="ReLU", **Dict):
     """
     Y = f(WX). Keep variance of forward signal or backward gradient.
     """
     assert len(Shape) == 2
     InNum = Shape[0]
     OutNum = Shape[1]
-    if NonLinearFunction in ["ReLU", "relu"]:
+    if NonLinear in ["ReLU", "relu"]:
         Priority = Dict.setdefault("Priority", "forward")
         if Priority in ["forward", "Forward"]:
             Max = math.sqrt(6.0 / InNum)
@@ -120,7 +120,7 @@ def SampleFromXaiverNormal(Shape, NonLinearFunction, **Dict):
 def SampleFromNormalDistribution(Shape, Mean, Std):
     return np.random.normal(size=Shape, loc=Mean, scale=Std)
 
-def SampleFromUniformDistribution(Shape, Min, Max):
+def SampleFromUniformDistribution(Shape, Min=0.0, Max=1.0):
     assert Min <= Max
     if Min == Max:
         return SampleFromConstantDistribution(Shape, Min)

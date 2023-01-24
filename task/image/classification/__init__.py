@@ -1,8 +1,5 @@
 import DLUtils
 
-
-
-
 class ImageClassificationTask(DLUtils.module.AbstractModule):
     def __init__(self, Type=None):
         super().__init__()

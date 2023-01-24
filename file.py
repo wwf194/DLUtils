@@ -50,7 +50,7 @@ def FileNameFromPath(FilePath):
     FileName = os.path.basename(FilePath)
     return FileName
 
-def StandardizePath(Path):
+def ToStandardPathStr(Path):
     if Path is None:
         return None
     # if Path.endswith("/"): # means this is a folder.
@@ -61,7 +61,7 @@ def StandardizePath(Path):
         if not Path.endswith("/"):
             Path += "/"
     return Path
-
+StandardizePath = ToStandardPath = ToStandardPathStr
 def MoveFile(FilePath, FilePathDest, RaiseIfNonExist=False, Overwrite=True, RaiseIfOverwrite=True):
     if not FileExists(FilePath):
         Msg = f"DLUtils.MoveFile: FilePath {FilePath} does not exist."

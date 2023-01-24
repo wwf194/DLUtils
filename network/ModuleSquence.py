@@ -4,7 +4,7 @@ from ..module import AbstractNetwork
 
 class ModuleSequence(AbstractNetwork):
     def __init__(self, ModuleList=None, Log=None, **Dict):
-        super().__init__(Log)
+        super().__init__(Log, **Dict)
         if ModuleList is None:
             ModuleList = []
         assert isinstance(ModuleList, list)
@@ -12,7 +12,6 @@ class ModuleSequence(AbstractNetwork):
             self.SetModuleList(ModuleList)
         else:
             self.ModuleList = []
-        self.SetParam(**Dict)
     def LoadParam(self, Param):
         super().LoadParam(Param)
         Param = self.Param
@@ -114,3 +113,6 @@ class ModuleGraph(AbstractNetwork):
         else:
             raise Exception()
         return super().Init(IsSuper=True, IsRoot=IsRoot)
+
+
+ModuleList = ModuleSequence

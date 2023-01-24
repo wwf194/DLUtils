@@ -7,10 +7,15 @@ import DLUtils
 #from .AbstractModule import AbstractNetwork
 from .LinearLayer import LinearLayer
 class NonLinearLayer(LinearLayer):
-    def __init__(self, InNum=None, OutNum=None):
-        super().__init__(InNum=InNum, OutNum=OutNum)
-        Param = self.Param
-        Param._CLASS = "DLUtils.network.NonLinearLayer"
+    SetParamMap = DLUtils.IterableKeyToElement({
+        ("NonLinear"): "NonLinear.Type",
+        ("InNum, inputNum, InputNum"): "In.Num",
+        ("OutNum, outputNum, OutputNum"): "Out.Num"
+    })
+    def __init__(self, InNum=None, OutNum=None, NonLinear=None, **Dict):
+        super().__init__(InNum=InNum, OutNum=OutNum, **Dict)
+        if NonLinear is None:
+            self.SetParam(NonLinear)
     def SetMode(self, Mode):
         Param = self.Param
         Param.Mode = Mode
@@ -19,9 +24,26 @@ class NonLinearLayer(LinearLayer):
     def LoadParam(self, Param):
         super().LoadParam(Param)
         return self
+    def SetNonLinearMethod(self):
+        self.NonLinear = self.SubModules.NonLinear
+        return self
+    def ReceiveFAddMulWxb(self, In):
+        return self.NonLinear(torch.mm(In + self.Bias, self.Weight))
+    def ReceiveAddFMulWxb(self, In):
+        return self.NonLinear(torch.mm(In, self.Weight)) + self.Bias
+    def ReceiveFMulWAddxb(self, In):
+        return self.NonLinear(torch.mm(In, self.Weight)) + self.Bias
+    ReceiveMethodMap = DLUtils.IterableKeyToElement({
+        "f(Wx+b)": ReceiveFAddMulWxb,
+        "f(W(x+b))": ReceiveFMulWAddxb,
+        "f(Wx)+b": ReceiveAddFMulWxb
+    })
     def SetReceiveMethod(self):
         Param = self.Param
+        Param.setdefault("Mode", "f(Wx+b)")
         Mode = Param.Mode
+        if Mode in self.ReceiveMethodMap:
+            self.Receive = self.ReceiveMethodMap[Mode]
         if Mode in ["f(Wx+b)"]:
             self.Receive = self.ReceiveFAddMulWxb
         elif Mode in ["f(W(x+b))"]:
@@ -32,29 +54,28 @@ class NonLinearLayer(LinearLayer):
             raise Exception(Mode)
         self.LogWithSelfInfo(f"set mode as {Mode}", "initialization")
         return self
-    def SetNonLinear(self, NonLinearModule):
-        if isinstance(NonLinearModule, str):
-            NonLinearModule = DLUtils.network.NonLinear.NonLinearModule(NonLinearModule)
-        self.AddSubModule("NonLinear", NonLinearModule)
-        self.LogWithSelfInfo(f"set nonlinear type: {NonLinearModule.ClassStr()}", "initialization")
-        self.SetNonLinearMethod()
-        return self
-    def SetNonLinearMethod(self):
-        self.NonLinear = self.SubModules.NonLinear
-        return self
-    def ReceiveFAddMulWxb(self, In):
-        return self.NonLinear(torch.mm(Input + self.Bias, self.Weight))
-    def ReceiveAddFMulWxb(self, In):
-        return self.NonLinear(torch.mm(Input, self.Weight)) + self.Bias
-    def ReceiveFMulWAddxb(self, In):
-        return self.NonLinear(torch.mm(Input, self.Weight)) + self.Bias
     # SetWeight(...) # inherit
     # SetBias(...) # inherit
     def Init(self, IsSuper=False, **Dict):
+        Param = self.Param
         if not IsSuper:
             self.SetReceiveMethod()
-            self.SetNonLinearMethod()
+        if self.IsInit():
+            Param.NonLinear.setdefault("Type", "ReLU")
+            self.LogWithSelfInfo(f"use default nonlinear type: {Param.NonLinear.Type}", "initialization")
+            self.AddSubModule(
+                "NonLinear", DLUtils.network.NonLinearModule(Param.NonLinear.Type)
+            )
+            if not Param.Data.hasattr("Weight"):
+                self.SetWeightDefault()
         super().Init(IsSuper=True, **Dict)
         return self
-    def ClassStr(self):
-        return "NonLinearLayer"
+    def SetWeightDefault(self):
+        Param = self.Param
+        self.SetTrainParam(
+            "Weight",
+            DLUtils.SampleFromKaimingUniform(
+                (Param.In.Num, Param.Out.Num),
+                NonLinear=Param.NonLinear.Type,
+            )
+        )

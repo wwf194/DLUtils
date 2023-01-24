@@ -107,8 +107,6 @@ def _threshold(x, threshold=None):
     else:
         return x
 
-
-
 # -----------------
 # --- FocalLoss ---
 # -----------------
@@ -121,7 +119,6 @@ class FocalLoss(DLUtils.AbstractModule):
         self.reduction = reduction
         self.class_weights = class_weights if class_weights is not None else 1.0
         self.name = "Focal"
-
     def forward(self, Predict, Truth):
         """
         Predict: [BatchSize, ClassNum, ImageHeight, ImageWidth]
@@ -137,17 +134,15 @@ class FocalLoss(DLUtils.AbstractModule):
         focal_loss = self.alpha * (1 - pt) ** self.gamma * bce_loss
         focal_loss = focal_loss * torch.tensor(self.class_weights).to(focal_loss.device)
 
-        if self.reduction == "mean":
-            focal_loss = focal_loss.mean()
-        else:
-            focal_loss = focal_loss.sum()
+        focal_loss = self.LossReduction(focal_loss)
         return focal_loss # single num
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         Param.Loss.setdefault("ReductionMethod", "Mean")
         if Param.Loss.ReductionMethod in ["Mean"]:
+            self.LossReduction = torch.mean
         elif Param.Loss.ReductionMethod in ["Sum"]:
-            
+            self.LossReduction = torch.sum
         else:
             raise Exception()
         return super().Init(IsSuper=True, IsRoot=IsRoot)

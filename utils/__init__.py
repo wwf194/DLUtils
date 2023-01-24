@@ -913,17 +913,17 @@ def write_dict_info(dict_, save_path='./', save_name='dict info.txt'): # write r
             else:
                 values_remained.append([key, value])
 
-def GetNonLinearMethodModule(Name):
-    if Name in ['relu']:
-        return nn.ReLU()
-    elif Name in ['tanh']:
-        return nn.Tanh()
-    elif Name in ['softplus']:
-        return nn.Softplus()
-    elif Name in ['sigmoid']:
-        return nn.Sigmoid()
-    else:
-        raise Exception(Name)
+# def GetNonLinearMethodModule(Name):
+#     if Name in ['relu']:
+#         return nn.ReLU()
+#     elif Name in ['tanh']:
+#         return nn.Tanh()
+#     elif Name in ['softplus']:
+#         return nn.Softplus()
+#     elif Name in ['sigmoid']:
+#         return nn.Sigmoid()
+#     else:
+#         raise Exception(Name)
 
 def trunc_prefix(string, prefix):
     if(string[0:len(prefix)]==prefix):
@@ -1370,10 +1370,26 @@ from DLUtils.format import *
 # def GetSystemType():
 #     return SystemType
 
-def RandomImage(Height=512, Width=512, ChannelNum=3, 
+def RandomImage(Height=512, Width=512, ChannelNum=None, 
         BatchNum=10, DataType="TorchTensor"):
-    return
+    if ChannelNum is None:
+        Shape = [Height, Width]
+    else:
+        Shape = [Height, Width, ChannelNum]
+    if BatchNum is not None:
+        if isinstance(BatchNum, float):
+            BatchNum = round(BatchNum)
+        assert isinstance(BatchNum, int)
+        Shape = [BatchNum] + Shape
+    Image = DLUtils.SampleFromUniformDistribution(Shape, -1.0, 1.0)
+    if DataType in ["np", "numpy"]:
+        return Image
+    elif DataType in ["TorchTensor"]:
+        return DLUtils.ToTorchTensor(Image)
+    else:
+        raise Exception()
 
+NoiseImage = RandomImage
 def IterableKeyToElement(Dict):
     for Key, Value in dict(Dict).items():
         if isinstance(Key, tuple) or isinstance(Key, set):

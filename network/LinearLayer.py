@@ -7,7 +7,6 @@ import numpy as np
 import DLUtils
 
 class LinearLayer(DLUtils.module.AbstractNetwork):
-    ClassStr = "LinearLayer"
     def __init__(self, InNum=None, OutNum=None):
         super().__init__()
         Param = self.Param
@@ -36,11 +35,11 @@ class LinearLayer(DLUtils.module.AbstractNetwork):
         else:
             raise Exception(Mode)
     def ReceiveMulWx(self, In): #Wx
-        return torch.mm(Input, self.Weight)
+        return torch.mm(In, self.Weight)
     def ReceiveAddMulWxb(self, In): # Wx+b
-        return torch.mm(Input, self.Weight) + self.Bias
+        return torch.mm(In, self.Weight) + self.Bias
     def ReceiveMulWAddxb(self, In): # W(x+b)
-        return torch.mm(Input + self.Bias, self.Weight)
+        return torch.mm(In + self.Bias, self.Weight)
     def SetWeight(self, Weight, Train=True):
         Weight = DLUtils.ToNpArrayOrNum(Weight)
         Param = self.Param
@@ -91,10 +90,12 @@ class LinearLayer(DLUtils.module.AbstractNetwork):
         return self
     def Init(self, IsSuper=True, **Dict):
         Param = self.Param
-        assert Param.Data.hasattr("Weight")
         assert Param.hasattr("Mode")
         if not IsSuper:
+            if not Param.Data.hasattr("Weight"):
+                self.SetWeightDefault()
             self.SetReceiveMethod()
+
         if Param.Mode != "Wx":
             if not Param.Data.hasattr("Bias"):
                 Param.Data.Bias = 0.0
@@ -103,4 +104,13 @@ class LinearLayer(DLUtils.module.AbstractNetwork):
         if "Bias" not in Param.Tensor:
             self.Bias = Param.Data.Bias
         super().Init(IsSuper=True, **Dict)
+        return self
+    def SetWeightDefault(self):
+        Param = self.Param
+        self.SetTrainParam("Weight",
+            DLUtils.SampleFromKaimingUniform(
+                (Param.In.Num, Param.Out.Num),
+                NonLinear=None,
+            )
+        )
         return self

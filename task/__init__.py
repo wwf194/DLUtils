@@ -2,12 +2,11 @@
 
 import DLUtils
 from .image.classification import ImageClassificationTask
-from .image.classification import mnist, cifar10
-
+from .image.classification import MNIST, CIFAR10
 
 DatasetMap = DLUtils.IterableKeyToElement({
-    ("MNIST", "mnist"): mnist,
-    ("CIFAR", "cifar", "cifar10"): mnist,
+    ("MNIST", "mnist"): MNIST,
+    ("CIFAR", "cifar", "cifar10"): CIFAR10,
     ("ImageClassification"): ImageClassificationTask
 })
 

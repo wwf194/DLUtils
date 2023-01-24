@@ -1,5 +1,8 @@
 {
     "python.analysis.extraPaths": [
         "../" // /home/wwf/Project/
-    ]
+    ],
+    "editor.autoIndent": "keep",
+    "python.formatting.provider": "none",
+    "editor.detectIndentation": false
 }

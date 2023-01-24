@@ -82,6 +82,8 @@ if __name__=="__main__":
                     DLUtils.example.cifar10_conv()
             else:
                 raise Exception()
+        elif SubTask in ["mnist_vae"]:
+            DLUtils.example.mnist_vae()
         else:
             raise Exception(SubTask)
     elif Task in ["cifar10"]:
@@ -94,5 +96,6 @@ if __name__=="__main__":
                 args.path,
                 "./task/image/classification/cifar10/"
             )
+
     else:
         raise Exception()

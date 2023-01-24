@@ -657,19 +657,12 @@ def PlotMatrixWithColorBar(
             "Min": Min,
             "Max": Max,
         })
-    #ax.axis("off")
     STATE0 = PlotMatrix(
         ax, data=data, dataInColor=dataInColor, ColorMap=ColorMap, XYRange=XYRange, Coordinate=Coordinate, 
         PixelHeightWidthRatio=PixelHeightWidthRatio, Ticks=Ticks,
         dataMask=dataMask, Save=False,
         XLabel=XLabel, YLabel=YLabel, Title=Title, **Dict
     )
-    
-    # if ColorBarOrientation in ["Auto", "auto"]:
-    #     if data.shape[0] / data.shape[1] > 1.5:
-    #         ColorBarOrientation = "vertical"
-    #     else:
-    #         ColorBarOrientation = "horizontal"
     
     aspect = GetAspectOfAx(ax)
     axColorBar = GetSubAx(ax, 1.0 + 0.1 / aspect, 0.0, 0.1 / aspect, 1.0)
@@ -692,7 +685,6 @@ def PlotMatrix(
         XLabel=None, YLabel=None, Title=None, Ticks=None, Origin=None,
         Save=False, SavePath=None, Format="svg", **Dict
     ):
-
     if dataInColor is None:
         # dataMask: [XNum, YNum]. Value: 0 if elemented is to be masked else 1.
         MaskInfOrNaN = Dict.setdefault("MaskInfOrNaN", True)
@@ -752,6 +744,8 @@ def PlotMatrix(
         PixelNumX = Right - Left
         PixelNumY = Top - Bottom
 
+    
+    PlotHeightWidthRatio = None
     if PixelHeightWidthRatio in ["FillAx"]:
         PixelHeightWidthRatio = "auto"
         axPlot = ax
@@ -760,12 +754,15 @@ def PlotMatrix(
         DataHeightWidthRatioMin = Dict.setdefault("DataHeightWidthRatioMin", 0.2)
         DataHeightWidthRatio = 1.0 * PixelNumY / PixelNumX
         if DataHeightWidthRatio > DataHeightWidthRatioMax:
+            PlotHeightWidthRatio = DataHeightWidthRatioMax
             # PixelNumY * PixelHeight = PixelNumX * PixelWidth * 5.0
             PixelHeightWidthRatio = 5.0 * PixelNumX / PixelNumY
         elif DataHeightWidthRatio < DataHeightWidthRatioMin:
+            PlotHeightWidthRatio = DataHeightWidthRatioMin
             # PixelNumY * PixelHeight = PixelNumX * PixelWidth * 0.2
             PixelHeightWidthRatio = 0.2 * PixelNumX / PixelNumY
         else:
+            PlotHeightWidthRatio = DataHeightWidthRatio
             if data.shape[1] > data.shape[0]:
                 HeightWidthRatio = 1.0 * data.shape[1] / data.shape[0]
                 #axPlot = GetSubAx(ax, 0.5 - WidthHeightRatio / 2.0, 0.0, WidthHeightRatio, 1.0)
@@ -785,9 +782,27 @@ def PlotMatrix(
             axPlot.set_yticklabels(Ticks["YTicksStr"])
         elif Ticks in ["int", "Int"]:
             XTicks, XTicksStr = GetXTicksInt(round(Left), round(Right - 1.0))
+            IsXTicksPrune = False
+            if PlotHeightWidthRatio is not None:
+                if PlotHeightWidthRatio >= DataHeightWidthRatioMax:
+                    XTicks, XTicksStr = PruneTicks(XTicks, XTicksStr, MaxNum=3)
+                    IsXTicksPrune = True
             axPlot.set_xticks(_OffsetTicks(XTicks, 0.5), labels=XTicksStr)
+            if IsXTicksPrune:
+                # RotateXTicks(axPlot, 45)
+                pass
+            
             YTicks, YTicksStr = GetYTicksInt(round(Bottom), round(Top - 1.0))
+            IsYTicksPrune = False
+            if PlotHeightWidthRatio is not None:
+                if PlotHeightWidthRatio <= DataHeightWidthRatioMin:
+                    YTicks, YTicksStr = PruneTicks(YTicks, YTicksStr, MaxNum=3)
+                    IsYTicksPrune = True
             axPlot.set_yticks(_OffsetTicks(YTicks, 0.5), labels=YTicksStr)
+            if IsYTicksPrune:
+                # RotateXTicks(axPlot, 45)
+                pass
+
         elif Ticks in ["float", "Float",]:
             SetXTicksFloat(axPlot, round(Left), round(Right))
             SetYTicksFloat(axPlot, round(Bottom), round(Top))
@@ -837,6 +852,23 @@ def PlotMatrix(
     SetTitleAndLabelForAx(axPlot, XLabel, YLabel, Title)
     SaveFigForPlt(Save, SavePath)
     return STATE.NORMAL
+
+def RotateXTicks(ax, Angle):
+    # Angle: positive: clockwise. negative: counter-clockwise.
+    ax.tick_params(axis='x', labelrotation=Angle)
+
+def RotateYTicks(ax, Angle):
+    # Angle: positive: clockwise. negative: counter-clockwise.
+    ax.tick_params(axis='y', labelrotation=Angle)
+
+def PruneTicks(Ticks, TicksStr, MaxNum = 3):
+    TickNum = len(Ticks)
+    if TickNum <= MaxNum:
+        return Ticks, TicksStr
+    else:
+        IndexList = np.asarray(range(MaxNum), dtype=np.float32) / (MaxNum - 1)
+        IndexList = np.round(IndexList * (TickNum - 1)).astype(np.int32)
+    return [Ticks[Index] for Index in IndexList], [TicksStr[Index] for Index in IndexList],
 
 def _OffsetTicks(Ticks, Offset):
     for Index, Tick in enumerate(Ticks):
@@ -948,8 +980,7 @@ def PlotBatchDataAndDistribution1D(Data=None, axes=None, Name=None, Save=True, S
     PlotDataAndDistribution2D(Data=Data, axes=axes, Name=Name, Save=Save, SavePath=SavePath, **Dict)
 
 def PlotDataAndDistribution2D(Data=None, axes=None, Name=None, Save=True, SavePath=None, **Dict):
-    XLabelDistribution = Dict.setdefault("XLabelDistribution", "Data Value")
-    YLabelDistribution = Dict.setdefault("YLabelDistribution", "Data Num")
+
     dataMask = Dict.setdefault("dataMask", None)
     Ticks = Dict.setdefault("Ticks", "Int")
     ColorForEqualValues = Dict.setdefault("ColorForEqualValues", ParseColor("LightGray"))
@@ -974,11 +1005,12 @@ def PlotDataAndDistribution2D(Data=None, axes=None, Name=None, Save=True, SavePa
     else:
         Data = DLUtils.ToNpArray(Data)
 
+    _Dict = dict(Dict)
+    _Dict["Title"] = Dict.setdefault("TitlePlot", "Visualization")
     State = DLUtils.plot.PlotMatrixWithColorBar(
         ax1, data=Data,
         XAxisLocation="top", PixelHeightWidthRatio="Auto",
-        Title="Visualization",
-        **Dict
+        **_Dict
     )
     if STATE.EQUAL_MIN_MAX in State:
         ax2.set_xlim([0.0, 1.0])
@@ -990,15 +1022,15 @@ def PlotDataAndDistribution2D(Data=None, axes=None, Name=None, Save=True, SavePa
         ax2.add_patch(Rectangle((0.0, 0.0), 1.0, 1.0, color=ColorForEqualValues))
         ax2.axis('on')
     else:
+        _Dict = dict(Dict)
+        _Dict["Title"] = Dict.setdefault("TitleDistribution", "Visualization")
         DataFlat = DLUtils.FlattenNpArray(Data)
         BinStat = DLUtils.math.CalculateBinnedMeanStd(DataFlat)
 
-        DictDistribution = dict(Dict)
-
-        Dict["XLabel"] = Dict.pop("XLabelDistribution")
-        Dict["YLabel"] = Dict.pop("YLabelDistribution")
-        Dict["YMin"] = 0
-        PlotLineChart(ax2, BinStat.Xs, BinStat.YNum, **Dict)
+        _Dict["XLabel"] = Dict.setdefault("XLabelDistribution", "Data Value")
+        _Dict["YLabel"] = Dict.setdefault("YLabelDistribution", "Data Num")
+        _Dict["YMin"] = 0
+        PlotLineChart(ax2, BinStat.Xs, BinStat.YNum, **_Dict)
     SaveFigForPlt(Save, SavePath)
 
 def Merge2Mask(mask1, mask2):
@@ -1220,8 +1252,8 @@ def PlotLineChart(ax=None, Xs=None, Ys=None,
     ):
     XLabel = Dict.setdefault("XLabel", "X")
     YLabel = Dict.setdefault("YLabel", "Y")
-    XTicks = Dict.setdefault("XTicks", "X")
-    YTicks = Dict.setdefault("YTicks", "Y")
+    XTicks = Dict.setdefault("XTicks", "Float")
+    YTicks = Dict.setdefault("YTicks", "Float")
 
     if ax is None:
         fig, ax = CreateFigurePlt()
