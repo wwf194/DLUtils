@@ -7,7 +7,7 @@ def cifar10_conv_anal(SaveDir = None, IsTrain=True):
     SaveDir = DLUtils.file.StandardizePath(SaveDir)
     Device = "cuda:0"  
     SaveFilePath = DLUtils.file.AfterTrainModelFile(SaveDir + "model/")
-    Model = DLUtils.network.ModuleSequence().FromFile(SaveFilePath)
+    Model = DLUtils.network.ModuleSeries().FromFile(SaveFilePath)
     Model.ToJsonFile(SaveDir + "model/config.jsonc")
     TrainSession = DLUtils.TrainSession().FromFile(SaveDir + "TrainSession.dat").Init()
 
@@ -30,7 +30,7 @@ def cifar10_conv(SaveDir=None, IsAnal=False):
     Task = DLUtils.Task("ImageClassification").SetType("cifar10").SetDataPath("~/Data/cifar-10-python.tar.gz")
     Log = DLUtils.log.SeriesLog()
     
-    Model = DLUtils.network.ModuleSequence(
+    Model = DLUtils.network.ModuleSeries(
         [
             DLUtils.transform.Norm(0.0, 256.0, -1.0, 1.0),
             DLUtils.network.Conv2D(Padding=1).SetWeight(
@@ -55,7 +55,7 @@ def cifar10_conv(SaveDir=None, IsAnal=False):
     DLUtils.file.JsonDict2File(TrainParam, SaveDir + "trainable_param.json")
     SaveFilePath = SaveDir + "model/config(Init).dat"
     Model.ToFile(SaveFilePath).ToJsonFile(SaveDir + "model/config.json")
-    Model = DLUtils.network.ModuleSequence().FromFile(SaveFilePath)
+    Model = DLUtils.network.ModuleSeries().FromFile(SaveFilePath)
     Model.ToJsonFile(SaveDir + "model/config.jsonc")
     Model.PlotWeight(SaveDir + "model/weight/")
     Model.SetLog(Log).FromFile(SaveFilePath).Init()

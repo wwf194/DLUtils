@@ -7,6 +7,7 @@ from DLUtils.attr import *
 # from DLUtils.loss.L2Loss import L2Loss
 # from DLUtils.loss.classification import Probability2MostProbableIndex, LogAccuracyForSingleClassPrediction
 from .entropy import CrossEntropy, SoftMax, SoftMaxAndCrossEntropy
+from .KLDivergence import KLNormAndNorm01
 
 def Loss(Type):
     if Type in ["CrossEntropy"]:

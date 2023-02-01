@@ -1,10 +1,12 @@
+from .LayerNorm import LayerNorm
+from .BatchNorm import BatchNorm2D
+
 import DLUtils
-from .. import AbstractOperator
+from DLUtils.module import AbstractOperator
 class Norm(AbstractOperator):
     def __init__(self, Min1=None, Max1=None, Min2=None, Max2=None):
         super().__init__()
         Param = self.Param
-        Param._CLASS = "DLUtils.transform.Norm"
         Param.Min1 = Min1
         Param.Max1 = Max1
         Param.Min2 = Min2
@@ -37,10 +39,10 @@ class NormOnColorChannel(AbstractOperator):
             Param.After.Std = Std1
     def _ReceiveMean0Std1(self, In):
         # Input : [BatchSize, Channel, Width, Height]
-        Output = (Input - self.Mean0[None, :, None, None]) / self.Std0[None, :, None, None]
-        return Output
+        Out = (In - self.Mean0[None, :, None, None]) / self.Std0[None, :, None, None]
+        return Out
     def _Receive(self, In):
-        return Output
+        return In
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         Param.After.setdefault("Mean", 0.0)

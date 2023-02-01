@@ -2,7 +2,7 @@
     "python.analysis.extraPaths": [
         "../" // /home/wwf/Project/
     ],
-    "editor.autoIndent": "keep",
+    "editor.autoIndent": "full",
     "python.formatting.provider": "none",
     "editor.detectIndentation": false
 }

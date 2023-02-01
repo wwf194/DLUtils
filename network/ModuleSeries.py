@@ -2,16 +2,7 @@ import DLUtils
 import numpy as np
 from ..module import AbstractNetwork
 
-class ModuleSequence(AbstractNetwork):
-    def __init__(self, ModuleList=None, Log=None, **Dict):
-        super().__init__(Log, **Dict)
-        if ModuleList is None:
-            ModuleList = []
-        assert isinstance(ModuleList, list)
-        if ModuleList is not None:
-            self.SetModuleList(ModuleList)
-        else:
-            self.ModuleList = []
+class ModuleSeries(DLUtils.module.AbstractModuleGroup):
     def LoadParam(self, Param):
         super().LoadParam(Param)
         Param = self.Param
@@ -20,40 +11,62 @@ class ModuleSequence(AbstractNetwork):
             self.ModuleList.append(self.SubModules[Name])
         Param.Module.Num = self.ModuleNum = len(self.ModuleList)
         return self
-    def SetModuleList(self, ModuleList):
-        Param = self.Param
-        if isinstance(ModuleList, list):
-            for Index, SubModule in enumerate(ModuleList):
-                self.AddSubModule(f"L{Index}", SubModule)
-        if isinstance(ModuleList, dict):
-            for Name, SubModule in ModuleList.items():
-                self.AddSubModule(
-                    Name, SubModule
-                )
-        self.ModuleNum = len(ModuleList)
-        self.ModuleList = ModuleList
-        Param.Module.Num = len(ModuleList)
-        return self
-    def AddSubModule(self, Name=None, SubModule=None, **Dict):
-        Param = self.Param
-        ModuleList = self.ModuleList
-        self.ModuleList.append(SubModule)
-        super().AddSubModule(Name, SubModule)
-        self.ModuleNum = Param.Module.Num = len(ModuleList)
-        return self
-    def AppendSubModule(self, SubModule=None):
+
+    # def AddSubModule(self, Name=None, SubModule=None, **Dict):
+    #     Param = self.Param
+    #     super().AddSubModule(Name, SubModule)
+    #     return self
+    def AppendSubModule(self, Name=None, SubModule=None):
         Param = self.Param
         ModuleList = self.ModuleList
         Index = len(ModuleList)
         self.ModuleList.append(SubModule)
-        super().AddSubModule(f"L{Index}", SubModule)
+        if Name is None:
+            Name = f"L{Index}"
+        super().AddSubModule(Name, SubModule)
         self.ModuleNum = Param.Module.Num = len(ModuleList)
         return self
-    def Receive(self, In):
+    def _forward_out(self, In):
         for ModuleIndex in range(self.ModuleNum):
             Out = self.ModuleList[ModuleIndex](In)
             In = Out
         return Out
+    def _forward_all_tuple(self, In):
+        OutList = []
+        for ModuleIndex in range(self.ModuleNum):
+            Out = self.ModuleList[ModuleIndex](In)
+            OutList.append(Out)
+            In = Out
+        return tuple(OutList)
+    def _forward_all_dict(self, In):
+        OutDict = {}
+        for ModuleIndex in range(self.ModuleNum):
+            Out = self.ModuleList[ModuleIndex](In)
+            OutDict[f"L{ModuleIndex}"] = Out
+            In = Out
+        return OutDict
+
+    def Init(self, IsSuper=False, IsRoot=True):
+        if self.IsLoad():
+            self.ModuleList = list(self.SubModules.values())
+        
+        Param = self.Param
+        OutType = Param.Out.setdefault("Type", "Out")
+        import functools
+
+        ReceiveMethodMap = DLUtils.IterableKeyToElement({
+            ("Out", "OutOnly"): self._forward_out,
+            ("All", "AllInTuple"): self._forward_all_tuple,
+            ("AllInDict"): self._forward_all_dict
+        })
+
+        #self.Receive = functools.partial(self.ReceiveMethodMap[OutType], self=self)
+        self.Receive = ReceiveMethodMap[OutType]
+
+        self.ModuleNum = Param.Module.Num = len(self.ModuleList)
+        assert self.ModuleNum > 0
+        super().Init(IsSuper=True, IsRoot=IsRoot)
+        return self
 
 class ModuleGraph(AbstractNetwork):
     def __init__(self):
@@ -115,4 +128,4 @@ class ModuleGraph(AbstractNetwork):
         return super().Init(IsSuper=True, IsRoot=IsRoot)
 
 
-ModuleList = ModuleSequence
+ModuleList = ModuleSeries

@@ -86,8 +86,8 @@ class UNet(DLUtils.module.AbstractNetwork):
         Out = self.OutputLayer(Out)
         return Out
 
-from .ModuleSquence import ModuleSequence
-class UNetDownPath(ModuleSequence):
+from .ModuleSeries import ModuleSeries
+class UNetDownPath(ModuleSeries):
     def Receive(self, In):
         Down = In
         SkipOut = []
@@ -117,7 +117,7 @@ class UNetDownPath(ModuleSequence):
                 InNum = OutNum
                 OutNum = InNum * 2
         return super().Init(IsSuper=False, IsRoot=IsRoot)
-class UNetUpPath(ModuleSequence):
+class UNetUpPath(ModuleSeries):
     def Receive(self, DownIn, SkipInList):
         for Index, Block in enumerate(self.ModuleList):
             SkipIn = SkipInList[Index] # Already reversed
@@ -174,7 +174,7 @@ class UNetDownSampleBlock(DLUtils.module.AbstractNetwork):
             Param.setdefault("Padding", 1)
             Param.Kernel.setdefault("Size", 3)
             Param.BatchNorm.setdefault("Enable", False)
-            Conv = DLUtils.network.ModuleSequence()
+            Conv = DLUtils.network.ModuleSeries()
             
             Conv.AddSubModule(
                 "Conv1", 
@@ -210,7 +210,7 @@ class UNetDownSampleBlock(DLUtils.module.AbstractNetwork):
             self.Norm = lambda x:x
         return super().Init(IsSuper=True, IsRoot=IsRoot)
 
-class UNetUpSampleBlock(ModuleSequence):
+class UNetUpSampleBlock(ModuleSeries):
     def SetParam(self, **Dict):
         Param = self.Param
         _Dict = {}

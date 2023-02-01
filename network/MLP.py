@@ -1,16 +1,17 @@
 import DLUtils
 from .NonLinearLayer import NonLinearLayer
-from .ModuleSquence import ModuleList
+from .ModuleSeries import ModuleList
 class MLP(ModuleList):
     SetParamMap = DLUtils.IterableKeyToElement({
         ("NonLinear"): "NonLinear.DefaultType",
         ("NonLinearOnLastLayer"): "NonLinear.ApplyOnLastLayer",
         ("UnitNum", "NeuronNum"): "Layer.Unit.Num"
     })
-    def __init__(self, UnitNum=None, Log=None, **Dict):
-        super().__init__(Log, **Dict)
+    def __init__(self, UnitNum=None, **Dict):
         if UnitNum is not None:
-            self.SetParam(UnitNum=UnitNum)
+            Dict["UnitNum"] = UnitNum
+            assert len(UnitNum) > 1
+        super().__init__(**Dict)
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         if self.IsInit():
@@ -23,11 +24,12 @@ class MLP(ModuleList):
                 Param.NonLinear.setdefault("ApplyOnLastLayer", True)
             for Index in range(Param.Layer.Num):
                 NonLinearStr = self.GetNonLinear(Index, LayerNum)
-                self.AddSubModule(
-                    "Layer%d"%Index, NonLinearLayer(
-                        InNum = Param.Layer.Unit.Num[Index],
-                        OutNum = Param.Layer.Unit.Num[Index + 1],
-                        NonLinear = NonLinearStr
+                self.AppendSubModule(
+                    Name="Layer%d"%Index,
+                    SubModule=NonLinearLayer(
+                        InNum=Param.Layer.Unit.Num[Index],
+                        OutNum=Param.Layer.Unit.Num[Index + 1],
+                        NonLinear=NonLinearStr
                     )
                 )
         self.LayerNum = Param.Layer.Num

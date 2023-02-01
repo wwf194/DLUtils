@@ -45,12 +45,12 @@ def GenerateColors(Num=10, ColorMap="gist_rainbow"):
 
 def PlotLinesPlt(ax, XYsStart, XYsEnd=None, Width=1.0, Color=NamedColor.Black):
     if XYsEnd is None:
-        Edges = ToNpArray(XYsStart)
+        Edges = DLUtils.ToNpArray(XYsStart)
         XYsStart = Edges[:, 0]
         XYsEnd = Edges[:, 1]
     else:
-        XYsStart = ToNpArray(XYsStart)
-        XYsEnd = ToNpArray(XYsEnd)
+        XYsStart = DLUtils.ToNpArray(XYsStart)
+        XYsEnd = DLUtils.ToNpArray(XYsEnd)
     LineNum = XYsStart.shape[0]
     for Index in range(LineNum):
         X = [XYsStart[Index, 0], XYsEnd[Index, 0]]
@@ -1090,11 +1090,9 @@ def ColorWheel(Index): #生成横跨0-255个位置的彩虹颜色.
         Index -= 170
         return (0, Index * 3, 255 - Index * 3)
 
-def PlotImages(imgs, ColNum):
-    img_num = len(imgs)
-    RowNum = img_num // ColNum
-    if img_num%ColNum>0:
-        RowNum += 1
+def PlotImages(ImageList, ColNum):
+    ImageNum = len(ImageList)
+    RowNum, ColNum = ParseRowColNum(ImageNum)
     fig, axes = plt.subplots(RowNum, ColNum)
 
 def cat_imgs_h(imgs, ColNum=10, space_Width=4):
@@ -2014,6 +2012,24 @@ def Norm2Image(data):
         data = np.stack([data, data, data], axis=2)
     return data
 
+def PlotImageLFloat01(Image, SavePath):
+    NpArray2ImageFileGreyFloat01PIL(Image, SavePath)
+PlotGreyImage = PlotImageGreyFloat = PlotImageGreyFloat01 = PlotImageLFloat01
+
+def PlotImageRGBFloat01(Image, SavePath):
+    #NpArray2ImageFile(Image, SavePath)
+    raise Exception()
+    return
+PlotColorImage = PlotImageRGBFloat = PlotImageRGBFloat01
+
+def PlotImage(Image, SavePath):
+    Shape = Image.shape
+    if len(Shape) == 2:
+        NpArray2ImageFileGreyFloat01PIL(Image, SavePath)
+    elif len(Shape) == 3:
+        PlotImageRGBFloat01(Image, SavePath)
+    else:
+        raise Exception()
 from PIL import Image as Im
 def NpArray2ImageFilePIL(Data, SavePath=None):
     # image : np.ndarray, with dtype np.uint8
@@ -2021,13 +2037,25 @@ def NpArray2ImageFilePIL(Data, SavePath=None):
     DLUtils.EnsureFileDir(SavePath)
     ImagePIL.save(SavePath)
 
+def NpArray2ImageFileGreyFloat01PIL(Image, ImageFilePath):
+    # Image: (Height, Width). float within range [0.0, 1.0].
+    DLUtils.EnsureFileDir(ImageFilePath)
+    ImageFilePath = DLUtils.file.RenameFileIfExists(ImageFilePath)
+    ImageInt255 = (Image * 255.999).astype(np.uint8)
+    _Image = Im.fromarray(ImageInt255)
+    _Image = _Image.convert('L')
+    _Image.save(ImageFilePath)
+
 import matplotlib.image
-def NpArray2ImageFileFloatMPL(Data, ImageFilePath):
+def NpArray2ImageFileFloat01MPL(Data, ImageFilePath):
     # requires Data is float, values in [0.0, 1.0].
+    DLUtils.EnsureFileDir(ImageFilePath)
+    ImageFilePath = DLUtils.file.RenameFileIfExists(ImageFilePath)
     matplotlib.image.imsave(ImageFilePath, Data)
-NpArray2ImageFile = NpArray2ImageFileFloatMPL
-NpArray2ImageFileFloat = NpArray2ImageFileFloatMPL
-UInt8NpArray2ImageFile = NpArray2ImageFileFloatMPL
+
+NpArray2ImageFile = NpArray2ImageFileFloat01MPL
+NpArray2ImageFileFloat = NpArray2ImageFileFloat01MPL
+NpArray2ImageFileInt255 = NpArray2ImageFileFloat01MPL
 
 def Tensor2ImageFile(Data, SavePath):
     Data = DLUtils.TorchTensor2NpArray(Data)

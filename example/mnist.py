@@ -7,7 +7,7 @@ def mnist_mlp(SaveDir="test/mnist/mlp"):
     Device = "cuda:0"
     
     Log = DLUtils.log.SeriesLog()
-    Model = DLUtils.network.ModuleSequence(
+    Model = DLUtils.network.ModuleSeries(
         [
             DLUtils.transform.Reshape(-1, 28 * 28),
             DLUtils.transform.Norm(0.0, 256.0, 0.0, 1.0),
@@ -28,11 +28,12 @@ def mnist_mlp(SaveDir="test/mnist/mlp"):
     
     SavePath = "./test/mlp - param.dat"
     Model.ToFile(SavePath).ToJsonFile("./test/mlp - param.json")
-    Model = DLUtils.network.ModuleSequence().FromFile("./test/mlp - param.dat")
+    Model = DLUtils.network.ModuleSeries().FromFile("./test/mlp - param.dat")
     Model.ToJsonFile("./test/mlp - param - 2.json")
     Model.PlotWeight("./test/")
     Model.SetLog(Log).FromFile(SavePath).Init()
     Input = DLUtils.SampleFromNormalDistribution((64, 28, 28), 0.0, 1.0)
+    
     Output = Model.Receive(
         DLUtils.ToTorchTensor(Input)
     )

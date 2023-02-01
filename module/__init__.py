@@ -1,57 +1,22 @@
 import torch.optim as optim
 import torch.nn as nn
 import torch.nn.functional as F
-
 import DLUtils
-
 import functools
 import warnings
 
-def BuildModuleFromType(Type):
-    module = DLUtils.transform.BuildModuleIfIsLegalType(Type)
-    if module is not None:
-        return module
-    
-    module = DLUtils.loss.BuildModuleIfIsLegalType(Type)
-    if module is not None:
-        return module
-    
-    module = DLUtils.dataset.BuildModuleIfIsLegalType(Type)
-    if module is not None:
-        return module
 
-    module = DLUtils.optimize.BuildModuleIfIsLegalType(Type)
-    if module is not None:
-        return module
-
-    raise Exception()
-
-def BuildModule(param, **kw):
+def BuildModule(param, **Dict):
     if hasattr(param, "ClassPath"):
         try:
             Class = DLUtils.parse.ParseClass(param.ClassPath)
-            return Class(**kw)
+            return Class(**Dict)
         except Exception:
             DLUtils.AddWarning("Cannot parse ClassPath: %s"%param.ClassPath)
     # if param.Type in ['transform.RNNLIF']:
     #     print("aaa")
-    module = DLUtils.transform.BuildModuleIfIsLegalType(param, **kw)
-    if module is not None:
-        return module
-    
-    module = DLUtils.loss.BuildModuleIfIsLegalType(param, **kw)
-    if module is not None:
-        return module
-    
-    module = DLUtils.dataset.BuildModuleIfIsLegalType(param, **kw)
-    if module is not None:
-        return module
 
-    module = DLUtils.optimize.BuildModuleIfIsLegalType(param, **kw)
-    if module is not None:
-        return module
-
-    module = BuildExternalModule(param, **kw)
+    module = BuildExternalModule(param, **Dict)
     if module is not None:
         return module
     raise Exception()
@@ -103,15 +68,15 @@ class LogComponent:
         return self
 
 class AbstractModule(LogComponent):
-    def __init__(self, Log=None):
+    def __init__(self, Log=None, **Dict):
         self.Name = "NullName"
         self.SubModules = DLUtils.param()
         Param = self.Param = DLUtils.Param()
-        #Param._CLASS = "DLUtils.module.AbstractModule"
         Param._CLASS = DLUtils.system.ClassPathStr(self)
         Param._PATH = "Root"
         if Log is not None:
             self._Log = Log
+        self.SetParam(**Dict)
     def __call__(self, *List, **Dict):
         return self.CallMethod(*List, **Dict)
     def ExtractParam(self, RetainSelf=True):
@@ -140,16 +105,21 @@ class AbstractModule(LogComponent):
         return self
     def SetParam(self, **Dict):
         Param = self.Param
-        if hasattr(self, "SetParamMap"):
-            for Key, Value in Dict.items():
-                if Key in self.SetParamMap:
-                    Param.setattr(self.SetParamMap[Key], Value)
-                else:
-                    Param.setattr(Key, Value)
+        UseSetParamMapDefault = Dict.setdefault("UseSetParamMapDefault", True)
+        Map = {}
+        if UseSetParamMapDefault:
+            Map = SetParamMapDefault
         else:
-            for Key, Value in Dict.items():
+            Map = {}
+        
+        if hasattr(self, "SetParamMap"):
+            Map.update(self.SetParamMap)
+
+        for Key, Value in Dict.items():
+            if Key in Map:
+                Param.setattr(Map[Key], Value)
+            else:
                 Param.setattr(Key, Value)
-        # setattr(self, Key, Value)
         return self
     def SetAttr(self, **Dict):
         for Key, Value in Dict.items():
@@ -171,7 +141,7 @@ class AbstractModule(LogComponent):
             Param.SubModules.setattr(Name, "MODULE_WITHOUT_PARAM")
         self.SubModules[Name] = SubModule
         setattr(self, Name, SubModule)
-        
+
     def GetSubModule(self, Name):
         return self.SubModules.getattr(Name)
     def RemoveSubModule(self, Name=None, SubModule=None):
@@ -233,7 +203,19 @@ class AbstractModule(LogComponent):
         if hasattr(self, "_ClassStr"):    
             return self._ClassStr
         else:
-            return str(self.__class__)
+            return DLUtils.system.ClassPathStr(self)
+    def SetName(self, Name, Recur=True):
+        _PATH = self.Param._PATH
+        PathList = _PATH.split(".")
+        PathList[0] = Name
+        self.Param._PATH = ".".join(PathList)
+        if Recur:
+            for SubModule in self.SubModules.values():
+                SubModule.SetName(Name)
+    def Rename(self, Name):
+        self.SetName(Name)
+    def ReName(self, Name):
+        self.SetName(Name)
     def SetEventDict(self):
         if not hasattr(self, "EventDict"):
             self.EventDict = DLUtils.param({
@@ -241,6 +223,7 @@ class AbstractModule(LogComponent):
             })
         return self
     def Init(self, IsSuper=False, IsRoot=True):
+        assert not self.InitFinished() # avoid 
         if self.IsLoad():
             for Name, SubModule in self.SubModules.items():
                 SubModule.Init(IsSuper=False, IsRoot=False)
@@ -278,6 +261,7 @@ class AbstractModule(LogComponent):
         if IsRoot:
             self.SetTest()
         assert hasattr(self, "CallMethod")
+        self._InitFinished = True
         return self
     def LogWithSelfInfo(self, Content, Type="Unknown"):
         self.Log(f"{self.PathStr()}({self.ClassStr()}): {Content}", Type=Type)
@@ -387,6 +371,8 @@ class AbstractModule(LogComponent):
         return not self.IsLoad()
     def IsLoad(self):
         return hasattr(self, "_IsLoad") and self._IsLoad
+    def InitFinished(self):
+        return hasattr(self, "_InitFinished") and self._InitFinished
     def HandleTensorBySelf(self):
         return hasattr(self, "_HandleTensorBySelf") and self._HandleTensorBySelf
     def SetTrain(self, Recur=True):
@@ -405,19 +391,19 @@ class AbstractModule(LogComponent):
 EmptyModule = AbstractModule
 class AbstractOperator(AbstractModule):
     # operation module without trainable parameter
-    def __init__(self, Log=None):
-        super().__init__(Log=Log)
+    def __init__(self, **Dict):
+        super().__init__(**Dict)
     def AddSubModule(self, Name, SubModule):
         raise Exception("AbstractOperator module.")
 
 class AbstractNetwork(AbstractModule):
     # network with trainable weights.
-    def __init__(self, Log=None, **Dict):
-        super().__init__(Log=Log)
+    def __init__(self, **Dict):
+        super().__init__(**Dict)
         Param = self.Param
         Param.Tensor = set()
         Param.TrainParam = set()
-        self.SetParam(**Dict)
+
     def SetTrainParam(self, Name=None, TrainParam=None, **Dict):
         if Name is not None:
             assert TrainParam is not None
@@ -633,3 +619,50 @@ class TorchModuleWrapper(AbstractNetwork):
     def UpdateTensorFromDict(self, Recur=False):
         self.UpdateParamFromModule()
         return super().UpdateTensorFromDict(Recur)
+
+SetParamMapDefault = DLUtils.IterableKeyToElement({
+    ("InNum", "InputNum"): "In.Num",
+    ("InType", "InputType"): "In.Type",
+    ("OutNum", "OutputNum"): "Out.Num",
+    ("OutType", "OutputType"): "Out.Type"
+})
+
+class AbstractModuleGroup(AbstractNetwork):
+    def __init__(self, *List, **Dict):
+        super().__init__(**Dict)
+        if len(List) == 0:
+            ModuleList = Dict.get("ModuleList")
+        else:
+            assert Dict.get("ModuleList") is None
+            if len(List) == 1 and DLUtils.IsIterable(List[0]):
+                if isinstance(List[0], dict):
+                    ModuleList = List[0]
+                else:
+                    ModuleList = List[0]
+            else:
+                ModuleList = List
+        self.ModuleList = []
+        if ModuleList is not None:
+            if isinstance(ModuleList, tuple):
+                ModuleList = list(ModuleList)
+            assert isinstance(ModuleList, list) or isinstance(ModuleList, dict)
+            self.SetModuleList(ModuleList)
+    def SetModuleList(self, ModuleList):
+        Param = self.Param
+        if isinstance(ModuleList, list):
+            for Index, SubModule in enumerate(ModuleList):
+                self.AddSubModule(f"L{Index}", SubModule)
+            self.ModuleList = ModuleList
+        if isinstance(ModuleList, dict):
+            for Name, SubModule in ModuleList.items():
+                self.AddSubModule(
+                    Name, SubModule
+                )
+            self.ModuleList = list(ModuleList.values())
+        return self
+    def Init(self, IsSuper=False, IsRoot=True):
+        Param = self.Param
+        if self.IsLoad():
+            self.ModuleList = list(self.SubModules.values())
+        self.ModuleNum = Param.Module.Num = len(self.ModuleList)
+        return super().Init(IsSuper=True, IsRoot=IsRoot)

@@ -2,16 +2,26 @@ import torch
 import torch.nn.functional as F
 from .. import AbstractOperator
 class Reshape(AbstractOperator):
-    def __init__(self, *List):
-        super().__init__()
-        Param = self.Param
-        Param._CLASS = "DLUtils.transform.Reshape"
+    def __init__(self, *List, **Dict):
         if len(List) > 0:
-            if len(List) == 1 and isinstance(List[0], tuple) or isinstance(List[0], list):
-                Shape = list(List[0])
+            assert Dict.get("Shape") is None
+            Dict["Shape"] = List
+        super().__init__(**Dict)
+    def SetParam(self, **Dict):
+        for Key, Value in Dict.items():
+            if Key in ["Shape"]:
+                Param = self.Param
+                if len(Value) > 0:
+                    if len(Value) == 1 and (isinstance(Value[0], tuple) or isinstance(Value[0], list)):
+                        Value = list(Value[0])
+                    else:
+                        Value = Value
+                    Param.Shape.After = Value
+                else:
+                    raise Exception()
             else:
-                Shape = List
-            Param.Shape.After = Shape
+                raise Exception()
+        return self
     def Receive(self, In):
         return torch.reshape(In, self.Shape)
     def Init(self, IsSuper=False, IsRoot=True):

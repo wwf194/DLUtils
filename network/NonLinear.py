@@ -11,9 +11,13 @@ class ReLU(DLUtils.module.AbstractNetwork):
     def __init__(self):
         super().__init__()
         Param = self.Param
-        Param.Type = "NonLinear.ReLU"
+        #Param.Type = "NonLinear.ReLU"
     def Receive(self, In):
         return torch.relu(In)
+
+class Sigmoid(DLUtils.module.AbstractNetwork):
+    def Receive(self, In):
+        return torch.sigmoid(In)
 
 class Linear(DLUtils.module.AbstractNetwork):
     def __init__(self):

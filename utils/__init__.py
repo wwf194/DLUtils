@@ -879,8 +879,6 @@ def cat_batch(dataloader): #data:(batch_num, batch_size, image_size)
         dataloader = list(dataloader)
     return torch.cat(dataloader, dim=0)
 
-
-
 def import_file(file_from_sys_path):
     if not os.path.isfile(file_from_sys_path):
         raise Exception("%s is not a file."%file_from_sys_path)
@@ -912,18 +910,6 @@ def write_dict_info(dict_, save_path='./', save_name='dict info.txt'): # write r
                 f.write('%s: %s'%(str(key), str(value)))
             else:
                 values_remained.append([key, value])
-
-# def GetNonLinearMethodModule(Name):
-#     if Name in ['relu']:
-#         return nn.ReLU()
-#     elif Name in ['tanh']:
-#         return nn.Tanh()
-#     elif Name in ['softplus']:
-#         return nn.Softplus()
-#     elif Name in ['sigmoid']:
-#         return nn.Sigmoid()
-#     else:
-#         raise Exception(Name)
 
 def trunc_prefix(string, prefix):
     if(string[0:len(prefix)]==prefix):
@@ -988,22 +974,10 @@ def set_default_attr(self, key, value):
 set_dict_and_instance_variable = set_class_variable_and_dict = set_instance_variable_and_dict
 
 
-def load_param(dict_, exception=[], default_exception=['kw', 'param', 'key', 'item'], use_default_exception=True):
-    param = Param()
-    for key, item in dict_.items():
-        if key not in exception:
-            if use_default_exception:
-                if key not in default_exception:
-                    setattr(param, key, item)
-            else:
-                setattr(param, key, item)
-    return param
-
-def print_dict(dict_):
+def PrintDict(Dict):
     Str = ""
-    
-    for key, items in dict_.items():
-        Str('%s=%s'%(str(key), str(items)), end=' ')
+    for Key, Value in Dict.items():
+        Str('%s=%s'%(str(Key), str(Value)), end=' ')
     print('\n')
 
 def GetLastestModel(model_prefix, base_dir='./', is_dir=True):
@@ -1175,7 +1149,6 @@ def copy_files(file_list, SourceDir='./', TargetDir=None, sys_type='linux'):
     else:
         raise Exception('copy_files: Invalid sys_type: '%str(sys_type))
 
-
 def TargetDir_module(path):
     path = path.lstrip('./')
     path = path.lstrip('/')
@@ -1183,7 +1156,6 @@ def TargetDir_module(path):
         path += '/'
     path =  path.replace('/','.')
     return path
-
 
 def GetAllMethodsOfModule(ModulePath):
     from inspect import getmembers, isfunction
@@ -1397,3 +1369,17 @@ def IterableKeyToElement(Dict):
                 Dict[_Key] = Value
             Dict.pop(Key)
     return Dict
+
+def NormWithinNStd2Range(Data, Min, Max, N=1.0, Clip=True):
+    Mean0 = Data.mean()
+    Std0 = Data.std()
+    Mean1 = (Min + Max) / 2.0
+    Std1 = (Max - Min) / 2.0
+    Data1 = (Data - Mean0) / (N * Std0) * Std1 + Std1
+    if Clip:
+        Data1 = np.clip(Data1, Min, Max)
+    return Data1
+
+import functools
+NormWithinStd2Range = functools.partial(NormWithinNStd2Range, N=1.0)
+NormWithin1Std2Range = NormWithinStd2Range

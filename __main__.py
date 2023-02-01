@@ -82,8 +82,8 @@ if __name__=="__main__":
                     DLUtils.example.cifar10_conv()
             else:
                 raise Exception()
-        elif SubTask in ["mnist_vae"]:
-            DLUtils.example.mnist_vae()
+        elif SubTask in ["vae_mnist", "mnist_vae"]:
+            DLUtils.example.vae_mnist()
         else:
             raise Exception(SubTask)
     elif Task in ["cifar10"]:

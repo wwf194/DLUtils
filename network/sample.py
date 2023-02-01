@@ -5,14 +5,10 @@ import DLUtils
 class SampleFromNormalDistribution(DLUtils.module.AbstractNetwork):
     SetParamMap = DLUtils.IterableKeyToElement({
         "ReceiveFormat": "Receive.Format",
-        ("InNum", "InputNum"): "In.Num",
         ("InType", "InputType"): "In.Type",
     })
-    def __init__(self, SubModule=None):
-        super().__init__()
-        Param = self.Param
-        if SubModule is not None:
-            self.AddSubModule("SubModule", SubModule)
+    # def __init__(self, *List, **Dict):
+    #     super().__init__(*List, **Dict)
     def _ReceiveSplitMeanStd(self, Mean, Std):
         # X: [BatchSize, FeatureNum]
         # Std = LogVar.mul(0.5).exp_()
@@ -44,7 +40,6 @@ class SampleFromNormalDistribution(DLUtils.module.AbstractNetwork):
         Param = self.Param
         Param.Receive.setdefault("Format", "CatMeanStd")
         Param.In.setdefault("Type", "LogOfVariance")
-
         if Param.In.Type in ["LogOfVariance", "LogVar"]:
             self.ProcessStd = self._ProcessLogOfVariance
         elif Param.In.Type in ["Std"]:
