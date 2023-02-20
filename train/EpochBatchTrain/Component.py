@@ -1,4 +1,4 @@
-
+import numpy as np
 
 import DLUtils
 import torch
@@ -10,17 +10,147 @@ from . import EventAfterEveryBatch
 class EvaluationLog(EventAfterEveryBatch):
     def __init__(self):
         super().__init__()
-        Param = self.Param
         if hasattr(self, "AfterBatch"):
             pass
         else:
             self.Event = self.Log
-
+    def BindTestSession(self, TestSession):
+        Param = self.Param
+        # if Param.OnlineMonitor.Enable:
+        #     OnlineMonitor = DLUtils.train.EpochBatchTrain.EventAfterFixedBatch(
+        #         BatchInterval=self.OnlineMonitorBatchNum,
+        #         Event=self.OnlineReport
+        #     ).Init()
+        #     # OnlineMonitor.AfterEpoch = lambda self, Dict: Dict.TestSession.RemoveSubModule(self)
+        #     OnlineMonitor.AfterEpoch = lambda Dict: Dict.TestSession.RemoveSubModule("OnlineMonitor")
+        #     TestSession.Bind(OnlineMonitor=OnlineMonitor)
+        return self
+    def BindTrainSession(self, TrainSession):
+        Param = self.Param
+        # if Param.OnlineMonitor.Enable:
+        #     OnlineMonitor = DLUtils.train.EpochBatchTrain.EventAfterFixedBatch(
+        #         BatchInterval=self.OnlineMonitorBatchNum,
+        #         Event=self.OnlineReport
+        #     )
+        #     TrainSession.Bind(OnlineMonitor=OnlineMonitor)
+        #     OnlineMonitor.BindTrainSession(TrainSession)
+        return super().BindTrainSession(TrainSession)
+    def BeforeTrain(self, Dict):
+        Param = self.Param
+        Param.Epochs.Test.setdefault("IndexList", [])
+        Param.Epochs.Train.setdefault("IndexList", [])
+        return self
+    def BeforeEpoch(self, Dict, EpochLogName=None, IsTrain=True):
+        Param = self.Param
+        if IsTrain:
+            Param.Epochs.Train.IndexList.append(Dict.EpochIndex)
+        else:
+            Param.Epochs.Test.IndexList.append(Dict.EpochIndex)
+        if EpochLogName is None:
+            EpochLog = Param.setemptyattr("Epoch%d"%Dict.EpochIndex)
+        else:
+            EpochLog = Param.setemptyattr(EpochLogName)
+        self.BatchNum = 0
+        EpochLog.Epoch.Index = Dict.EpochIndex
+        self.EpochLog = EpochLog
+        return self
+    def BeforeTestEpoch(self, Dict):
+        self.BeforeEpoch(Dict, EpochLogName="TestEpoch%d"%Dict.EpochIndex, IsTrain=False)
+        return self
+    def AfterTestBatch(self, Dict):
+        Dict.IsTest = True
+        self.AfterBatch(Dict)
+        return self
+    def AfterTestEpoch(self, Dict):
+        self.AfterEpoch(Dict)
+        return self
+    def AfterEpoch(self, Dict):
+        self.EpochLog.Batch.Num = Dict.BatchSize
+    def GetEpochLog(self, EpochIndex, IsTrain=True):
+        Param = self.Param
+        if IsTrain:
+            EpochLog = Param.getattr("Epoch%d"%EpochIndex)
+        else:
+            EpochLog = Param.getattr("TestEpoch%d"%EpochIndex)
+        return EpochLog
+    def BatchIndexFloatList1Epoch(self, EpochIndex, IsTrain=True):
+        Param = self.Param
+        EpochLog = self.GetEpochLog(EpochIndex, IsTrain)
+        if EpochLog.hasattr("Batch.Num"):
+            BatchSize = EpochLog.Batch.Num
+        else:
+            BatchSize = len(EpochLog.LossList)
+        BatchIndexList = np.asarray(range(BatchSize), dtype=np.float32)
+        BatchIndexList = BatchIndexList / BatchSize
+        BatchIndexList = BatchIndexList + 1.0 * EpochIndex
+        return BatchIndexList
+    BatchIndexFloatList = BatchIndexFloatInEpoch = BatchIndexFloatList1Epoch
+    def LossList1Epoch(self, EpochIndex, IsTrain=True):
+        Param = self.Param
+        EpochLog = self.GetEpochLog(EpochIndex, IsTrain)
+        return list(EpochLog.LossList)
+    LossListInEpoch = LossList1Epoch
+    def BatchIndexFloatAllEpoch(self, IsTrain=True):
+        Param = self.Param
+        BatchIndexListAllEpoch = []
+        if IsTrain:
+            EpochIndexList = Param.Epochs.Train.IndexList
+        else:
+            EpochIndexList = Param.Epochs.Test.IndexList
+        for EpochIndex in EpochIndexList:
+            BatchIndexList = self.BatchIndexFloatInEpoch(EpochIndex, IsTrain=IsTrain)
+            BatchIndexListAllEpoch.append(BatchIndexList)
+        BatchIndexList = np.concatenate(BatchIndexListAllEpoch, axis=0)
+        return BatchIndexList
+    def LossListEpoch(self, IsTrain=True):
+        Param = self.Param
+        if IsTrain:
+            if Param.Epochs.Train.hasattr("LossList"):
+                return Param.Epochs.Train.LossList
+            else:
+                LossList = Param.Epochs.Train.LossList = []
+                for EpochIndex in Param.Epochs.Train.IndexList:
+                    LossList.append(Param.getattr("Epoch%d"%EpochIndex).Loss)
+            return LossList
+        else:
+            if Param.Epochs.Test.hasattr("LossList"):
+                return Param.Epochs.Test.LossList
+            else:
+                LossList = Param.Epochs.Test.LossList = []
+                for EpochIndex in Param.Epochs.Test.IndexList:
+                    LossList.append(Param.getattr("TestEpoch%d"%EpochIndex).Loss)
+            return LossList
+    def LossListBatch(self, IsTrain=True):
+        Param = self.Param
+        BatchIndexListAllEpoch = []
+        LossListAllEpoch = []
+        if IsTrain:
+            EpochIndexList = Param.Epochs.Train.IndexList
+        else:
+            EpochIndexList = Param.Epochs.Test.IndexList
+        for EpochIndex in EpochIndexList:
+            BatchIndexFloatList1Epoch = self.BatchIndexFloatList1Epoch(EpochIndex, IsTrain=IsTrain)
+            LossList1Epoch = self.LossList1Epoch(EpochIndex, IsTrain=IsTrain)
+            assert len(LossList1Epoch) == len(BatchIndexFloatList1Epoch)
+            BatchIndexListAllEpoch.append(BatchIndexFloatList1Epoch)
+            LossListAllEpoch.append(LossList1Epoch)
+        BatchIndexListAllEpoch = np.concatenate(BatchIndexListAllEpoch, axis=0)
+        LossListAllEpoch = np.concatenate(LossListAllEpoch, axis=0)
+        return BatchIndexListAllEpoch, LossListAllEpoch
+    def Init(self, IsSuper=False, IsRoot=True):
+        Param = self.Param
+        # Param.OnlineMonitor.setdefault("Enable", False)
+        # if Param.OnlineMonitor.Enable:
+        #     Param.OnlineMonitor.Batch.setdefault("Num", 50)
+        #     self.OnlineMonitorBatchNum = Param.OnlineMonitor.Batch.Num
+        #     self.OnlineMonitorNumTotalList = DLUtils.FixedSizeQueuePassiveOutInt(self.OnlineMonitorBatchNum)
+        #     self.OnlineMonitorNumCorrectList = DLUtils.FixedSizeQueuePassiveOutInt(self.OnlineMonitorBatchNum)
+        return super().Init(IsSuper=True, IsRoot=IsRoot)
+    
 class Test(EventAfterEpoch):
     def __init__(self, **Dict):
         super().__init__(**Dict)
         Param = self.Param
-        Param._CLASS = "DLUtils.train.EpochBatchTrain.Test"
         self.Event = self.Test # to be called
     def Test(self, Dict):
         TestData = Dict.TestData
@@ -34,7 +164,7 @@ class Test(EventAfterEpoch):
             "TestSession": self
         })
         EvaluationLog = Dict.EvaluationLog
-        assert isinstance(EvaluationLog, DLUtils.train.SingleClassification.EvaluationLogSingleClassification)
+        # assert isinstance(EvaluationLog, DLUtils.train.Select1FromN.EvaluationLog)
         EvaluationLog.BindTestSession(self)
         self.Bind(EvaluationLog=EvaluationLog)
         self.BeforeTest(DictTest)
@@ -42,21 +172,21 @@ class Test(EventAfterEpoch):
         for TestBatchIndex in range(BatchNum):
             DictTest.BatchIndex = TestBatchIndex
             self.BeforeTestBatch(DictTest)
-            Input, OutputTarget = TestData.Get(TestBatchIndex)
+            In, OutTarget = TestData.Get(TestBatchIndex)
             DLUtils.NpArray2Str
-            Output = Model(Input)
-            DictTest.Input = Input
-            DictTest.Output = Output
-            DictTest.OutputTarget = OutputTarget
+            Out = Model(In)
+            DictTest.In = In
+            DictTest.Out = Out
+            DictTest.OutTarget = OutTarget
             Evaluation = Evaluator.Evaluate(DictTest)
             DictTest.Evaluation = Evaluation
             self.AfterTestBatch(DictTest)
         self.AfterTestEpoch(DictTest)
-        self.UnBind(EvaluationLog=EvaluationLog)
+        self.UnBind("EvaluationLog")
         return self
     def Bind(self, **Dict):
         for Name, SubModule in Dict.items():
-            self.AddSubModule(Name, SubModule)
+            super().Bind(Name, SubModule)
             if hasattr(SubModule, "BeforeTest"):
                 self.AddBeforeTestEvent(SubModule.BeforeTest)
             elif hasattr(SubModule, "BeforeTrain"):
@@ -86,11 +216,6 @@ class Test(EventAfterEpoch):
                 self.AddAfterTestEvent(SubModule.AfterTest)
             elif hasattr(SubModule, "AfterTrain"):
                 self.AddAfterTestEvent(SubModule.AfterTrain)
-
-        return self
-    def UnBind(self, **Dict):
-        for Name, SubModule in Dict.items():
-            self.RemoveSubModule(Name=Name, SubModule=SubModule)
         return self
     def AddBeforeTestEvent(self, Event):
         self.BeforeTestEventList.append(Event)
@@ -200,7 +325,6 @@ class Save(EventAfterEpoch):
     def __init__(self, **Dict):
         super().__init__(**Dict)
         Param = self.Param
-        Param._CLASS = "DLUtils.train.EpochBatchTrain.Save"
         self.Event = self.Save # to be called
     def SetParam(self, **Dict):
         Param = self.Param
@@ -211,16 +335,18 @@ class Save(EventAfterEpoch):
         return self
     def Save(self, Dict, ModelSaveFilePath=None):
         if ModelSaveFilePath is None:
-            ModelSaveFilePath = self.SaveDir + "model/" + f"model-Epoch{Dict.EpochIndex}.dat"
+            ModelSaveFilePath = self.SaveDir + "model-saved/" + f"model-Epoch{Dict.EpochIndex}.dat"
         Dict.Model.ToFile(ModelSaveFilePath, RetainSelf=False)
         Dict.Model.Clear()
         Dict.Model = Dict.Model.FromFile(ModelSaveFilePath).Init()
         Dict.TrainSession.Model = Dict.Model
-        Dict.TrainSession.ToFile(self.SaveDir)
-        Dict.TrainSession.ToJsonFile(self.SaveDir + "./TrainSession-config.jsonc")
-        print("Saving TrainSession. Epoch {0:>3} Batch {1:>3}. FilePath:{2}".format(Dict.EpochIndex, Dict.BatchIndex, self.SaveDir))
+        Dict.TrainSession.ToFile(self.SaveDir + "TrainSession.dat")
+        Dict.TrainSession.ToJsonFile(self.SaveDir + "TrainSession-config.jsonc")
+        print("Saving TrainSession. Epoch {0:>3} Batch {1:>3}. FilePath:{2}"
+                .format(Dict.EpochIndex, Dict.BatchIndex, self.SaveDir + "TrainSession.dat"))
         Dict.TrainSession.SetConnectEvents()
         Dict.TrainSession.SetDevice()
+        Dict.Optimizer.ResetOptimizer()
         print("Saving Model. Epoch {0:>3} Batch {1:>3}. FilePath:{2}".format(Dict.EpochIndex, Dict.BatchIndex, ModelSaveFilePath))
         return self
     def Init(self, IsSuper=False, IsRoot=True):
@@ -233,15 +359,16 @@ class Save(EventAfterEpoch):
     def BeforeTrain(self, Dict):
         Param = self.Param
         super().BeforeTrain(Dict)
-        if Param.Save.Before.Train:
-            Dict.EpochIndex = "0(BeforeTrain)"
-            Dict.BatchIndex = -1
-            self.Save(Dict)
+        _Dict = DLUtils.param(Dict)
+        if Param.Save.BeforeTrain:
+            _Dict.EpochIndex = "0(BeforeTrain)"
+            _Dict.BatchIndex = -1
+            self.Save(_Dict)
         return self
     def AfterTrain(self, Dict):
         Param = self.Param
+        ModelSaveDir = self.SaveDir + "model-saved/"
         ModelSaveFilePath = f"model-Epoch{Dict.EpochIndex}(AfterTrain).dat"
-        ModelSaveDir = self.SaveDir + "model/"
         ModelSaveFileNameLast = f"model-Epoch{Dict.EpochIndex}.dat"
         if Dict.EpochIndex == self.EventEpochIndexList[-1] and DLUtils.FileExists(ModelSaveDir + ModelSaveFileNameLast): # Already saved after train
             DLUtils.file.RenameFile(ModelSaveDir, ModelSaveFileNameLast, ModelSaveFilePath)
@@ -249,11 +376,42 @@ class Save(EventAfterEpoch):
             self.Save(Dict, self.SaveDir + "model/" + ModelSaveFilePath)
         return self
 
-class XFixedSizeYFixedSizeProb(EpochBatchTrainComponent):
+class EvaluatorPredAndTarget(EpochBatchTrainComponent):
+    def BeforeTrain(self, Dict):
+        self.Log(f"Before Train. {DLUtils.system.Time()}")
+    def SetLoss(self, LossModule, *List, **Dict):
+        if isinstance(LossModule, str):
+            LossModule = DLUtils.Loss(LossModule, *List, **Dict)
+        self.LossModule = LossModule
+        return self
+    def _Evaluate1Loss(self, Dict):
+        Loss = self.LossModule(Out=Dict.Out, OutTarget=Dict.OutTarget)
+        self.Loss = Loss
+        Evaluation = Loss
+        return Evaluation
+    def _EvaluateNLoss(self, Dict):
+        Loss = self.LossModule(Out=Dict.Out, OutTarget=Dict.OutTarget)
+        self.Loss = Loss
+        Evaluation = Loss
+        return Evaluation
+    def AfterTrain(self, Dict):
+        self.Log(f"After Train.")
+    def Init(self, IsSuper=False, IsRoot=True):
+        Param = self.Param
+        Type = Param.setdefault("Type", "1Loss")
+        if Type in ["1Loss"]:
+            self.Evaluate = self._Evaluate1Loss
+        elif Type in ["NLoss"]:
+            self.Evaluate = self._EvaluateNLoss
+        else:
+            raise Exception()
+        return super().Init(IsSuper=True, IsRoot=IsRoot)
+
+class EvaluatorPredAndTargetSelect1FromN(EvaluatorPredAndTarget):
     def __init__(self):
         super().__init__()
-        Param = self.Param
-        Param._CLASS = "DLUtils.train.EpochBatchTrain.XFixedSizeYFixedSizeProb"
+        # Param = self.Param
+        # Param._CLASS = "DLUtils.train.EpochBatchTrain.EvaluatorPredAndTargetSelect1FromN"
     def BeforeTrain(self, Dict):
         self.Log(f"Before Train. {DLUtils.system.Time()}")
         Param = self.Param
@@ -268,32 +426,8 @@ class XFixedSizeYFixedSizeProb(EpochBatchTrainComponent):
             TrainLog
         )
         self.TrainLog = TrainLog
-        # Model = self.Model
-        # self.TrainParam = Model.ExtractTrainParam()
-    # def AfterBatch(self, EpochIndex, BatchIndex):
-    #     TrainLog = self.TrainLog
-    #     TrainLog.EpochIndex.append(EpochIndex)
-    #     TrainLog.BatchIndex.append(BatchIndex)
-    #     TrainLog.NumCorrect.append(self.NumCorrect)
-    #     TrainLog.NumTotal.append(self.NumTotal)
-        
-    #     TrainLog.RateCorrect.append(RateCorrect)
-        
-    #     return self
-    # def Optimize(self, Input=None, OutputTarget=None, Model=None, Evaluation=None):
-    #     Model.ClearGrad()
-    #     Evaluation.Loss.backward()
-    #     Output = Model(Input)
-    #     Loss = self.LossModule(Output, OutputTarget)
-    #     self.optimizer.UpdateParam()
-    #     return self
-    def SetLoss(self, LossModule, *List, **Dict):
-        if isinstance(LossModule, str):
-            LossModule = DLUtils.Loss(LossModule, *List, **Dict)
-        self.LossModule = LossModule
-        return self
     def Evaluate(self, Dict):
-        Loss = self.LossModule(Output=Dict.Output, OutputTarget=Dict.OutputTarget)
+        Loss = self.LossModule(Out=Dict.Output, OutTarget=Dict.OutputTarget)
         NumTotal, NumCorrect = RateCorrectSingelClassPrediction(Dict.Output, Dict.OutputTarget)
         self.Loss = Loss
         self.NumTotal = NumTotal
@@ -302,8 +436,8 @@ class XFixedSizeYFixedSizeProb(EpochBatchTrainComponent):
             "Loss": Loss, "NumTotal": NumTotal, "NumCorrect": NumCorrect
         })
         return Evaluation
-    def AfterTrain(self, Dict):
-        self.Log(f"Ater Train.")
+
+
 
 def LogAccuracyForSingleClassPrediction(Accuracy, Output, OutputTarget):
     # Output: np.ndarray. Predicted class indices in shape of [BatchNum]
@@ -328,15 +462,28 @@ class AnalysisAfterTrain(EpochBatchTrainComponent):
             self.SaveDir = SaveDir
     def AfterTrain(self, Dict):
         Param = self.Param
-        PlotRateCorrect(Dict, Param.SaveDir)
-        PlotLoss(Dict, Param.SaveDir)
+        ItemList = Param.Item.List
+        TrainSession = Dict.TrainSession
+        for Item in ItemList:
+            if Item in ["RateCorrect", "Acc"]:
+                PlotRateCorrect(TrainSession, Dict.SaveDir)
+            elif Item in ["Loss", "LossEpoch"]:
+                PlotLoss(TrainSession, Dict.SaveDir)
+            elif Item in ["LossBatch"]:
+                PlotLossBatch(TrainSession, Dict.SaveDir)
+            else:
+                raise Exception()
         return self
-
-def PlotRateCorrect(Dict, SaveDir=None):
+    def AddItem(self, ItemName):
+        Param = self.Param
+        Param.Item.setdefault("List", [])
+        Param.Item.List.append(ItemName)
+        return self
+    
+def PlotRateCorrect(TrainSession, SaveDir=None):
     SaveDir = DLUtils.file.StandardizePath(SaveDir)
-    TrainSession = Dict.TrainSession
     EvaluationLog = TrainSession.EvaluationLog
-    assert isinstance(EvaluationLog, DLUtils.train.SingleClassification.EvaluationLogSingleClassification)
+    # assert isinstance(EvaluationLog, DLUtils.train.Select1FromN.EvaluationLog)
     XsTrain = EvaluationLog.EpochIndexList(IsTrain=True)
     XsTest = EvaluationLog.EpochIndexList(IsTrain=False)
     YsTrain = EvaluationLog.CorrectRateEpoch(IsTrain=True)
@@ -353,11 +500,10 @@ def PlotRateCorrect(Dict, SaveDir=None):
         SavePath=SaveDir + "Epoch ~ CorrectRate.svg"
     )
 
-def PlotLoss(Dict, SaveDir=None):
+def PlotLoss(TrainSession, SaveDir=None):
     SaveDir = DLUtils.file.StandardizePath(SaveDir)
-    TrainSession = Dict.TrainSession
     EvaluationLog = TrainSession.EvaluationLog
-    assert isinstance(EvaluationLog, DLUtils.train.SingleClassification.EvaluationLogSingleClassification)
+    # assert isinstance(EvaluationLog, DLUtils.train.Select1FromN.EvaluationLog)
     XsTrain = EvaluationLog.EpochIndexList(IsTrain=True)
     XsTest = EvaluationLog.EpochIndexList(IsTrain=False)
     YsTrain = EvaluationLog.LossEpoch(IsTrain=True)
@@ -370,6 +516,25 @@ def PlotLoss(Dict, SaveDir=None):
         XTicks="Int", YTicks="Float",
         XRange = [min(XsTrain), max(XsTrain)], YRange=[0.0, 1.0],
         Labels = ["train", "test"],
-        Title="Epoch - Loss Relationship",
-        SavePath = SaveDir + "Epoch ~ Loss.svg"
+        Title="Epoch ~ Loss Relationship",
+        SavePath = SaveDir + "train-curve/" + "Epoch ~ Loss.svg"
+    )
+
+def PlotLossBatch(TrainSession, SaveDir=None):
+    SaveDir = DLUtils.file.StandardizePath(SaveDir)
+    EvaluationLog = TrainSession.EvaluationLog
+    assert isinstance(EvaluationLog, DLUtils.train.Select1FromN.EvaluationLog)
+    XsTrain, YsTrain = EvaluationLog.LossListBatch(IsTrain=True)
+    XsTest, YsTest = EvaluationLog.LossListBatch(IsTrain=False)     
+
+    DLUtils.plot.PlotMultiLineChart(
+        XsList = [XsTrain, XsTest],
+        YsList = [YsTrain, YsTest],
+        ColorList = ["Red", "Blue"],
+        XLabel="Epoch", YLabel="Loss",
+        XTicks="Int", YTicks="Float",
+        XRange = [min(XsTrain), max(XsTrain)], YRange=[0.0, 1.0],
+        Labels = ["train", "test"],
+        Title="Epoch ~ Loss Relationship",
+        SavePath = SaveDir + "train-curve/" + "Epoch ~ Loss.svg"
     )

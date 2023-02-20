@@ -3,7 +3,23 @@ import numpy as np
 from enum import Enum
 import math
 
-def Conv2DKernel(Shape, GroupNum=1, **Dict):
+def ShapeWithSameValue(Shape, Value):
+    return np.full(Shape, Value)
+
+def DefaultNonLinearLayerWeight(Shape, NonLinear):
+    return SampleFromKaimingUniform(Shape, NonLinear=NonLinear)
+
+def DefaultNonLinearLayerBias(UnitNum):
+    Min = - 1.0 / math.sqrt(UnitNum)
+    Max = - Min
+    return SampleFromUniformDistribution((UnitNum), Min, Max)
+
+DefaultLinearLayerBias = DefaultNonLinearLayerBias
+
+def DefaultLinearLayerWeight(Shape):
+    return SampleFromKaimingUniform(Shape, NonLinear=None)
+
+def DefaultConv2DKernel(Shape, GroupNum=1, **Dict):
     """
     Shape: [InNum, OutNum, KernelHeight, KernelWidth]
     torch: w ~ U(-sqrt(k), sqrt(k))
@@ -15,7 +31,7 @@ def Conv2DKernel(Shape, GroupNum=1, **Dict):
     assert Shape[1] % GroupNum == 0
     return SampleFromUniformDistribution((Shape[1], Shape[0] // GroupNum, Shape[2], Shape[3]), Min, Max)
 
-def Conv2DBias(Shape, GroupNum=1, **Dict):
+def DefaultConv2DBias(Shape, GroupNum=1, **Dict):
     """
     Shape: [InNum, OutNum, KernelHeight, KernelWidth]
     pytorch: w ~ U(-sqrt(k), sqrt(k)). k = GroupNum / (InNum * KernelWidth * KernelHeight)
@@ -24,9 +40,9 @@ def Conv2DBias(Shape, GroupNum=1, **Dict):
     Min = - Max
     assert Shape[0] % GroupNum == 0
     assert Shape[1] % GroupNum == 0
-    return SampleFromUniformDistribution((Shape[1], Shape[0] // GroupNum, Shape[2], Shape[3]), Min, Max)
+    return SampleFromUniformDistribution((Shape[1]), Min, Max)
 
-def UpConv2DKernel(Shape, GroupNum=1, **Dict):
+def DefaultUpConv2DKernel(Shape, GroupNum=1, **Dict):
     """
     Shape: [InNum, OutNum, KernelHeight, KernelWidth]
         where k = GroupNum / (OutNum * KernelWidth * KernelHeight)
@@ -38,6 +54,17 @@ def UpConv2DKernel(Shape, GroupNum=1, **Dict):
     assert Shape[1] % GroupNum == 0
     # Weight: [InNum, OutNum // GroupNum, KernelHeight, KernelWidth]
     return SampleFromUniformDistribution((Shape[0], Shape[1] // GroupNum, Shape[2], Shape[3]), Min, Max)
+
+def DefaultUpConv2DBias(Shape, GroupNum=1, **Dict):
+    """
+    Shape: [InNum, OutNum, KernelHeight, KernelWidth]
+    pytorch: w ~ U(-sqrt(k), sqrt(k)). k = GroupNum / (OutNum * KernelWidth * KernelHeight)
+    """
+    Max = math.sqrt(GroupNum / (Shape[1] * Shape[2] * Shape[3]))
+    Min = - Max
+    assert Shape[0] % GroupNum == 0
+    assert Shape[1] % GroupNum == 0
+    return SampleFromUniformDistribution((Shape[1]), Min, Max)
 
 def SampleFromKaimingUniform(Shape, NonLinear="ReLU", **Dict):
     """
@@ -59,6 +86,8 @@ def SampleFromKaimingUniform(Shape, NonLinear="ReLU", **Dict):
             raise Exception()
         Min = - Max
         return SampleFromUniformDistribution(Shape, Min, Max)
+    elif NonLinear in ["None", "none"] or NonLinear is None:
+        return SampleFromXaiverUniform(Shape, **Dict)
     else:
         raise Exception()
 
@@ -117,8 +146,10 @@ def SampleFromXaiverNormal(Shape, NonLinearFunction, **Dict):
         raise Exception()
     return SampleFromNormalDistribution(Shape, 0.0, Std)
 
-def SampleFromNormalDistribution(Shape, Mean, Std):
+def SampleFromNormalDistribution(Shape, Mean=0.0, Std=1.0):
     return np.random.normal(size=Shape, loc=Mean, scale=Std)
+
+SampleFromGaussianDistribution = SampleFromNormalDistribution
 
 def SampleFromUniformDistribution(Shape, Min=0.0, Max=1.0):
     assert Min <= Max

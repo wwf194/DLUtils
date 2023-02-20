@@ -5,7 +5,6 @@ import numpy as np
 import scipy
 import DLUtils
 
-from DLUtils.attr import GetAttrs
 
 def NpArrayStatistics(data, verbose=False):
     DataStat = DLUtils.param({

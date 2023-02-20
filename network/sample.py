@@ -27,23 +27,33 @@ class SampleFromNormalDistribution(DLUtils.module.AbstractNetwork):
         Std = MeanStd[:, self.InNum:]
         return self.Sample(Mean, Std)
     def Sample(self, Mean, Std):
-        Std = self.ProcessStd(Std)
+        Std = self.GetStd(Std)
         Epsilon = torch.FloatTensor(Std.size()).normal_()
         Epsilon = Epsilon.to(self.Device)
-        return Epsilon.mul(Std).add_(Mean)
-    def _ProcessLogOfVariance(self, LogOfVariance):
-        Std = LogOfVariance.mul(0.5).exp_()
-        return Std
-    def _ProcessStd(self, Std):
+        # return Epsilon.mul(Std).add_(Mean).detach()
+        return Epsilon * Std + Mean
+    def _GetStdFromLogOfVar(self, LogOfVar):
+        # Std = LogOfVar.mul(0.5).exp_()
+        # Std = LogOfVar.detach().mul(0.5).exp_()
+        # LogOfVar = Log ^ (Std ^ 2) = 2.0 * Log (Std)
+        # Std = exp ^ (LogOfVar * 0.5)
+        # _LogOfVar = LogOfVar.detach() # this will block backward gradient.s
+        _LogOfVar = LogOfVar
+        _LogOfStd = _LogOfVar * 0.5
+        _Std = torch.exp(_LogOfStd)
+        return _Std
+    def _GetStd(self, Std):
         return Std
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
-        Param.Receive.setdefault("Format", "CatMeanStd")
-        Param.In.setdefault("Type", "LogOfVariance")
-        if Param.In.Type in ["LogOfVariance", "LogVar"]:
-            self.ProcessStd = self._ProcessLogOfVariance
+        Param.Receive.setdefault("Format", "SplitMeanStd")
+        Param.In.setdefault("Type", "LogOfVar")
+
+        if Param.In.Type in ["LogOfVariance", "LogVar", "LogOfVar"]:
+            Param.In.Type = "LogOfVar"
+            self.GetStd = self._GetStdFromLogOfVar
         elif Param.In.Type in ["Std"]:
-            self.ProcessStd = self._ProcessStd
+            self.GetStd = self._GetStd
         else:
             raise Exception()
 

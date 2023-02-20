@@ -5,11 +5,14 @@ class ImageClassificationTask(DLUtils.module.AbstractModule):
         super().__init__()
         if Type is not None:
             self.SetType(Type)
+    def MNIST(self):
+        self.__class__ = MNIST
+        self._INIT()
+        assert isinstance(self, MNIST)
+        return self
     def SetType(self, Type):
         if Type in ["MNIST", "mnist"]:
-            self.__class__ = MNIST
-            self._INIT()
-            assert isinstance(self, MNIST)
+            return self.MNIST()
         elif Type in ["CIFAR10", "cifar10"]:
             self.__class__ = CIFAR10
             self._INIT()
@@ -33,6 +36,7 @@ class ImageClassificationTask(DLUtils.module.AbstractModule):
                 raise Exception()
         return self
 
+    
 def MinMax2FixedValue(BatchSize):
     return
 class Flow():

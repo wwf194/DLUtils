@@ -13,8 +13,6 @@ def BuildModule(param, **Dict):
             return Class(**Dict)
         except Exception:
             DLUtils.AddWarning("Cannot parse ClassPath: %s"%param.ClassPath)
-    # if param.Type in ['transform.RNNLIF']:
-    #     print("aaa")
 
     module = BuildExternalModule(param, **Dict)
     if module is not None:
@@ -49,6 +47,8 @@ class LogComponent:
     def SetLogRecur(self, Log=None):
         if Log is None:
             _Log = self._Log
+        else:
+            _Log = Log
         for Name, SubModule in self.SubModules.items():
             SubModule.SetLog(_Log)
         return self
@@ -69,8 +69,9 @@ class LogComponent:
 
 class AbstractModule(LogComponent):
     def __init__(self, Log=None, **Dict):
-        self.Name = "NullName"
+        self.Name = "_ABSTRACT_MODULE"
         self.SubModules = DLUtils.param()
+        self.BindModules = DLUtils.param()
         Param = self.Param = DLUtils.Param()
         Param._CLASS = DLUtils.system.ClassPathStr(self)
         Param._PATH = "Root"
@@ -81,8 +82,9 @@ class AbstractModule(LogComponent):
         return self.CallMethod(*List, **Dict)
     def ExtractParam(self, RetainSelf=True):
         if hasattr(self, "Param"):
-            Param = self.Param
+            Param = DLUtils.Param(self.Param)
             self.ExtractParamRecur(Param, RetainSelf)
+            Attr = Param.delattrifexists("BindModules")
             return Param
         else:
             return "MODULE_WITHOUT_PARAM"
@@ -94,6 +96,7 @@ class AbstractModule(LogComponent):
         self.Param = Param
         self._IsLoad = True
         self.SubModules = DLUtils.param()
+        self.BindModules = DLUtils.param()
         self.SetEventDict()
         self.LoadParamRecur(Param)
         return self
@@ -103,7 +106,7 @@ class AbstractModule(LogComponent):
             SubModule._PATH = Param._PATH + "." + Name
             self.SubModules[Name] = ModuleClass().LoadParam(SubModule)
         return self
-    def SetParam(self, **Dict):
+    def SetParam(self, Key=None, Value=None, **Dict):
         Param = self.Param
         UseSetParamMapDefault = Dict.setdefault("UseSetParamMapDefault", True)
         Map = {}
@@ -111,15 +114,29 @@ class AbstractModule(LogComponent):
             Map = SetParamMapDefault
         else:
             Map = {}
-        
+
         if hasattr(self, "SetParamMap"):
             Map.update(self.SetParamMap)
 
-        for Key, Value in Dict.items():
-            if Key in Map:
-                Param.setattr(Map[Key], Value)
-            else:
-                Param.setattr(Key, Value)
+        # for Key, Value in Dict.items():
+        #     if Key in Map:
+        #         Param.setattr(Map[Key], Value)
+        #     else:
+        #         Param.setattr(Key, Value)
+        # return self
+        if Key is not None or Value is not None:
+            assert Value is not None
+            assert Key is not None
+            self._SetParam(Key, Value, Map)
+        for _Key, _Value in Dict.items():
+            self._SetParam(_Key, _Value, Map)
+        return self
+    def _SetParam(self, Key, Value, Map):
+        Param = self.Param
+        if Key in Map:
+            Param.setattr(Map[Key], Value)
+        else:
+            Param.setattr(Key, Value)
         return self
     def SetAttr(self, **Dict):
         for Key, Value in Dict.items():
@@ -128,12 +145,16 @@ class AbstractModule(LogComponent):
     def AddSubModule(self, Name=None, SubModule=None, **Dict):
         if Name is not None:
             assert SubModule is not None
+            
+            assert len(Dict) == 0
             self._AddSubModule(Name, SubModule)
         for _Name, _SubModule in Dict.items():
-            self._AddSubModule(_Name, _SubModule)
+            self._AddSubModule(Name=_Name, SubModule=_SubModule)
         return self
     def _AddSubModule(self, Name, SubModule):
         Param = self.Param
+        # detect overwrite module
+        assert not self.SubModules.hasattr(Name)
         if hasattr(SubModule, "Param"):
             Param.SubModules.setattr(Name, SubModule.Param)
             SubModule.Param._PATH = Param._PATH + "." + Name
@@ -141,7 +162,55 @@ class AbstractModule(LogComponent):
             Param.SubModules.setattr(Name, "MODULE_WITHOUT_PARAM")
         self.SubModules[Name] = SubModule
         setattr(self, Name, SubModule)
-
+        return self
+    def BindModule(self, Name=None, Module=None, **Dict):
+        if Name is not None:
+            assert Module is not None
+            assert len(Dict) == 0
+            self._BindModule(Name, Module)
+        for _Name, _Module in Dict.items():
+            self._BindModule(Name=_Name, Module=_Module)
+        return self
+    Bind = BindModule
+    def _BindModule(self, Name, Module):
+        Param = self.Param
+        if hasattr(Module, "Param"):
+            Param.BindModules.setattr(Name, Module.Param)
+            #Module.Param._PATH = Param._PATH + "." + Name
+        else:
+            Param.BindModules.setattr(Name, "MODULE_WITHOUT_PARAM")
+        self.BindModules[Name] = Module
+        setattr(self, Name, Module)
+        return self
+    def UnBindModule(self, Name=None, *List):
+        if Name is not None:
+            # assert Module is not None
+            # assert len(List) == 0
+            self._UnBindModule(Name)
+        for _Name, _Module in List:
+            self._UnBindModule(Name=_Name)
+        return self
+    UnBind = UnBindModule
+    Unbind = UnBindModule
+    def _UnBindModule(self, Name):
+        Param = self.Param
+        Module = self.BindModules.getattr(Name)
+        if Module is None:
+            return self
+        if hasattr(Module, "Param"):
+            Param.BindModules.delattrifexists(Module.Param)
+            #Module.Param._PATH = Param._PATH + "." + Name
+        else:
+            #Param.BindModules.delattrifexists(Name, "MODULE_WITHOUT_PARAM")
+            pass
+        if Name in self.BindModules:
+            self.BindModules.pop(Name)
+        if hasattr(self, Name):
+            delattr(self, Name)
+        return self
+    _UnBind = _UnBindModule
+    _Unbind = _UnBindModule
+    _UnbindModule = _UnBindModule
     def GetSubModule(self, Name):
         return self.SubModules.getattr(Name)
     def RemoveSubModule(self, Name=None, SubModule=None):
@@ -216,6 +285,15 @@ class AbstractModule(LogComponent):
         self.SetName(Name)
     def ReName(self, Name):
         self.SetName(Name)
+    def IsFixedRoot(self):
+        if hasattr(self, "Param"):
+            if hasattr(self.Param, "IsRoot"):
+                if self.Param.IsRoot:
+                    return True
+        return False
+    def SetRoot(self):
+        self.Param.setattr("IsRoot", True)
+        return self
     def SetEventDict(self):
         if not hasattr(self, "EventDict"):
             self.EventDict = DLUtils.param({
@@ -223,7 +301,8 @@ class AbstractModule(LogComponent):
             })
         return self
     def Init(self, IsSuper=False, IsRoot=True):
-        assert not self.InitFinished() # avoid 
+        if self.InitFinished(): # avoid double init
+            return self
         if self.IsLoad():
             for Name, SubModule in self.SubModules.items():
                 SubModule.Init(IsSuper=False, IsRoot=False)
@@ -233,12 +312,13 @@ class AbstractModule(LogComponent):
                 self.Param._PATH = "Root"
             for Name, SubModule in self.SubModules.items():
                 if hasattr(SubModule, "Param"):
-                    SubModule.Param._PATH = self.Param._PATH + "." + Name
+                    if not SubModule.IsFixedRoot():
+                        SubModule.Param._PATH = self.Param._PATH + "." + Name
                 SubModule.Init(IsSuper=False, IsRoot=False)
                 setattr(self, Name, SubModule)
         self.SetEventDict()
         if hasattr(self, "_Log"):
-            self.SetLogRecur(self.Log)
+            self.SetLogRecur(self._Log)
         self.SetConnectEvents()
 
         self.SetTrain()
@@ -248,8 +328,9 @@ class AbstractModule(LogComponent):
         elif hasattr(self, "forward"):
             self.CallMethod = self.forward
         else:
-            raise Exception()
+            # raise Exception()
             # pass
+            pass
         if not hasattr(self, "Receive"):
             if hasattr(self, "__call__"):
                 self.Receive = self.__call__
@@ -260,7 +341,7 @@ class AbstractModule(LogComponent):
                 pass
         if IsRoot:
             self.SetTest()
-        assert hasattr(self, "CallMethod")
+        # assert hasattr(self, "CallMethod")
         self._InitFinished = True
         return self
     def LogWithSelfInfo(self, Content, Type="Unknown"):
@@ -276,14 +357,15 @@ class AbstractModule(LogComponent):
             if Param.hasattr("Tensor"):
                 for TensorName in Param.Tensor:
                     if hasattr(self, TensorName):
-                        Tensor = getattr(self, TensorName)
-                        TensorNew = Tensor.to(Device).detach() # requires_grad remains same.
-                        TensorNew.requires_grad = Tensor.requires_grad
+                        TensorData = getattr(self, TensorName)
+                        TensorNew = TensorData.to(Device).detach() # requires_grad remains same.
+                        TensorNew.requires_grad = TensorData.requires_grad
                         setattr(self, TensorName, TensorNew)
                     else:
-                        Tensor = Param.Data.getattr(TensorName)
-                        TensorNew = DLUtils.ToTorchTensor(Tensor).to(Device).detach()
-                        TensorNew.requires_grad = Tensor.requires_grad
+                        # Tensor = Param.Data.getattr(TensorName)
+                        TensorData = Param.getattr(TensorName)
+                        TensorNew = DLUtils.ToTorchTensor(TensorData).to(Device).detach()
+                        TensorNew.requires_grad = TensorData.requires_grad
                         setattr(self, TensorName, TensorNew)
         self.SetDeviceRecur(Device, IsRoot=False)
         if IsRoot:
@@ -293,6 +375,9 @@ class AbstractModule(LogComponent):
             )
         return self
     def SetDeviceRecur(self, Device, IsRoot=True):
+        for Name, BindModule in self.BindModules.items():
+            if hasattr(BindModule, "SetDevice"):
+                BindModule.SetDevice(Device, IsRoot=False)
         for Name, SubModule in self.SubModules.items():
             if hasattr(SubModule, "SetDevice"):
                 SubModule.SetDevice(Device, IsRoot=False)
@@ -303,7 +388,8 @@ class AbstractModule(LogComponent):
             Dict = {}
         if Param.hasattr("Tensor"):
             for Name in Param.Tensor:
-                Tensor = Param.Data.getattr(Name)
+                # Tensor = Param.Data.getattr(Name)
+                Tensor = Param.getattr(Name)
                 Dict[Name] = Tensor.size
         if Prefix is None:
             _PATH = Param.get("_PATH")
@@ -391,8 +477,8 @@ class AbstractModule(LogComponent):
 EmptyModule = AbstractModule
 class AbstractOperator(AbstractModule):
     # operation module without trainable parameter
-    def __init__(self, **Dict):
-        super().__init__(**Dict)
+    def __init__(self, *List, **Dict):
+        super().__init__(*List, **Dict)
     def AddSubModule(self, Name, SubModule):
         raise Exception("AbstractOperator module.")
 
@@ -401,68 +487,105 @@ class AbstractNetwork(AbstractModule):
     def __init__(self, **Dict):
         super().__init__(**Dict)
         Param = self.Param
-        Param.Tensor = set()
-        Param.TrainParam = set()
-
-    def SetTrainParam(self, Name=None, TrainParam=None, **Dict):
+        Param.setemptyattr("TrainParam")
+        Param.setemptyattr("Tensor")
+    def SetTrainable(self, Name):
+        Param = self.Param
+        assert Param.Tensor.hasattr(Name)
+        Path = Param.Tensor.getattr(Name)
+        Param.TrainParam.setattr(Name, Path)
+        return self
+    def SetTrainParam(self, Name=None, Path=None, Value=None, **Dict):
         if Name is not None:
-            assert TrainParam is not None
-            self._SetTrainParam(Name, TrainParam)
-        for _Name, _TrainParam in Dict.items():
-            self._SetTrainParam(_Name, _TrainParam)
+            assert Value is not None
+            self._SetTrainParam(Name, Path, Value)
+        for _Name, _Value in Dict.items():
+            self._SetTrainParam(_Name, None, _Value)
         return self
-    def _SetTrainParam(self, Name, TrainParam):
+    SetTrainableParam = SetTrainParam
+    def _SetTrainParam(self, Name, Path=None, Value=None):
         Param = self.Param
-        #if isinstance(Param, torch.Tensor):
-        if hasattr(TrainParam, "requires_grad"):
-            TrainParam.requires_grad = True
-        self.SetTensor(Name, TrainParam)
-        Param.TrainParam.add(Name)
+        if Path is None:
+            Path = "Data." + Name
+        assert Value is not None
+        if hasattr(Value, "requires_grad"):
+            Value.requires_grad = True
+        Param.TrainParam.setattr(Name, Path)
+        Param.setattr(Path, Value)
+        Param.Tensor.setattr(Name, Path)
+        setattr(self, Name, Value)
         return self
-    def SetTensor(self, Name=None, Tensor=None, **Dict):
+    def SetUnTrainableParam(self, Name=None, Path=None, Value=None, Trainable=False, **Dict):
+        if Trainable:
+            self.SetTrainParam(Name=Name, Path=Path, Value=Value, **Dict)
+            return self
         if Name is not None:
-            assert Tensor is not None
-            self._SetTensor(Name, Tensor)
-        for _Name, _Tensor in Dict.items():
-            self._SetTensor(_Name, _Tensor)
+            assert Value is not None
+            self._SetTensor(Name, Path, Value)
+        for _Name, _Value in Dict.items():
+            self._SetTensor(_Name, None, _Value)
         return self
-    def _SetTensor(self, Name, Tensor):
+    SetTensor = SetUntrainableParam = SetUnTrainableParam
+    def _SetTensor(self, Name, Path=None, Value=None):
+        if Path is None:
+            Path = Name
+        assert Value is not None
         Param = self.Param
-        Param.Data.setattr(Name, Tensor)
-        Param.Tensor.add(Name)
+        Param.Tensor.setattr(Name, Path)
+        Param.setattr(Path, Value)
         return self
-    def AddTrainParamName(self, Name):
+    def AddTensor(self, Name=None, Path=None, **Dict):
+        if Name is not None:
+            assert Path is not None
+        for _Name, _Path in Dict.items():
+            self._AddTensor(_Name, _Path)
+        return self
+    def _AddTensor(self, Name, Path=None):
+        if Path is None:
+            Path = Name
         Param = self.Param
-        Param.TrainParam.add(Name)
+        Param.Tensor.setattr(Name, Path)
+        return self
+    AddTensorName = AddTensor
+    def AddTrainParam(self, Name, Path=None):
+        if Path is None:
+            Path = Name
+        Param = self.Param
+        Param.TrainParma.setattr(Name, Path)
+        self.AddTensor(Name, Path)
+        return self
+    AddTrainParamName = AddTrainParam
     def GetTensor(self, Name):
         assert not self.HandleTensorBySelf()
         Param = self.Param
-        return Param.Data.getattr(Name)
+        # return Param.Data.getattr(Name)
+        assert Param.Tensor.hasattr(Name)
+        if hasattr(self, Name):
+            return getattr(self, Name)
+        else:
+            Path = Param.Tensor.getattr(Name)
+            return Param.getattr(Path)
     def UpdateTensorFromDict(self, Recur=False):
         Param = self.Param        
-        # if Param.hasattr("TrainParam"):
-        #     for Name in Param.TrainParam:
-        #         setattr(self, Name, Param.Data.getattr(Name))
-        # TrainParam must be in Tensor.
-        # if Param.hasattr("Tensor") and not self.HandleTensorBySelf():
-        #     for Name in Param.Tensor:
-        #         setattr(self, Name, Param.Data.getattr(Name))
-        if not self.HandleTensorBySelf():
-            if Param.hasattr("Tensor"):
-                for Name in Param.Tensor:
-                    assert Param.Data.hasattr(Name)
-                    Data = Param.Data.getattr(Name)
-                    Tensor = DLUtils.ToTorchTensorOrNum(Data)
-                    if hasattr(self, "Device"):
-                        TensorNew = Tensor.to(self.Device).detach()
-                        TensorNew.requires_grad = Tensor.requires_grad
-                    else:
-                        TensorNew = Tensor
-                    setattr(self, Name, TensorNew)
-            if Param.hasattr("TrainParam"):
-                for Name in Param.TrainParam:
-                    Tensor = getattr(self, Name)
-                    Tensor.requires_grad = True
+        if  self.HandleTensorBySelf():
+            return
+        if Param.hasattr("Tensor"):
+            for Name, Path in Param.Tensor.items():
+                # assert Param.Data.hasattr(Name)
+                # Data = Param.Data.getattr(Name)
+                assert Param.hasattr(Path)
+                TensorData = Param.getattr(Path)
+                Tensor = DLUtils.ToTorchTensorOrNum(TensorData)
+                if hasattr(self, "Device"):
+                    TensorNew = Tensor.to(self.Device).detach()
+                    TensorNew.requires_grad = Tensor.requires_grad
+                else:
+                    TensorNew = Tensor
+                setattr(self, Name, TensorNew)
+        if Param.hasattr("TrainParam"):
+            for Name, Path in Param.TrainParam.items():
+                Tensor = getattr(self, Name)
+                Tensor.requires_grad = True
         if Recur:
             for Name, SubModule in self.SubModules.items():
                 if hasattr(SubModule, "UpdateTensorFromDict"):
@@ -473,16 +596,16 @@ class AbstractNetwork(AbstractModule):
         Param = self.Param
         if not self.HandleTensorBySelf():
             if Param.hasattr("TrainParam"):
-                for Name in Param.TrainParam:
+                for Name, Path in Param.TrainParam.items():
                     if hasattr(self, Name):
-                        Tensor = getattr(self, Name)
-                        setattr(Param.Data, Name, DLUtils.ToNpArrayOrNum(Tensor))
+                        TrainParamData = getattr(self, Name)
+                        Param.setattr(Path, DLUtils.ToNpArray(TrainParamData))
         if Recur:
             for Name, SubModule in self.SubModules.items():
                 if hasattr(SubModule, "UpdateDictFromTensor"):
                     SubModule.UpdateDictFromTensor(Recur=True)
         return self
-    def ExtractTrainParam(self, ParamDict={}, PathStrPrefix=True, Recur=True):
+    def ExtractTrainParam(self, TrainParam={}, PathStrPrefix=True, Recur=True):
         self.UpdateDictFromTensor(Recur=False)
         # self.UpdateTensorFromDict()
         Param = self.Param
@@ -490,29 +613,29 @@ class AbstractNetwork(AbstractModule):
             Prefix = self.PathStr() + "."
         else:
             Prefix = ""
-        TrainParam = Param.get("TrainParam")
-        if TrainParam is not None:
-            for Name in TrainParam:
-                ParamDict[Prefix + Name] = getattr(self, Name)
+        if Param.get("TrainParam") is not None:
+            for Name, Path in Param.TrainParam.items():
+                TrainParam[Prefix + Name] = getattr(self, Name)
         if Recur:
-            self.ExtractTrainParamRecur(ParamDict=ParamDict, PathStrPrefix=PathStrPrefix)
-        return ParamDict
-    def ExtractTrainParamRecur(self, ParamDict={}, PathStrPrefix=True):
+            self.ExtractTrainParamRecur(TrainParam=TrainParam, PathStrPrefix=PathStrPrefix)
+        return TrainParam
+    def ExtractTrainParamRecur(self, TrainParam={}, PathStrPrefix=True):
         for Name, SubModule in self.SubModules.items():
             if hasattr(SubModule, "ExtractTrainParam"):
                 SubModule.ExtractTrainParam(
-                    ParamDict=ParamDict,
+                    TrainParam=TrainParam,
                     PathStrPrefix=PathStrPrefix,
                     Recur=True
                 ) 
-        return ParamDict
+        return TrainParam
     def PlotWeight(self, SaveDir=None, SaveName=None):
         Param = self.Param
         Param = self.ExtractParam()
         SavePath = DLUtils.ParseSavePath(SaveDir, SaveName, SaveNameDefault=Param._PATH)
         if Param.hasattr("TrainParam"):
             for WeightName in Param.TrainParam:
-                Data = Param.Data.getattr(WeightName)
+                # Data = Param.Data.getattr(WeightName)
+                Data = Param.getattr(WeightName)
                 if hasattr(Data, "shape"):
                     DimNum = len(Data.shape)
                 else:
@@ -548,12 +671,13 @@ class AbstractNetwork(AbstractModule):
             self.PlotWeightRecur(SaveDir, SaveName)
         return self
     def ExtractParam(self, RetainSelf=True):
-        Param = self.Param
+        Param = DLUtils.Param(self.Param)
         self.UpdateDictFromTensor(Recur=False)
         if not RetainSelf:
             # prune some empty nodes for readability and storage space saving.
             if Param.hasattr("TrainParam") and len(Param.TrainParam) == 0:
                 Param.delattr("TrainParam")
+        Attr = Param.delattrifexists("BindModules")
         self.ExtractParamRecur(Param, RetainSelf)
         return Param
     def LoadParam(self, Param):
@@ -579,8 +703,7 @@ class AbstractNetwork(AbstractModule):
         for Event in self.EventDict.TensorMovement:
             Event(Model=self, Param=self.ExtractTrainParam())
     def parameters(self):
-        return 
-    
+        return
 
 class TorchModuleWrapper(AbstractNetwork):
     def __init__(self, *List, **Dict):
@@ -624,7 +747,11 @@ SetParamMapDefault = DLUtils.IterableKeyToElement({
     ("InNum", "InputNum"): "In.Num",
     ("InType", "InputType"): "In.Type",
     ("OutNum", "OutputNum"): "Out.Num",
-    ("OutType", "OutputType"): "Out.Type"
+    ("OutType", "OutputType"): "Out.Type",
+    ("EpochNum"): "Epoch.Num",
+    ("BatchNum"): "Batch.Num",
+    ("BatchSize"): "Batch.Size",
+    ("AfterOperation"): "Operation.After"
 })
 
 class AbstractModuleGroup(AbstractNetwork):

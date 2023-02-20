@@ -34,11 +34,11 @@ def cifar10_conv(SaveDir=None, IsAnal=False):
         [
             DLUtils.transform.Norm(0.0, 256.0, -1.0, 1.0),
             DLUtils.network.Conv2D(Padding=1).SetWeight(
-                DLUtils.Conv2DKernel((3, 100, 3, 3), NonLinear="ReLU")
+                DLUtils.DefaultConv2DKernel((3, 100, 3, 3), NonLinear="ReLU")
             ).SetBias("zeros"),
             DLUtils.network.AvgPool2D(2),
             DLUtils.network.Conv2D(Padding=1).SetWeight(
-                DLUtils.Conv2DKernel((100, 5, 3, 3), NonLinear="ReLU")
+                DLUtils.DefaultConv2DKernel((100, 5, 3, 3), NonLinear="ReLU")
             ).SetBias("zeros"),
             DLUtils.transform.Reshape(-1, 5 * 16 * 16),
             DLUtils.network.NonLinearLayer().SetWeight(
@@ -94,3 +94,4 @@ def cifar10_conv(SaveDir=None, IsAnal=False):
         ) \
         .AddConnectEvent("Model", "TensorMovement", "Optimizer", "ResetOptimizer") \
         .Init().SetDevice(Device).Start().ToFile(SaveDir + "TrainSession.dat")
+

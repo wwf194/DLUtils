@@ -26,8 +26,21 @@ def ParseClass(ClassPath):
         else:
             return Module
     except Exception:
+        pass
+    try:
         Class = eval(ClassPath)
         return Class
+    except Exception:
+        pass
+    
+    try:
+        ClassPathList = ClassPath.split(".")
+        _ClassPath = ".".join(ClassPathList[:-1])
+        Class = eval(_ClassPath)
+        return Class
+    except Exception:
+        pass
+    raise Exception()
 
 def ImportModule(ModulePath):
     try:

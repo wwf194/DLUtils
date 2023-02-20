@@ -7,7 +7,7 @@ import traceback
 sys.path.append("../")
 
 import argparse
-parser = argparse.ArgumentParser(description="命令行参数解析") # description可选
+parser = argparse.ArgumentParser()
 parser.add_argument(
         "-t", "--task", # 数量>=1即可                
         dest="task", # 这个参数将被存储在args.dest属性中
@@ -69,26 +69,33 @@ if __name__=="__main__":
     if Task in ["json", "TestJsonUtils"]:
         TestJsonUtils()
     elif Task in ["example"]:
-        SubTask = TaskList[1]
-        if SubTask in ["mnist_mlp"]:
+        Param1 = TaskList[1]
+        if Param1 in ["mnist_mlp"]:
             import DLUtils
             #DLUtils.file.FolderConfig("~/Data/mnist").ToJsonFile("task/image/classification/mnist-folder-config.jsonc")
             DLUtils.example.mnist_mlp()
-        elif SubTask in ["cifar10"]:
-            if TaskList[2] in ["conv"]:
+        elif Param1 in ["cifar10"]:
+            Param2 = TaskList[2]
+            if Param2 in ["conv"]:
                 if args.IsAnal:
                     DLUtils.example.cifar10_conv_anal()
                 else:
                     DLUtils.example.cifar10_conv()
             else:
                 raise Exception()
-        elif SubTask in ["vae_mnist", "mnist_vae"]:
-            DLUtils.example.vae_mnist()
+        elif Param1 in ["vae_mnist", "mnist_vae"]:
+            Param2 = TaskList[2]
+            if Param2 in ["conv"]:
+                DLUtils.example.vae_conv()
+            elif Param2 in ["mlp"]:
+                DLUtils.example.vae_mnist_mlp()
+            else:
+                raise Exception()
         else:
             raise Exception(SubTask)
-    elif Task in ["cifar10"]:
-        SubTask = TaskList[1]
-        if SubTask in ["generate_config"]:
+    elif Task in ["cifar10", "cifar"]:
+        Param1 = TaskList[1]
+        if Param1 in ["generate_config"]:
             Path = args.path
             if Path is None:
                 Path = "~/Data/cifar-10-batches-py"
@@ -96,6 +103,5 @@ if __name__=="__main__":
                 args.path,
                 "./task/image/classification/cifar10/"
             )
-
     else:
         raise Exception()

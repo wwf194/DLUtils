@@ -1,6 +1,8 @@
 import torch
 import torch.nn.functional as F
 from .. import AbstractOperator
+
+import DLUtils
 class Reshape(AbstractOperator):
     def __init__(self, *List, **Dict):
         if len(List) > 0:
@@ -26,14 +28,30 @@ class Reshape(AbstractOperator):
         return torch.reshape(In, self.Shape)
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
-        self.Shape = Param.Shape.After
+        self.Shape = tuple(Param.Shape.After)
         super().Init(IsSuper=True, IsRoot=IsRoot)
+
+class ChangeDimOrder(AbstractOperator):
+    SetParamMap = DLUtils.IterableKeyToElement({
+        ("Order"): "Order"
+    })
+    def __init__(self, *List, **Dict):
+        if len(List) > 0:
+            assert Dict.get("Order") is None
+            Dict["Order"] = List
+        super().__init__(**Dict)
+    def Receive(self, In):
+        return torch.permute(In, self.Order)
+    def Init(self, IsSuper=False, IsRoot=True):
+        Param = self.Param
+        assert Param.hasattr("Order")
+        self.Order = tuple(Param.Order)
+        super().Init(IsSuper=True, IsRoot=IsRoot)
+Permute = ChangeDimOrder
 
 class Index2OneHot(AbstractOperator):
     def __init__(self, FeatureNum):
         super().__init__()
-        Param = self.Param
-        Param._CLASS = "DLUtils.transform.Index2OneHot"
         Param.FeatureNum = FeatureNum
     def Receive(self, In):
         return F.one_hot(In.long(), num_classes=self.FeatureNum)

@@ -15,7 +15,6 @@ class CIFAR10(ImageClassificationTask):
         self._INIT()
     def _INIT(self):
         Param = self.Param
-        Param._CLASS = "DLUtils.task.image.classification.CIFAR10"
         self.DataLoaderList = set()
         return self
     def SetDataPath(self, DataPath, CheckIntegrity=True):

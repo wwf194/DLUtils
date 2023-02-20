@@ -86,7 +86,7 @@ class UNet(DLUtils.module.AbstractNetwork):
         Out = self.OutputLayer(Out)
         return Out
 
-from .ModuleSeries import ModuleSeries
+from .ModuleGroup import ModuleSeries
 class UNetDownPath(ModuleSeries):
     def Receive(self, In):
         Down = In

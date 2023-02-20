@@ -16,13 +16,14 @@ def ReportPyTorchInfo():
     return Report
 
 def GetSystemType():
-    if re.match(r'win',sys.platform) is not None:
-        SystemType = 'windows'
-    elif re.match(r'linux',sys.platform) is not None:
-        SystemType = 'linux'
+    if "win" in sys.platform is not None:
+        SystemType = 'Windows'
+    elif "linux" in sys.platform is not None:
+        SystemType = 'Linux'
     else:
-        SystemType = 'unknown'
+        SystemType = 'Unknown'
     return SystemType
+SystemType = SysType = GetSysType = GetSystemType
 
 def ClassPathStr(Obj):
     # https://stackoverflow.com/questions/2020014/get-fully-qualified-class-name-of-an-object-in-python
@@ -54,8 +55,7 @@ def ReportMemoryOccupancy(Obj):
     ByteNum = GetBytesInMemory(Obj)
     return DLUtils.ByteNum2Str(Obj)
 
-def ReportTorchInfo(): # print info about training environment, global variables, etc.
-    return torch.pytorch_info()
+
 
 import subprocess
 def RunPythonScript(FilePath, Args):

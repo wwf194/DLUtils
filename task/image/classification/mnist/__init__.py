@@ -23,7 +23,7 @@ class MNIST(ImageClassificationTask):
         Param.DataPath = DataPath
         ConfigFile = DLUtils.file.ParentFolderPath(__file__) + "mnist-folder-config.jsonc"
         Config = DLUtils.file.JsonFile2Param(ConfigFile, SplitKeyByDot=False)
-        DataPath = ExtractDataSetFile(DataPath)
+        DataPath = ExtractDataSet(DataPath)
         if CheckIntegrity:
             assert DLUtils.file.CheckIntegrity(DataPath, Config)
         self.DataPath = DataPath
@@ -32,10 +32,10 @@ class MNIST(ImageClassificationTask):
         return self
     def SetParam(self):
         return self
-    def PreprocessData(self, Preprocess, BatchSize=1000):
-        assert self.IsDataPathBind
-        Data = LoadDataSet(self.DataPath)
-        return self
+    # def PreprocessData(self, Preprocess, BatchSize=1000):
+    #     assert self.IsDataPathBind
+    #     Data = LoadDataSet(self.DataPath)
+    #     return self
     def TestData(self, BatchSize=64):
         return self.DataLoader("Test", BatchSize)
     def TrainData(self, BatchSize=64):
@@ -75,7 +75,8 @@ class MNIST(ImageClassificationTask):
             Data.SetDevice(Device)
         self.Device = Device
         return self
-
+    def AllTrainData(self):
+        return DLUtils.param(self.Data.Train)
 
 def LoadImage(file_name):
     ##   在读取或写入一个文件之前，你必须使用 Python 内置open()函数来打开它。##
@@ -119,8 +120,7 @@ def LoadLabel(file_name):
 
     # np.int64 -> np.uint8
     labels = labels.astype(np.uint8)
-    return labels 
-
+    return labels
 
 def ExtractImage(Data, IndexList=None, PlotNum=10, SavePath="./"):
     if IndexList is None:
@@ -181,7 +181,8 @@ class DataLoader(torch.utils.data.DataLoader, AbstractModule):
         self.Reset()
     def Get(self, BatchIndex):
         Image, Label = next(self.Iter)
-        return Image.to(self.Device), Label.to(self.Device)
+        # return Image.to(self.Device), Label.to(self.Device)
+        return Image, Label
     def SetDevice(self, Device, IsRoot=True):
         self.DataFetcher.SetDevice(Device)
         self.Device = Device
@@ -192,7 +193,7 @@ class DataLoader(torch.utils.data.DataLoader, AbstractModule):
         self.Iter = iter(self)
         return self
     
-def ExtractDataSetFile(Path, MoveCompressedFile2ExtractFolder=True):
+def ExtractDataSet(Path, MoveCompressedFile2ExtractFolder=True):
     Path = DLUtils.file.ToAbsPath(Path)
 
     if DLUtils.file.FileExists(Path): # extract from mnist zip file
@@ -209,16 +210,23 @@ def ExtractDataSetFile(Path, MoveCompressedFile2ExtractFolder=True):
         FolderPath = ExtractFolderPath
         if MoveCompressedFile2ExtractFolder:
             DLUtils.file.MoveFile(CompressFilePath, ExtractFolderPath)
-    elif DLUtils.file.FolderExists(Path):
-        FolderPath = Path
     else:
-        if Path.endswith(".zip"):
-            # .zip file already extracted and put into extracted folder.
-            FileName = DLUtils.FileNameFromPath(Path)
-            FolderPath = DLUtils.FolderPathOfFile(Path) + "mnist/"
-            assert DLUtils.FolderExists(FolderPath)
-        else:
-            raise Exception()
+        Sig = True
+        if DLUtils.file.FolderExists(Path):
+            if DLUtils.file.IsEmptyDir(Path):
+                DLUtils.file.RemoveDir(Path)
+                Sig = True
+            else:
+                FolderPath = Path
+                Sig = False
+        if Sig:
+            if Path.endswith(".zip"):
+                # .zip file already extracted and put into extracted folder.
+                FileName = DLUtils.FileNameFromPath(Path)
+                FolderPath = DLUtils.FolderPathOfFile(Path) + "mnist/"
+                assert DLUtils.FolderExists(FolderPath)
+            else:
+                raise Exception()
 
     for FileName in DLUtils.ListAllFiles(FolderPath):
         # if files in folder is gz file.

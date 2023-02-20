@@ -1,7 +1,7 @@
 import torch
 import numpy as np
-
 import DLUtils
+
 class ModuleParallel(DLUtils.module.AbstractModuleGroup):
     def Receive(self, In):
         OutList = []
@@ -11,5 +11,4 @@ class ModuleParallel(DLUtils.module.AbstractModuleGroup):
         return OutList
     def Init(self, IsSuper=False, IsRoot=True):
         self.ModuleList = list(self.SubModules.values())
-        Param = self.Param
         return super().Init(IsSuper, IsRoot)

@@ -1,6 +1,6 @@
 import DLUtils
 from .NonLinearLayer import NonLinearLayer
-from .ModuleSeries import ModuleList
+from .ModuleGroup import ModuleList
 class MLP(ModuleList):
     SetParamMap = DLUtils.IterableKeyToElement({
         ("NonLinear"): "NonLinear.DefaultType",
@@ -25,7 +25,7 @@ class MLP(ModuleList):
             for Index in range(Param.Layer.Num):
                 NonLinearStr = self.GetNonLinear(Index, LayerNum)
                 self.AppendSubModule(
-                    Name="Layer%d"%Index,
+                    Name="L%d"%Index,
                     SubModule=NonLinearLayer(
                         InNum=Param.Layer.Unit.Num[Index],
                         OutNum=Param.Layer.Unit.Num[Index + 1],

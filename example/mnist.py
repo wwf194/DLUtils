@@ -1,5 +1,7 @@
 
 import DLUtils
+import DLUtils.network as network
+import DLUtils.transform as transform
 def mnist_mlp(SaveDir="test/mnist/mlp"):
     DLUtils.file.EnsureDir(SaveDir)
     BatchSize = 64
@@ -9,13 +11,13 @@ def mnist_mlp(SaveDir="test/mnist/mlp"):
     Log = DLUtils.log.SeriesLog()
     Model = DLUtils.network.ModuleSeries(
         [
-            DLUtils.transform.Reshape(-1, 28 * 28),
-            DLUtils.transform.Norm(0.0, 256.0, 0.0, 1.0),
-            DLUtils.network.NonLinearLayer().SetWeight(
+            transform.Reshape(-1, 28 * 28),
+            transform.Norm(0.0, 256.0, 0.0, 1.0),
+            network.NonLinearLayer().SetWeight(
                 DLUtils.SampleFromKaimingUniform((28 * 28, 100), "ReLU")
             ).SetMode("f(Wx+b)").SetBias(0.0).SetNonLinear("ReLU"),
-            DLUtils.norm.LayerNorm().SetFeatureNum(100),
-            DLUtils.network.LinearLayer().SetWeight(
+            network.LayerNorm().SetFeatureNum(100),
+            network.LinearLayer().SetWeight(
                 DLUtils.SampleFromXaiverUniform((100, 10))
             ).SetMode("Wx+b").SetBias("zeros"),
         ]
@@ -40,20 +42,20 @@ def mnist_mlp(SaveDir="test/mnist/mlp"):
     DLUtils.plot.PlotDataAndDistribution2D(Input[0], SavePath="./test/In.svg")
     DLUtils.plot.PlotBatchDataAndDistribution1D(Output, SavePath="./test/Out.svg")
 
-    Loss = DLUtils.network.ModuleGraph() \
-        .AddSubModule("ClassIndex2OneHot", DLUtils.transform.Index2OneHot(10)) \
-        .AddSubModule("Loss", DLUtils.Loss("SoftMaxAndCrossEntropy"))\
+    Loss = network.ModuleGraph() \
+        .AddSubModule(
+            ClassIndex2OneHot=network.Index2OneHot(10),
+            Loss=DLUtils.Loss("SoftMaxAndCrossEntropy")
+        ) \
         .AddRoute("ClassIndex2OneHot", ["OutputTarget"], "OutputTargetProb")\
         .AddRoute("Loss", ["Output", "OutputTargetProb"], "Loss")\
-        .SetOutput("Loss").Init()
+        .SetOut("Loss").Init()
 
-    Evaluator = DLUtils.Evaluator("ImageClassification") \
-        .SetLoss(Loss)
+    Evaluator = DLUtils.Evaluator("ImageClassification").SetLoss(Loss)
     EvaluationLog = DLUtils.EvaluationLog("ImageClassification")
 
     Optimizer = DLUtils.Optimizer("GradientDescend") \
-        .SetSubType("Adam") \
-        .Enable("Momentum") \
+        .SetSubType("Adam").Enable("Momentum") \
         .SetTrainParam(Model.ExtractTrainParam()) \
         .SetParam(LearningRate=0.0001, Alpha=0.1, Beta=0.1) \
         .BindEvaluator(Evaluator) \
@@ -71,8 +73,7 @@ def mnist_mlp(SaveDir="test/mnist/mlp"):
             Evaluator=Evaluator, EvaluationLog=EvaluationLog,
             Model=Model, Task=Task, Optimizer=Optimizer, 
             Test=Test, Save=Save
-        ) \
-        .SetDevice(Device).Init().Start()
+        ).Init().SetDevice(Device).Start()
 
 def mnist_conv():
     return

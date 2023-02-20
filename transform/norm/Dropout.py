@@ -6,8 +6,6 @@ import DLUtils
 class Dropout(DLUtils.module.AbstractNetwork):
     def __init__(self, Rate=None):
         super().__init__()
-        Param = self.Param
-        Param._CLASS = "DLUtils.norm.Dropout"
         if Rate is not None:
             Param.Rate = Rate
     def ReceiveTrain(self, In):

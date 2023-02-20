@@ -3,7 +3,7 @@ from .BatchNorm import BatchNorm2D
 
 import DLUtils
 from DLUtils.module import AbstractOperator
-class Norm(AbstractOperator):
+class ShiftRange(AbstractOperator):
     def __init__(self, Min1=None, Max1=None, Min2=None, Max2=None):
         super().__init__()
         Param = self.Param
@@ -27,8 +27,6 @@ class Norm(AbstractOperator):
 class NormOnColorChannel(AbstractOperator):
     def __init__(self, Mean0=None, Std0=None, Mean1=None, Std1=None):
         super().__init__()
-        Param = self.Param
-        Param._CLASS = "DLUtils.transform.Norm"
         if Mean0 is not None:
             Param.Before.Min = Mean0
         if Std0 is not None:

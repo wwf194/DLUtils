@@ -10,14 +10,14 @@ import matplotlib.pyplot as plt
 
 import DLUtils
 #from DLUtils.attr import *
-import DLUtils.train.algorithm as algorithm
+import DLUtils.optimize as optimzie
 import DLUtils.train.evaluate as evaluate
-import DLUtils.train.loss as loss
+import DLUtils.loss as loss
 
 import DLUtils.train.EpochBatchTrain as EpochBatchTrain
 from .EpochBatchTrain import EpochBatchTrainSession
 
-import DLUtils.train.SingleClassification as SingleClassification
+import DLUtils.train.Select1FromN as Select1FromN
 
 def TrainSession(Type="EpochBatchTrain"):
     if Type in ["EpochBatchTrain", "Epoch-Batch"]:

@@ -14,7 +14,6 @@ import json5
 from inspect import getframeinfo, stack
 
 import DLUtils
-from DLUtils.attr import *
 
 import DLUtils.log.AbstractLog as AbstractLog
 from DLUtils.log.AbstractLog import \

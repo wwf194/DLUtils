@@ -9,25 +9,34 @@ import pickle
 import random
 
 from typing import Iterable, List
-#import pynvml
-#from pynvml.nvml import nvmlDeviceOnSameBoard
-
-#import timeout_decorator
 import numpy as np
 import torch
 import torch.nn as nn
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 # from inspect import getframeinfo, stack
-from DLUtils.attr import *
-from DLUtils.file import *
-
-#import utils.param as utils
-import DLUtils.utils.json as json
-import DLUtils.utils.math as math
+# from .attrs import *
+from .file import *
+from ._str import *
 
 import argparse
 import traceback
+
+from .system import GetSystemType, GetSysType
+from .file import Str2File
+from ._dict import *
+
+def FromFile(FilePath):
+    Param = DLUtils.File2Param(FilePath)
+    assert hasattr(Param, "_CLASS")
+    ModuleClass = DLUtils.python.ParseClass(Param._CLASS)
+    Module = ModuleClass().LoadParam(Param)
+    return Module
+
+File2Module = FromFile
+
+def File2Param(FilePath):
+    return DLUtils.Param().FromFile(FilePath)
 
 def EmptyObj():
     return types.SimpleNamespace()
@@ -77,63 +86,63 @@ def ParseTaskName(task):
         pass
     return task
 
-def Main(**kw):
-    GlobalParam = DLUtils.GetGlobalParam()
-    SetAttrs(GlobalParam, "time.StartTime", value=DLUtils.system.GetTime())
+# def Main(**kw):
+#     GlobalParam = DLUtils.GetGlobalParam()
+#     SetAttrs(GlobalParam, "time.StartTime", value=DLUtils.system.GetTime())
     
-    #try:
-    CmdArgs = kw.get("CmdArgs")
-    if CmdArgs is None:
-        CmdArgs = ParseCmdArgs()
-    else:
-        CmdArgs = Namespace2PyObj(CmdArgs)
-    TaskFilePath = CmdArgs.TaskFile # All sciprt loads a task file, and keep doing tasks in it.
-    CmdArgs.task = ParseTaskName(CmdArgs.task)
-    task = CmdArgs.task
-    if task in ["CleanLog"]:
-        CleanLog()
-    elif task in ["CleanFigure"]:
-        CleanFigure()
-    elif task in ["DoTasksFromFile"]:
-        TaskObj = DLUtils.LoadTaskFile(TaskFilePath)
-        Tasks = getattr(TaskObj, CmdArgs.TaskName)
-        if not CmdArgs.IsDebug:
-            try: # catch all unhandled exceptions
-                DLUtils.DoTasks(Tasks, ObjRoot=DLUtils.GetGlobalParam())
-            except Exception:
-                DLUtils.Log(traceback.format_exc())
-                raise Exception()
-        else:
-            DLUtils.DoTasks(Tasks, ObjRoot=DLUtils.GetGlobalParam())
-    elif task in ["TotalLines"]:
-        DLUtils.CalculateGitProjectTotalLines()
-    elif task in ["QuickScript"]:
-        QuickScript = kw.get("QuickScript")
-        QuickScript(CmdArgs)
-    elif task in ["CopyProject2FolderAndRun"]:
-        GlobalParam = DLUtils.GetGlobalParam()
-        CopyFilesAndDirs2DestDir(
-            GlobalParam.config.Project.Files, 
-            "./", 
-            DLUtils.GetMainSaveDir() + "src/"
-        )
-        CmdArgs.task = CmdArgs.task2
-        delattr(CmdArgs, "task2")
-        DLUtils.system.RunPythonScript(
-            DLUtils.GetMainSaveDir() + "src/" + CmdArgs.MainScript,
-            ParsedArgs2CmdArgs(CmdArgs)
-        )
-    elif task in ["TotalLines"]:
-        DLUtils.CalculateGitProjectTotalLines()
-    else:
-        raise Exception("Inavlid Task: %s"%CmdArgs.task)
+#     #try:
+#     CmdArgs = kw.get("CmdArgs")
+#     if CmdArgs is None:
+#         CmdArgs = ParseCmdArgs()
+#     else:
+#         CmdArgs = Namespace2PyObj(CmdArgs)
+#     TaskFilePath = CmdArgs.TaskFile # All sciprt loads a task file, and keep doing tasks in it.
+#     CmdArgs.task = ParseTaskName(CmdArgs.task)
+#     task = CmdArgs.task
+#     if task in ["CleanLog"]:
+#         CleanLog()
+#     elif task in ["CleanFigure"]:
+#         CleanFigure()
+#     elif task in ["DoTasksFromFile"]:
+#         TaskObj = DLUtils.LoadTaskFile(TaskFilePath)
+#         Tasks = getattr(TaskObj, CmdArgs.TaskName)
+#         if not CmdArgs.IsDebug:
+#             try: # catch all unhandled exceptions
+#                 DLUtils.DoTasks(Tasks, ObjRoot=DLUtils.GetGlobalParam())
+#             except Exception:
+#                 DLUtils.Log(traceback.format_exc())
+#                 raise Exception()
+#         else:
+#             DLUtils.DoTasks(Tasks, ObjRoot=DLUtils.GetGlobalParam())
+#     elif task in ["TotalLines"]:
+#         DLUtils.CalculateGitProjectTotalLines()
+#     elif task in ["QuickScript"]:
+#         QuickScript = kw.get("QuickScript")
+#         QuickScript(CmdArgs)
+#     elif task in ["CopyProject2FolderAndRun"]:
+#         GlobalParam = DLUtils.GetGlobalParam()
+#         CopyFilesAndDirs2DestDir(
+#             GlobalParam.config.Project.Files, 
+#             "./", 
+#             DLUtils.GetMainSaveDir() + "src/"
+#         )
+#         CmdArgs.task = CmdArgs.task2
+#         delattr(CmdArgs, "task2")
+#         DLUtils.system.RunPythonScript(
+#             DLUtils.GetMainSaveDir() + "src/" + CmdArgs.MainScript,
+#             ParsedArgs2CmdArgs(CmdArgs)
+#         )
+#     elif task in ["TotalLines"]:
+#         DLUtils.CalculateGitProjectTotalLines()
+#     else:
+#         raise Exception("Inavlid Task: %s"%CmdArgs.task)
 
-    GlobalParam = DLUtils.GetGlobalParam()
+#     GlobalParam = DLUtils.GetGlobalParam()
     
-    SetAttrs(GlobalParam, "time.EndTime", value=DLUtils.system.GetTime())
-    DurationTime = DLUtils.system.GetTimeDifferenceFromStr(GlobalParam.time.StartTime, GlobalParam.time.EndTime)
-    SetAttrs(GlobalParam, "time.DurationTime", value=DurationTime)
-    _StartEndTime2File()
+#     SetAttrs(GlobalParam, "time.EndTime", value=DLUtils.system.GetTime())
+#     DurationTime = DLUtils.system.GetTimeDifferenceFromStr(GlobalParam.time.StartTime, GlobalParam.time.EndTime)
+#     SetAttrs(GlobalParam, "time.DurationTime", value=DurationTime)
+#     _StartEndTime2File()
 
 def _StartEndTime2File():
     GlobalParam = DLUtils.GetGlobalParam()
@@ -165,7 +174,7 @@ def CleanFigure():
 def ParseTaskList(TaskList, InPlace=True, **kw):
     TaskListParsed = []
     for Index, Task in enumerate(TaskList):
-        if isinstance(Task, str):
+        if isinstance(Task, _str):
             TaskParsed = DLUtils.PyObj({
                 "Type": Task,
                 "Args": {}
@@ -209,7 +218,7 @@ def ParseTaskList(TaskList, InPlace=True, **kw):
 
 def ParseTaskObj(TaskObj, Save=True, **kw):
     kw.setdefault("ObjRoot", DLUtils.GetGlobalParam())
-    if isinstance(TaskObj, str):
+    if isinstance(TaskObj, _str):
         TaskObj = DLUtils.parse.ResolveStr(TaskObj, **kw)
     if DLUtils.IsDictLikePyObj(TaskObj):
         if hasattr(TaskObj, "__Tasks__"):
@@ -242,7 +251,7 @@ def ParseTaskObj(TaskObj, Save=True, **kw):
 def DoTasks(Tasks, **kw):
     if not kw.get("DoNotChangeObjCurrent"):
         kw["ObjCurrent"] = Tasks
-    if isinstance(Tasks, str) and "&" in Tasks:
+    if isinstance(Tasks, _str) and "&" in Tasks:
         Tasks = DLUtils.parse.ResolveStr(Tasks, **kw)
     Tasks = DLUtils.ParseTaskObj(Tasks)
 
@@ -261,7 +270,7 @@ def DoTask(Task, **kw):
     #Task = DLUtils.parse.ParsePyObjDynamic(Task, RaiseFailedParse=False, InPlace=False, **kw)
     TaskType = Task.Type
     TaskArgs = Task.Args
-    if isinstance(TaskArgs, str) and "&" in TaskArgs:
+    if isinstance(TaskArgs, _str) and "&" in TaskArgs:
         TaskArgs = DLUtils.parse.ResolveStr(TaskArgs, kw)
     if TaskType in ["BuildObjFromParam", "BuildObjectFromParam"]:
         BuildObjFromParam(TaskArgs, **kw)
@@ -272,7 +281,7 @@ def DoTask(Task, **kw):
             Router = TaskArgs.Router
         else:
             Router = TaskArgs
-        if isinstance(Router, str):
+        if isinstance(Router, _str):
             Router = DLUtils.parse.ResolveStr(Router)
         # Require that router is already parsed.
         #RouterParsed = DLUtils.router.ParseRouterStaticAndDynamic(Router, ObjRefList=[Router], **kw)
@@ -532,12 +541,9 @@ def IsIterable(Obj):
     else:
         return False
 def IsListLike(List):
-    if isinstance(List, list):
+    if isinstance(List, list) or isinstance(List, tuple):
         return True
-    elif isinstance(List, DLUtils.PyObj) and List.IsListLike():
-        return True
-    else:
-        return False
+    return False
 
 def RemoveStartEndEmptySpaceChars(Str):
     Str = re.match(r"\s*([\S].*)", Str).group(1)
@@ -687,8 +693,7 @@ def NpArray2Tensor(data, Location="cpu", DataType=torch.float32, RequiresGrad=Fa
 def NpArray2List(data):
     return data.tolist()
 
-def NpArray2Str(data):
-    return np.array2string(data)
+
 
 def ToStandardizeTorchDataType(DataType):
     if DataType in ["Float", "float"]:
@@ -710,7 +715,7 @@ def DeleteKeysIfExist(Dict, Keys):
     return Dict
 
 def ParseDataTypeNp(DataType):
-    if isinstance(DataType, str):
+    if isinstance(DataType, _str):
         # if DataType in ["np.float32"]:
         #     return np.float32
         # elif DataType in ["np.int8"]:
@@ -906,21 +911,38 @@ def write_dict_info(dict_, save_path='./', save_name='dict info.txt'): # write r
     with open(save_path+save_name, 'w') as f:
         for key in dict_.keys():
             value = dict_[value]
-            if isinstance(value, str) or isinstance(value, int):
-                f.write('%s: %s'%(str(key), str(value)))
+            if isinstance(value, _str) or isinstance(value, int):
+                f.write('%s: %s'%(_str(key), _str(value)))
             else:
                 values_remained.append([key, value])
 
-def trunc_prefix(string, prefix):
-    if(string[0:len(prefix)]==prefix):
-        return string[len(prefix):len(string)]
+
+def AtLeastOneKeyInDict(_Dict, *List, **Dict):
+    Num = 0
+    if len(KeyList) == 1 and DLUtils.IsListLike(KeyList[0]):
+        KeyList = List[0]
     else:
-        return string
+        KeyList = List
+
+    InDictKeyList = []
+    for Key in KeyList:
+        if Key in _Dict:
+            Num += 1
+            InDictKeyList.append(Key)
+    if Num == 0:
+        return None
+    elif Num == 1:
+        return _Dict[InDictKeyList[0]]
+    else:
+        raise Exception()
+
+
+            
 
 def update_key(dict_0, dict_1, prefix='', strip=False, strip_only=True, exempt=[]):
     if not strip:
         for key in dict_1.keys():
-            dict_0[prefix+key]=dict_1[key]
+            dict_0[prefix + key]=dict_1[key]
     else:
         for key in dict_1.keys():
             trunc_key=trunc_prefix(key, prefix)
@@ -967,18 +989,14 @@ def set_instance_variable_and_dict(self, dict_1, dict_0, keys=None, exception=['
                     dict_1[key] = value
                     setattr(self, key, value)
                 
-def set_default_attr(self, key, value):
-    if self.__dict__.get(key) is None:
-        setattr(self, key, value)
+def set_default_attr(Obj, Key, Value):
+    if Obj.__dict__.get(Key) is None:
+        setattr(Obj, Key, Value)
+setdefault = set_default_attr
 
 set_dict_and_instance_variable = set_class_variable_and_dict = set_instance_variable_and_dict
 
 
-def PrintDict(Dict):
-    Str = ""
-    for Key, Value in Dict.items():
-        Str('%s=%s'%(str(Key), str(Value)), end=' ')
-    print('\n')
 
 def GetLastestModel(model_prefix, base_dir='./', is_dir=True):
     # search for directory or file of most recently saved models(model with biggest epoch index)
@@ -1000,7 +1018,7 @@ def GetLastestModel(model_prefix, base_dir='./', is_dir=True):
                     if(max_epoch < epoch_num):
                         max_epoch = epoch_num
     if max_epoch is not None:
-        return base_dir + model_prefix + str(max_epoch) + '/'
+        return base_dir + model_prefix + _str(max_epoch) + '/'
     else:
         return "error"
 
@@ -1024,7 +1042,7 @@ def EnsureSuffix(name, suffix):
 def check_suffix(name, suffix=None, is_path=True):
     # check whether given file name has suffix. If true, check whether it's legal. If false, add given suffix to it.
     if suffix is not None:
-        if isinstance(suffix, str):
+        if isinstance(suffix, _str):
             suffix = standardize_suffix(suffix)
         elif isinstance(suffix, list):
             for i, suf_ in enumerate(suffix):
@@ -1032,7 +1050,7 @@ def check_suffix(name, suffix=None, is_path=True):
             if len(suffix)==0:
                 suffix = None
         else:
-            raise Exception('check_suffix: invalid suffix: %s'%(str(suffix)))      
+            raise Exception('check_suffix: invalid suffix: %s'%(_str(suffix)))      
 
     pattern = re.compile(r'(.*)\.(\w+)')
     result = pattern.match(name)
@@ -1041,7 +1059,7 @@ def check_suffix(name, suffix=None, is_path=True):
         suf = result.group(2)
         if suffix is None:
             return name + '.' + suf
-        elif isinstance(suffix, str):
+        elif isinstance(suffix, _str):
             if name==suffix:
                 return name
             else:
@@ -1057,17 +1075,17 @@ def check_suffix(name, suffix=None, is_path=True):
                 warnings.warn('check_suffix: %s is illegal suffix. replacing it with %s.'%(suf, suffix[0]))
                 return name + '.' + suffix[0]                
         else:
-            raise Exception('check_suffix: invalid suffix: %s'%(str(suffix)))
+            raise Exception('check_suffix: invalid suffix: %s'%(_str(suffix)))
     else: # fail to match
         if suffix is None:
             raise Exception('check_suffix: %s does not have suffix.'%name)
         else:
-            if isinstance(suffix, str):
+            if isinstance(suffix, _str):
                 suf_ = suffix
-            elif isinstance(suffix, str):
+            elif isinstance(suffix, _str):
                 suf_ = suffix[0]
             else:
-                raise Exception('check_suffix: invalid suffix: %s'%(str(suffix)))
+                raise Exception('check_suffix: invalid suffix: %s'%(_str(suffix)))
             warnings.warn('check_suffix: no suffix found in %s. adding suffix %s.'%(name, suffix))            
             return name + '.' + suf_
 
@@ -1093,7 +1111,7 @@ def scan_files(path, pattern, ignore_folder=True, raise_not_found_error=False):
         path.append('/')
     files_path = os.listdir(path)
     matched_files = []
-    if isinstance(pattern, str):
+    if isinstance(pattern, _str):
         pattern = re.compile(pattern)
     for file_name in files_path:
         #print(file_name)
@@ -1147,7 +1165,7 @@ def copy_files(file_list, SourceDir='./', TargetDir=None, sys_type='linux'):
         # to be implemented 
         pass
     else:
-        raise Exception('copy_files: Invalid sys_type: '%str(sys_type))
+        raise Exception('copy_files: Invalid sys_type: '%_str(sys_type))
 
 def TargetDir_module(path):
     path = path.lstrip('./')
@@ -1234,7 +1252,6 @@ def GetDimensionNum(data):
 def ToLowerStr(Str):
     return Str.lower()
 
-from DLUtils.file import Str2File
 
 def GetSavePathFromName(Name, Suffix=""):
     if not Suffix.startswith("."):
@@ -1265,7 +1282,7 @@ def Float2StrDisplay(Float):
     Base, Exp = DLUtils.math.Float2BaseAndExponent(Float)
     TicksStr = []
     if 1 <= Exp <= 2:
-        FloatStr = str(int(Float))
+        FloatStr = _str(int(Float))
     elif Exp == 0:
         FloatStr = '%.1f'%Float
     elif Exp == -1:
@@ -1312,7 +1329,7 @@ def RegisterExternalClasses(Name, Class):
     setattr(ExternalClasses, Name, Class)
 
 def Bytes2Str(Bytes, Format="utf-8"):
-    return str(Bytes, encoding = "utf-8")
+    return _str(Bytes, encoding = "utf-8")
 
 def Str2Bytes(Str, Format="utf-8"):
     return Str.decode(Format)
@@ -1336,11 +1353,7 @@ def CreateDefaultDict(GetDefaultMethod):
     return defaultdict(GetDefaultMethod)
 GetDefaultDict = CreateDefaultDict
 
-from DLUtils.format import *
-
-# SystemType = DLUtils.system.GetSystemType()
-# def GetSystemType():
-#     return SystemType
+from .format import *
 
 def RandomImage(Height=512, Width=512, ChannelNum=None, 
         BatchNum=10, DataType="TorchTensor"):

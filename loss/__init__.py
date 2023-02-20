@@ -2,12 +2,15 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import DLUtils
-from DLUtils.attr import *
-# import DLUtils.loss.classification as classification
-# from DLUtils.loss.L2Loss import L2Loss
-# from DLUtils.loss.classification import Probability2MostProbableIndex, LogAccuracyForSingleClassPrediction
-from .entropy import CrossEntropy, SoftMax, SoftMaxAndCrossEntropy
-from .KLDivergence import KLNormAndNorm01
+
+from .entropy_loss import \
+    SoftMax, \
+    SoftMaxAndCrossEntropy, \
+    CrossEntropy2Class, CrossEntropyNClass, CrossEntropy
+
+from .mse_loss import MSELoss
+
+from .entropy_loss import KLNormAndNorm01, KLNormMuSigmaAndNorm01
 
 def Loss(Type):
     if Type in ["CrossEntropy"]:

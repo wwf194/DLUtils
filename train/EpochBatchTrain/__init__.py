@@ -2,8 +2,8 @@ import DLUtils
 import numpy as np
 
 class EpochBatchTrainComponent(DLUtils.module.AbstractModule):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *List, **Dict):
+        super().__init__(*List, **Dict)
         Param = self.Param
         Param.Data.Log = DLUtils.Param([])
     def BindTrainSession(self, TrainSession):
@@ -20,44 +20,58 @@ class EpochBatchTrainComponent(DLUtils.module.AbstractModule):
             TrainSession.AddAfterEpochEvent(self.AfterEpoch)
         if hasattr(self, "AfterTrain"):
             TrainSession.AddAfterTrainEvent(self.AfterTrain)
+    def EventList(self, Dict):
+        for _Event in self._EventList:
+            _Event(Dict)
+        return self
     # def Log(self, Content):
     #     Param = self.Param
     #     Param.Data.Log.append(Content)
     #     return self
 
+class EventAfterEveryEpoch(EpochBatchTrainComponent):
+    def SetEvent(self, Event):
+        self.Event = Event
+        return self
+    def AfterEpoch(self, Dict):
+        self.Event(Dict)
+        return self
+    def Init(self, IsSuper=False, IsRoot=True):
+        assert hasattr(self, "Event")
+        return super().Init(IsSuper=True, IsRoot=IsRoot)
+
+class EventAfterTrain(EpochBatchTrainComponent):
+    def SetEvent(self, Event):
+        self.Event = Event
+        return self
+    def SetEventList(self, *EventList):
+        self._EventList = EventList
+        self.Event = self.EventList
+        return self
+    def AfterTrain(self, Dict):
+        self.Event(Dict)
+        return self
+    def Init(self, IsSuper=False, IsRoot=True):
+        assert hasattr(self, "Event")
+        return super().Init(IsSuper=True, IsRoot=IsRoot)
+
 class EventAfterEpoch(EpochBatchTrainComponent):
+    SetParamMap = DLUtils.IterableKeyToElement({
+        ("Num"): "Event.Num",
+        ("Mode"): "Test.Mode"
+    })
     def __init__(self, **Dict):
         super().__init__()
         self.SetParam(**Dict)
-    def SetParam(self, **Dict):
-        Param = self.Param
-        Num = Dict.get("Num")
-        if Num is not None:
-            Param.Event.Num = Num
-        Mode = Dict.get("Mode")
-        if Mode is not None:
-            Param.Test.Mode = Mode
-        return self
-    def BindEvaluator(self, Evaluator):
-        self.Evaluator = Evaluator
-        return self
-    def BindTestData(self, TestData):
-        self.TestData = TestData
-        return self
-    def BindModel(self, Model):
-        self.Model = Model
-        return self
-    def Bind(self, **Dict):
-        Model = Dict.get("Model")
-        if Model is not None:
-            self.BindModel(Model)
-        TestData = Dict.get("TestData")
-        if TestData is not None:
-            self.BindTestData(TestData)
-        Evaluator = Dict.get("Evaluator")
-        if Evaluator is not None:
-            self.BindEvaluator(Evaluator)
-        return self
+    # def SetParam(self, **Dict):
+    #     Param = self.Param
+    #     Num = Dict.get("Num")
+    #     if Num is not None:
+    #         Param.Event.Num = Num
+    #     Mode = Dict.get("Mode")
+    #     if Mode is not None:
+    #         Param.Test.Mode = Mode
+    #     return self
     def _AfterEpoch(self, Dict):
         EpochIndex = Dict.EpochIndex
         if EpochIndex == self.EventEpochNext:
@@ -116,23 +130,30 @@ class EventAfterEpoch(EpochBatchTrainComponent):
         return self
 
 class EventAfterFixedBatch(EpochBatchTrainComponent):
-    def __init__(self, BatchInterval=None, Event=None):
-        super().__init__()
+    SetParamMap = DLUtils.IterableKeyToElement({
+        ("BatchInterval"): "Batch.Interval"
+    })
+    def __init__(self, BatchInterval=None, *List, **Dict):
         if BatchInterval is not None:
-            assert BatchInterval > 0
-            self.BatchInterval = BatchInterval
-        if Event is not None:
-            self.BindEvent(Event)
+            Dict["BatchInterval"] = BatchInterval
+        super().__init__(*List, **Dict)
     def AfterBatch(self, Dict):
-        self.BatchNum += 1
-        if self.BatchNum == self.BatchInterval:
+        self.BatchIndex += 1
+        if self.BatchIndex == self.BatchInterval:
             self.Event(Dict)
-            self.BatchNum = 0
+            self.BatchIndex = 0
         return self
     def BindEvent(self, Event):
         self.Event = Event
     def BeforeTrain(self, Dict):
-        self.BatchNum = 0
+        self.BatchIndex = 0
+    def Init(self, IsSuper=False, IsRoot=True):
+        Param = self.Param
+        self.BatchInterval = Param.Batch.Interval
+        assert self.BatchInterval > 0
+        # decide event to be triggered after batch interval
+        assert hasattr(self, "Event")
+        return super().Init(IsSuper=True, IsRoot=IsRoot)
 
 class EventAfterEveryBatch(EpochBatchTrainComponent):
     def __init__(self):
@@ -143,8 +164,10 @@ class EventAfterEveryBatch(EpochBatchTrainComponent):
         return self
 
 class EpochBatchTrainSession(DLUtils.module.AbstractModule):
-    def __init__(self, Logger=None):
-        super().__init__(Logger=Logger)
+    def __init__(self, Log=None, *List, **Dict):
+        if Log is not None:
+            Dict["Log"] = Log
+        super().__init__(*List, **Dict)
         self.BeforeTrainList = []
         self.BeforeEpochList = []
         self.BeforeBatchList = []
@@ -169,29 +192,30 @@ class EpochBatchTrainSession(DLUtils.module.AbstractModule):
         self.AddSubModule("Model", Model)
         return self
     def Bind(self, **Dict):
-        for Name, SubModule in Dict.items():
-            self.AddSubModule(Name, SubModule)
+        super().Bind(**Dict)
         return self
     def BindOptimizer(self, Optimizer):
         self.AddSubModule("Optimizer", Optimizer)
         return self
-    def AddSubModule(self, Name, SubModule):
-        super().AddSubModule(Name, SubModule)
+    def AddSubModule(self, *List, **Dict):
+        super().AddSubModule(*List, **Dict)
         return self
     def BeforeTrain(self, Dict):
         Param = self.Param
         Task = self.Task
-        TrainData = Task.TrainData(BatchSize=Param.BatchSize)
-        TestData  = Task.TestData(BatchSize=Param.BatchSize)
+        TrainData = Task.TrainData(BatchSize=Param.Batch.Size)
+        TestData  = Task.TestData(BatchSize=Param.Batch.Size)
         self.BatchNum = TrainData.BatchNum()
-        self.AddSubModule("TrainData", TrainData)
-        self.AddSubModule("TestData", TestData)
+        self.BindModule("TrainData", TrainData)
+        self.BindModule("TestData", TestData)
         # self.TrainData = TrainData
         # self.TestData = TestData
-        self.AddSubModule("EpochIndexLog", DLUtils.structure.IntRange())
+        self.AddSubModule("EpochIndexLog", DLUtils.struct.IntRange())
         self.AddSubModule("BatchIndexLog", DLUtils.module.EmptyModule())
         
-        for Name, SubModule in dict(self.SubModules).items():
+        Modules = dict(self.SubModules)
+        Modules.update(self.BindModules)
+        for Name, SubModule in Modules.items():
             if hasattr(SubModule, "BindTrainSession"):
                 SubModule.BindTrainSession(self)
             else:
@@ -224,7 +248,7 @@ class EpochBatchTrainSession(DLUtils.module.AbstractModule):
         return self
     def BeforeEpoch(self, Dict):
         Name = "%d"%Dict.EpochIndex
-        SubModule = DLUtils.structure.IntRange()
+        SubModule = DLUtils.struct.IntRange()
         self.BatchIndexLog.AddSubModule(Name, SubModule)
         self._BatchIndexList = SubModule
         for Event in self.BeforeEpochList:
@@ -247,8 +271,8 @@ class EpochBatchTrainSession(DLUtils.module.AbstractModule):
     def AfterTrain(self, Dict):
         for Event in self.AfterTrainList:
             Event(Dict)
-        self.RemoveSubModule("TrainData")
-        self.RemoveSubModule("TestData")
+        self.UnBind("TrainData")
+        self.UnBind("TestData")
         return self
     def AddBeforeTrainEvent(self, Event):
         self.BeforeTrainList.append(Event)
@@ -262,18 +286,25 @@ class EpochBatchTrainSession(DLUtils.module.AbstractModule):
         self.AfterEpochList.append(Event)
     def AddAfterTrainEvent(self, Event):
         self.AfterTrainList.append(Event)
-    def SetParam(self, **Dict):
+    def SimulateAfterTrain(self, Module):
         Param = self.Param
-        for Key, Value in Dict.items():
-            if Key in ["EpochNum"]:
-                Param.Epoch.Num = Value
-                self.EpochNum = Value
-            elif Key in ["BatchNum"]:
-                Param.Batch.Num = Value
-                self.BatchNum = Value
-            else:
-                Param.setattr(Key, Value)
-
+        Dict = DLUtils.new_param(
+            TrainSession=self,
+            EpochIndex = Param.Epoch.Num - 1,
+            BatchIndex = Param.Batch.Num - 1,
+            EpochNum = Param.Epoch.Num,
+            BatchNum = Param.Batch.Num,
+            Model = self.Model,
+            EvaluationLog = self.EvaluationLog,
+            Evaluator = self.Evaluator,
+            SaveDir= Param.SaveDir
+        )
+        if hasattr(self, "Device"):
+            Dict.Device = self.Device
+        Module.AfterTrain(Dict)
+        return self
+    def SetParam(self, **Dict):
+        super().SetParam(**Dict)
         return self
     def EpochIndexList(self):
         return self.EpochIndexLog.Extract()
@@ -305,18 +336,19 @@ class EpochBatchTrainSession(DLUtils.module.AbstractModule):
         for EpochIndex in range(self.EpochStart, self.EpochStart + self.EpochNum):
             self.Log(f"EpochIndex: {EpochIndex}", "TrainSession")
             Dict.EpochIndex = EpochIndex
+            Dict.SaveDir = Param.SaveDir
             self.BeforeEpoch(Dict)
             for BatchIndex in range(self.BatchNum):
                 Dict.BatchIndex = BatchIndex
                 self.BeforeBatch(Dict)
-                Input, OutputTarget = TrainData.Get(BatchIndex)
+                In, OutTarget = TrainData.Get(BatchIndex)
                 # if BatchIndex < 3:
                     # DLUtils.Tensor2TextFile2D(Input[3], "./test/mnist/mlp/Input-Epoch%3d-Batch%3d"%(EpochIndex, BatchIndex))
                     # DLUtils.Tensor2ImageFile(Input[3], "./test/mnist/mlp/Input-Epoch%3d-Batch%3d-Index03.png"%(EpochIndex, BatchIndex))
-                Output = Model(Input)
-                Dict.Input = Input
-                Dict.Output = Output
-                Dict.OutputTarget = OutputTarget
+                Output = Model(In)
+                Dict.In = In
+                Dict.Out = Output
+                Dict.OutTarget = OutTarget
                 Evaluation = Evaluator.Evaluate(Dict)
                 Dict.Evaluation = Evaluation
                 Optimizer.Optimize(Dict)
@@ -324,7 +356,6 @@ class EpochBatchTrainSession(DLUtils.module.AbstractModule):
             self.AfterEpoch(Dict)
         self.AfterTrain(Dict)
         return self
-
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         self.BatchSize = Param.Batch.setdefault("Size", "NotRegistered")
@@ -349,23 +380,29 @@ class EpochBatchTrainSession(DLUtils.module.AbstractModule):
                 Index = IndexNext
                 EpochIndex += 1.0
         return BatchIndexFloat
-    def ToFile(self, SaveDir, RetainSelf=True):
+    def ToFile(self, SavePath=None, RetainSelf=True):
         Param = DLUtils.Param(self.Param)
+        if SavePath is None:
+            assert hasattr(Param, "SaveDir")
+            SavePath = Param.SaveDir + "TrainSession.dat"
+        else:
+            if SavePath.endswith("/"):
+                SavePath = SavePath + "TrainSession.dat"
         if not RetainSelf:
-            self.RemoveSubModule("TrainData")
-            self.RemoveSubModule("TestData")
+            self.UnBind("TrainData")
+            self.UnBind("TestData")
         for Name, SubModule in self.SubModules.items():
             if Name in ["TrainData", "TestData"]:
                 Param.SubModules.delattr(Name)
                 continue
             else:
                 Param.SubModules.setattr(Name, SubModule.ExtractParam())
-        Param.ToFile(SaveDir + "TrainSession.dat")
+        Param.ToFile(SavePath)
         return self
+
 from .Component import \
     Save, \
     Test, \
-    AnalysisAfterTrain, XFixedSizeYFixedSizeProb
-    
+    AnalysisAfterTrain, EvaluatorPredAndTargetSelect1FromN
 
-import DLUtils.train.SingleClassification as SingleClassification
+import DLUtils.train.Select1FromN as Select1FromN

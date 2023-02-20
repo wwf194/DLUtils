@@ -1,51 +1,58 @@
-import re
 import DLUtils
-from DLUtils.attr import *
+import re
 import numpy as np
 
 class FixedSizeQueuePassiveOut(): # first in, first out. out is passive. queue is fixed size.
-    def __init__(self, Size, DataType=None):
-        self.Size = Size
+    def __init__(self, NumMax):
+        assert NumMax > 0
+        self.NumMax = NumMax
         self.Index = 0
-        self.SizeNow = 0
+        self.Num = 0
         self.IsFull = False
-        assert Size > 0
-    def put(self, In):
-        self.SizeNow += 1
+        self.append = self.put
     def _Sum(self):
         return self.Data.sum()
-
-class FixedSizeQueuePassiveOutInt32(FixedSizeQueuePassiveOut):
-    def __init__(self, Size, KeepSum=True):
-        self.Data = np.zeros((Size), np.int32)
-        if KeepSum:
-            self.Sum = self._SumCached
-        else:
-            self.Sum = self._Sum
-        self.SumCache = 0
-        super().__init__(Size, DataType=np.int32)
-        self.append = self.put
-    def _SumCached(self):
-        return self.SumCache
+    def Average(self):
+        return self.Data.mean()
     def put(self, In):
         Index = self.Index
         Data = self.Data
         Out = self.Data[Index]
         Data[Index] = In
-        
         self.Index += 1
-        if self.Index == self.Size:
+        if self.Index == self.NumMax:
             self.Index = 0
         self.SumCache += In
-
         if self.IsFull:
             self.SumCache -= Out
             return Out
         else:
-            self.SizeNow += 1
-            if self.SizeNow == self.Size:
+            self.Num += 1
+            if self.Num == self.NumMax:
                 self.IsFull = True
             return None
+    def _SumCached(self):
+        return self.SumCache
+
+class FixedSizeQueuePassiveOutInt(FixedSizeQueuePassiveOut):
+    def __init__(self, NumMax, KeepSum=True):
+        self.Data = np.zeros((NumMax), np.int32)
+        if KeepSum:
+            self.Sum = self._SumCached
+        else:
+            self.Sum = self._Sum
+        self.SumCache = 0
+        super().__init__(NumMax)
+
+class FixedSizeQueuePassiveOutFloat(FixedSizeQueuePassiveOut):
+    def __init__(self, NumMax, KeepSum=True):
+        self.Data = np.zeros((NumMax), np.float32)
+        if KeepSum:
+            self.Sum = self._SumCached
+        else:
+            self.Sum = self._Sum
+        self.SumCache = 0
+        super().__init__(NumMax)
 
 class IntRange(DLUtils.module.AbstractModule):
     # represesnt a single int range.
@@ -54,7 +61,6 @@ class IntRange(DLUtils.module.AbstractModule):
     def __init__(self, Logger=None):
         super().__init__(Logger)
         Param = self.Param
-        Param._CLASS = "DLUtils.structure.IntRange"
         self.Start = None
         self.Next = None
         self.append = self._appendFirst

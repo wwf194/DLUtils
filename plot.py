@@ -12,7 +12,6 @@ sns.set_style("white")
 default_res=60
 
 import DLUtils
-from DLUtils.attr import *
 
 def SetMatplotlibParamToDefault():
     mpl.rcParams.update(mpl.rcParamsDefault)
@@ -1906,16 +1905,20 @@ def SetTitleAndLabelForAx(ax, XLabel=None, YLabel=None, Title=None):
     if Title is not None:
         ax.set_title(Title)
 
-def SaveFigForPlt(Save=True, SavePath=None):
+def SaveFigForPlt(Save=True, SavePath=None, Fig=None):
     if SavePath is not None:
         Save = True
     if SavePath is None and Save is True:
         raise Exception()
     if Save:
-        DLUtils.EnsureFileDir(SavePath)
-        plt.tight_layout()
-        plt.savefig(SavePath, format="svg")
-        plt.close()
+        if Fig is not None:
+            Fig.savefig(SavePath)
+        else:
+            DLUtils.EnsureFileDir(SavePath)
+            plt.tight_layout()
+            # plt.savefig(SavePath, format="svg")
+            plt.savefig(SavePath)
+            # plt.close() # is closed, plt.show() will not function normally.
 
 def CompareDensityCurve(data1, data2, Name1, Name2, Save=True, SavePath=None):
     fig, ax = plt.subplots()

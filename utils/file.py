@@ -28,7 +28,12 @@ def MostRecentlyModified(PathList, Num=None):
                 Path = _Path
         return Path
 
-def MostRecentlySavedModel(SaveDir):
+def LoadMostRecentlySavedModelInDir(SaveDir):
+    ModelFilePath = MostRecentlySavedModelPathInDir(SaveDir)
+    Model = DLUtils.FromFile(ModelFilePath)
+    return Model
+
+def MostRecentlySavedModelPathInDir(SaveDir):
     SaveDir = StandardizePath(SaveDir)
     FileNameList = ListAllFiles(SaveDir)
     List = []
@@ -36,6 +41,7 @@ def MostRecentlySavedModel(SaveDir):
         if "model" in Name:
             List.append(Name)
     return MostRecentlyModified([SaveDir + FileName for FileName in List])  
+MostRecentlySavedModelPath = MostRecentlySavedModelPathInDir
 
 def AfterTrainModelFile(SaveDir):
     SaveDir = StandardizePath(SaveDir)
@@ -170,6 +176,16 @@ def RemoveFile(FilePath):
     else:
         os.remove(FilePath)
 
+def RemoveDir(DirPath):
+    assert ExistsDir(DirPath)
+    shutil.rmtree(DirPath)
+    return
+
+def ClearDir(DirPath):
+    if ExistsDir(DirPath):
+        RemoveDir(DirPath)
+    EnsureDir(DirPath)
+
 def RemoveAllFilesUnderDir(DirPath, verbose=True):
     assert ExistsDir(DirPath)
     for FileName in GetAllFiles(DirPath):
@@ -229,6 +245,10 @@ def ListAllFilesAndDirs(DirPath):
             Dirs.append(Item + "/")
     return Files, Dirs
 GetAllFilesAndDirs = ListAllFilesAndDirs
+
+def IsEmptyDir(DirPath):
+    Files, Dirs = ListAllFilesAndDirs(DirPath)
+    return len(Files) == 0 and len(Dirs) == 0
 
 def ListFilesName(DirPath):
     assert os.path.exists(DirPath), "Non-existing DirPath: %s"%DirPath
@@ -509,7 +529,6 @@ def RenameDirIfExists(DirPath):
             if not ExistsPath(DirPath):
                 break
             Index += 1
-
     DirPath += "/"
     return DirPath
 
@@ -520,20 +539,42 @@ def Str2File(Str, FilePath):
 
 def Tensor2TextFile2D(Data, SavePath="./test/"):
     Data = DLUtils.ToNpArray(Data)
-    NpArray2TextFile2D(Data, SavePath=SavePath)
+    NpArray2D2TextFile(Data, SavePath=SavePath)
 
-def NpArray2TextFile2D(Data, ColName=None, RowName=None, SavePath=None):
+def NpArray2Str(Data, **Dict):
+    DimNum = len(Data.shape)    
+    if DimNum == 2:
+        DataStr = NpArray2D2Str(Data, **Dict)
+        Name = Dict.setdefault("Name", "NpArray")
+        Shape = str(Data.shape)
+        Info = "{0}. Shape: {1}".format(Name, list(Shape))
+        Dim = "Dim 0 / Dim 1"
+        return "\n".join([Name, Shape, Dim, DataStr])
+    else:
+        raise Exception()
+
+def NpArray2D2Str(Data, ColName=None, RowName=None, **Dict):
     assert len(Data.shape) == 2
     DataDict= {}
     if ColName is None:
-        ColName = range(Data.shape[1])
+        ColName = ["Col %d"%ColIndex for ColIndex in range(Data.shape[1])]
     for ColIndex, Name in enumerate(ColName):
         DataDict[Name] = Data[:, ColIndex]
     if RowName is not None:
         # to be implemented
         pass
-    DLUtils.Str2File(pd.DataFrame(DataDict).to_string(), SavePath)
-    
+    return pd.DataFrame(Data).to_string()
+def NpArray2D2TextFile(Data, ColName=None, RowName=None, SavePath=None):
+    Str = NpArray2D2Str(Data, ColName=ColName, RowName=RowName, SavePath=SavePath)
+    DLUtils.Str2File(Str, SavePath)
+
+def NpArray2TextFile(Data, SavePath, **Dict):
+    DimNum = len(Data.shape)    
+    if DimNum == 2:
+        NpArray2D2TextFile(Data, SavePath=SavePath, **Dict)
+    else:
+        raise Exception()
+
 def LoadParamFromFile(Args, **kw):
     if isinstance(Args, dict):
         _LoadParamFromFile(DLUtils.json.JsonObj2PyObj(Args), **kw)
@@ -694,13 +735,20 @@ def _AbsPath(Path):
         PathAbs += "/"
     return PathAbs
 def AbsPath(Path):
+    if Path.endswith("/"):
+        EndsWithSlash = True
+    else:
+        EndsWithSlash = False
     if "~" in Path:
         Path = os.path.expanduser(Path)
     PathAbs = pathlib.Path(Path).absolute()
     PathAbs = str(PathAbs)
-    if Path.endswith("/") or ExistsFolder(PathAbs):
-        # if not PathAbs.endswith("/"):
-        PathAbs += "/"
+
+    if not PathAbs.endswith("/"):
+        if EndsWithSlash:
+            PathAbs += "/"
+    # if ExistsFolder(PathAbs) and not PathAbs.endswith("/"):
+    #    PathAbs += "/"
     return PathAbs
 ToAbsPath = AbsPath
 
@@ -809,10 +857,10 @@ def Data2TextFile(data, Name=None, FilePath=None):
         FilePath = DLUtils.GetSavePathFromName(Name, Suffix=".txt")
     DLUtils.Str2File(str(data), FilePath)
 
-from .utils.json import PyObj2DataFile, DataFile2PyObj, PyObj2JsonFile, \
+from .json import PyObj2DataFile, DataFile2PyObj, PyObj2JsonFile, \
     JsonFile2PyObj, JsonFile2JsonDict, JsonObj2JsonFile, DataFile2JsonObj
 
-from .utils._param import JsonDict2Str
+from ._param import JsonDict2Str
 
 def FolderConfig(FolderPath):
     FolderPath = ToAbsPath(FolderPath)
@@ -856,7 +904,7 @@ def FolderConfig(FolderPath):
             )
     return Tree
 
-def CheckIntegrity(FolderPath, Config):
+def CheckIntegrity(FolderPath, Config, RaiseException=True):
     FolderPath = ToAbsPath(FolderPath)
     FolderNodeList = []
     ConfigNodeList = []
@@ -873,15 +921,24 @@ def CheckIntegrity(FolderPath, Config):
             FileName = FileName.replace("(DOT)", ".")
             SubFilePath = FolderPath + FileName
             if not FileExists(SubFilePath):
-                return False
+                if RaiseException:
+                    raise Exception()
+                else:
+                    return False
             if not FileInfo.MD5 == File2MD5(SubFilePath):
-                return False
+                if RaiseException:
+                    raise Exception()
+                else:
+                    return False
         FoldersNode = ConfigNode.Folders
         for FolderName, FolderInfo in FoldersNode.items():
             FolderName = FolderName.replace("(DOT)", ".")
             SubFolderPath = FolderPath + FolderName
             if not ExistsDir(SubFolderPath):
-                return False
+                if RaiseException:
+                    raise Exception()
+                else:
+                    return False
             ConfigNodeList.append(FolderInfo)
             FolderNodeList.append(SubFolderPath)
     return True

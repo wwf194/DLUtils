@@ -1,5 +1,4 @@
-from DLUtils.attr import *
-from .utils.json import *
+from .json import *
 from collections import defaultdict
 
 def ParseShape(Shape):

@@ -1,22 +1,17 @@
-# from DLUtils.PyObj import *
-from DLUtils.system import GetSystemType
-SystemType = GetSystemType()
-
-from .utils.json import IsJsonObj, PyObj, EmptyPyObj, IsPyObj, IsDictLikePyObj, IsListLikePyObj, CheckIsLegalPyName
+from .utils.json import \
+    IsJsonObj, PyObj, EmptyPyObj, IsPyObj, IsDictLikePyObj, \
+    IsListLikePyObj, CheckIsLegalPyName
 import DLUtils.utils as utils
 import DLUtils.utils.json as json
 
+
 #from .utils import _1DTo2D
 from .utils._param import \
-    Param, ToParam, param \
-
-import DLUtils.attr as attrs
-import DLUtils.parse as parse
-import DLUtils.geometry2D as geometry2D
-import DLUtils.file as file
+    Param, param, \
+    new_param, NewParam, ToParam
 
 from .utils import *
-
+SystemType = GetSystemType()
 from DLUtils.module import AbstractModule, AbstractNetwork, AbstractOperator
 import DLUtils.module as module
 import DLUtils.transform as transform
@@ -24,10 +19,15 @@ import DLUtils.transform.norm as norm
 
 import DLUtils.log as log # log -> transform
 
-import DLUtils.structure as structure
-import DLUtils.function as function
+import DLUtils.utils.attrs as attrs
+import DLUtils.utils.parse as parse
+import DLUtils.utils.file as file
+import DLUtils.utils.func as function
 import DLUtils.utils.math as math
-import DLUtils.system as system
+import DLUtils.utils.__struct__ as struct
+import DLUtils.utils.system as system
+from .utils.__struct__ import FixedSizeQueuePassiveOutInt, FixedSizeQueuePassiveOutFloat
+
 
 import DLUtils.optimize as optimize # module -> optimize
 import DLUtils.evaluate as evaluate
@@ -35,7 +35,7 @@ import DLUtils.analysis as analysis
 import DLUtils.transform as transform
 import DLUtils.train as train # module -> train
 import DLUtils.network as network
-import DLUtils.network.NonLinear as NonLinear
+# import DLUtils.network.nonlinear as NonLinear
 
 import DLUtils.task as task
 from .task import Task, Dataset
@@ -43,12 +43,12 @@ from .task import Task, Dataset
 # from .functions import *
 # from .log import *
 
-from .train.algorithm import Optimizer
+from .optimize import Optimizer
+from .optimize import SGD, Adam
 from .train.evaluate import Evaluator, EvaluationLog
 import DLUtils.plot as plot
 
-import DLUtils.train.loss as loss
-from .train.loss import Loss
+import DLUtils.loss as loss
 
 from DLUtils.data.utils import \
     SampleFromKaimingNormal, \
@@ -57,27 +57,30 @@ from DLUtils.data.utils import \
     SampleFromXaiverUniform, \
     SampleFromConstantDistribution, \
     SampleFromNormalDistribution, \
+    SampleFromGaussianDistribution, \
     SampleFromUniformDistribution, \
-    Conv2DKernel, UpConv2DKernel
+    DefaultConv2DKernel, DefaultUpConv2DKernel, ShapeWithSameValue, \
+    DefaultNonLinearLayerWeight, DefaultNonLinearLayerBias, DefaultLinearLayerWeight, \
+    DefaultUpConv2DBias, DefaultConv2DBias
 
-from DLUtils.parse import ParseSavePath
-from DLUtils.train import TrainSession
-import DLUtils.train.loss as loss
+import DLUtils.geometry2D as geometry2D
+
+
+from DLUtils.train import TrainSession, EpochBatchTrainSession
 
 from DLUtils.log import \
     ResetGlobalLogIndex, \
     GlobalLogIndex
 
-from DLUtils.function import \
+from DLUtils.utils.func import \
     EmptyFunction
+from DLUtils.utils.parse import ParseSavePath
 
 from DLUtils.plot import \
     NpArray2ImageFile, \
     Tensor2ImageFile
 
 import DLUtils.example as example
+import DLUtils.backend.torch as torch
 
-from .structure import FixedSizeQueuePassiveOutInt32 
-
-
-PackageFolderPath = DLUtils.file.FolderPathOfFile(__file__)
+PackageFolderPath = DLUtils.file.FolderPathOfFile(__file__)        

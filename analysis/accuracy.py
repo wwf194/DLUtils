@@ -2,7 +2,6 @@ import matplotlib as mpl
 from matplotlib import pyplot as plt
 
 import DLUtils
-from DLUtils.attr import *
 
 class LogForAccuracy:
     def __init__(self):

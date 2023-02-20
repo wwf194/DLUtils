@@ -2,7 +2,8 @@
     "python.analysis.extraPaths": [
         "../" // /home/wwf/Project/
     ],
-    "editor.autoIndent": "full",
+    "editor.autoIndent": "keep",
     "python.formatting.provider": "none",
-    "editor.detectIndentation": false
+    "editor.detectIndentation": false,
+    "editor.foldingStrategy": "indentation"
 }

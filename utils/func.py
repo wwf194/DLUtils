@@ -1,6 +1,5 @@
 import functools
 import DLUtils
-from DLUtils.attr import *
 
 def StackFunctions(FunctionList, *Functions, Inverse=False, InNum=1):
     if isinstance(FunctionList, list):

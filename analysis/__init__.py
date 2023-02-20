@@ -6,7 +6,6 @@ from matplotlib import pyplot as plt
 from collections import defaultdict
 
 import DLUtils
-from DLUtils.attr import *
 
 def AnalyzeTimeVaryingActivitiesEpochBatch(Logs, PlotIndex=0, SaveDir=None, ContextObj=None):
     PlotIndex = 0

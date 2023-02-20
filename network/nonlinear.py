@@ -1,11 +1,12 @@
 import DLUtils
 import torch
 
-def NonLinearModule(Type, *List, **Dict):
+def NonLinearFunction(Type, *List, **Dict):
     if Type in NonLinearModuleMap:
         return NonLinearModuleMap[Type](*List, **Dict)
     else:
         raise Exception(Type)
+NonLinearModule = NonLinearTransform = NonLinearFunction
 
 class ReLU(DLUtils.module.AbstractNetwork):
     def __init__(self):
@@ -29,5 +30,6 @@ class Linear(DLUtils.module.AbstractNetwork):
 
 NonLinearModuleMap = DLUtils.IterableKeyToElement({
     ("ReLU", "relu"): ReLU,
-    ("None", "none"): Linear
+    ("None", "none"): Linear,
+    ("Sigmoid", "sigmoid"): Sigmoid
 })
