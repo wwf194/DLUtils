@@ -12,8 +12,9 @@ from .utils._param import \
 
 from .utils import *
 SystemType = GetSystemType()
-from DLUtils.module import AbstractModule, AbstractNetwork, AbstractOperator
+
 import DLUtils.module as module
+from DLUtils.module import AbstractModule, AbstractNetwork, AbstractOperator
 import DLUtils.transform as transform
 import DLUtils.transform.norm as norm
 

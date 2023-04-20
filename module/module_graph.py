@@ -1,9 +1,8 @@
 import DLUtils
 import numpy as np
-from ..module import AbstractNetwork
+from ..module import AbstractNetwork, AbstractModuleGroup
 
-
-class ModuleGraph(DLUtils.module.AbstractModuleGroup):
+class ModuleGraph(AbstractModuleGroup):
     def __init__(self, *List, **Dict):
         super().__init__(*List, **Dict)
         Param = self.Param

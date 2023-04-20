@@ -21,8 +21,8 @@ class Image2PatchList(DLUtils.module.AbstractNetwork):
         X = X.view(BatchSize, ChannelNum, self.PatchYNum, self.PatchHeight, self.PatchXNum, self.PatchWidth)
             # X: (BatchSize, ChannelNum, PatchYNum, PatchHeight, PatchXNum, PatchWidth)
         X = X.permute(0, 2, 4, 3, 5, 1)
-            # X: (BatchSize, PatchYNum, PatchXNum, PatchHeight, PatchWidth, ChannelNum)
-        X = X.reshape(BatchSize, self.PatchYNum * self.PatchXNum, self.PatchHeight * self.PatchWidth, ChannelNum)
+            # X: (BatchSize, PatchYNum, PatchXNum, PatchHeight, PatchWidth * ChannelNum)
+        X = X.reshape(BatchSize, self.PatchYNum * self.PatchXNum, self.PatchHeight * self.PatchWidth * ChannelNum)
         return X
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param

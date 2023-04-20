@@ -512,7 +512,7 @@ class AbstractNetwork(AbstractModule):
             Value.requires_grad = True
         Param.TrainParam.setattr(Name, Path)
         Param.setattr(Path, Value)
-        Param.Tensor.setattr(Name, Path)
+        self._RegisterTensor(Name, Path)
         setattr(self, Name, Value)
         return self
     def SetUnTrainableParam(self, Name=None, Path=None, Value=None, Trainable=False, **Dict):
@@ -537,8 +537,9 @@ class AbstractNetwork(AbstractModule):
     def RegisterTensor(self, Name=None, Path=None, **Dict):
         if Name is not None:
             assert Path is not None
+            self._RegisterTensor(Name, Path)
         for _Name, _Path in Dict.items():
-            self._AddTensor(_Name, _Path)
+            self._RegisterTensor(_Name, _Path)
         return self
     def _RegisterTensor(self, Name, Path=None):
         if Path is None:

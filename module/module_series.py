@@ -1,5 +1,7 @@
 
-class ModuleSeries(DLUtils.module.AbstractModuleGroup):
+import DLUtils
+from ..module import AbstractModuleGroup
+class ModuleSeries(AbstractModuleGroup):
     SetParamMap = DLUtils.IterableKeyToElement({
         ("OutName", "OutputName"): "Out.Name"
     })

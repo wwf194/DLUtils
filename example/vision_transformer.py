@@ -71,7 +71,7 @@ def init_ViT(
 def vision_transformer_imagenet_1k_patch_test(SaveDir, Preprocess, PatchNum, Device):
     TestImage = DLUtils.Jpg2NpArray(
         # "~/Data/imagenet/ILSVRC/Data/CLS-LOC/test/ILSVRC2012_test_00011424.JPEG"
-        "~/Data/imagenet/ILSVRC/Data/CLS-LOC/train/n01820546/n01820546_4054.JPEG"
+        "./example/vit_imagenet/test/test_image.png"
     )
     print("TestImage shape: %s. dtype: %s"%(str(TestImage.shape), str(TestImage.dtype)))
     # return
@@ -89,12 +89,9 @@ def vision_transformer_imagenet_1k_patch_test(SaveDir, Preprocess, PatchNum, Dev
         )
     return
 
-
-
-
 def vision_transformer_imagenet_1k(SaveDir="./example/vit_imagenet/"):
     SaveDir = DLUtils.file.ToStandardPathStr(SaveDir)
-    DLUtils.file.ClearDir(SaveDir)
+    # DLUtils.file.ClearDir(SaveDir)
     XNum = 28 * 28
     LatentUnitNum = 2
     EpochNum = 30
@@ -109,14 +106,38 @@ def vision_transformer_imagenet_1k(SaveDir="./example/vit_imagenet/"):
         Image2PatchList=network.Image2PatchList(
             PatchNumX=PatchNum, PatchNumY=PatchNum,
             ImageHeight=224, ImageWidth=224
-        ) # (BatchSize, ChannelNum, Height, Width)
-    ).Init().SetDevice(Device)
+        ) # (BatchSize, PatchListSize, Height * Width * ChannelNum)
+    )
     
+    HeadNum = 16
+    QKVSize = 512
+    PatchFeatureNum = 224 * 224 * 3 // (PatchNum * PatchNum)
+    ViT = network.ModuleList().AddSubModule(
+        Preprocess=Preprocess,
+        MSA=network.MultiHeadSelfAttention(
+            QKSize = QKVSize,
+            VSize = QKVSize,
+            HeadNum = HeadNum,
+            InNum = PatchFeatureNum,
+            OutNum = PatchFeatureNum
+        )
+    ).Init().SetDevice(Device)
+
     # test image2patch
     vision_transformer_imagenet_1k_patch_test(
         SaveDir, Preprocess, PatchNum, Device
     )
 
+    TestImage = DLUtils.Jpg2NpArray(
+        # "~/Data/imagenet/ILSVRC/Data/CLS-LOC/test/ILSVRC2012_test_00011424.JPEG"
+        # "~/Data/imagenet/ILSVRC/Data/CLS-LOC/train/n01820546/n01820546_4054.JPEG"
+        "./example/vit_imagenet/test/test_image.png"
+    )
+
+    Out = ViT(
+        DLUtils.ToTorchTensor(TestImage).to(Device).permute(2, 0, 1).unsqueeze(0)
+    )
+    return
     Decoder = network.ModuleList().AddSubModule(
         Linear1=network.NonLinear(InNum=2, OutNum=64 * 7 * 7, NonLinear="ReLU"),
         Reshape1=network.Reshape(-1, 64, 7, 7),

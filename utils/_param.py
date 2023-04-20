@@ -375,8 +375,8 @@ class Param(param):
                 return False
         return True
     def hasattr(self, *Keys):
-        if len(Keys) > 0:
-            return self.hasattrs(Key)
+        if len(Keys) > 1:
+            return self.hasattrs(Keys)
         Key = Keys[0]
         KeyList = Key.split(".")
         Base = self
