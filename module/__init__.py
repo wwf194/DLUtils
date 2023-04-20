@@ -534,27 +534,27 @@ class AbstractNetwork(AbstractModule):
         Param.Tensor.setattr(Name, Path)
         Param.setattr(Path, Value)
         return self
-    def AddTensor(self, Name=None, Path=None, **Dict):
+    def RegisterTensor(self, Name=None, Path=None, **Dict):
         if Name is not None:
             assert Path is not None
         for _Name, _Path in Dict.items():
             self._AddTensor(_Name, _Path)
         return self
-    def _AddTensor(self, Name, Path=None):
+    def _RegisterTensor(self, Name, Path=None):
         if Path is None:
             Path = Name
         Param = self.Param
         Param.Tensor.setattr(Name, Path)
         return self
-    AddTensorName = AddTensor
-    def AddTrainParam(self, Name, Path=None):
+    RegisterTensorName = RegisterTensor
+    def RegisterTrainParam(self, Name, Path=None):
         if Path is None:
             Path = Name
         Param = self.Param
-        Param.TrainParma.setattr(Name, Path)
-        self.AddTensor(Name, Path)
+        Param.TrainParam.setattr(Name, Path)
+        self.RegisterTensor(Name, Path)
         return self
-    AddTrainParamName = AddTrainParam
+    RegisterTrainParamName = RegisterTrainParam
     def GetTensor(self, Name):
         assert not self.HandleTensorBySelf()
         Param = self.Param
@@ -693,8 +693,7 @@ class AbstractNetwork(AbstractModule):
         return self
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
-        super().Init(True, IsRoot=IsRoot)
-
+        super().Init(IsSuper=True, IsRoot=IsRoot)
         self.UpdateTensorFromDict()
         if IsRoot:
             self.Log(f"{Param._CLASS}: initialization finished.", Type="initialization")
@@ -793,3 +792,8 @@ class AbstractModuleGroup(AbstractNetwork):
             self.ModuleList = list(self.SubModules.values())
         self.ModuleNum = Param.Module.Num = len(self.ModuleList)
         return super().Init(IsSuper=True, IsRoot=IsRoot)
+
+
+from .module_graph import ModuleGraph
+from .module_series import ModuleList, ModuleSeries
+

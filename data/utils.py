@@ -6,6 +6,8 @@ import math
 def ShapeWithSameValue(Shape, Value):
     return np.full(Shape, Value)
 
+
+import math
 def DefaultNonLinearLayerWeight(Shape, NonLinear):
     return SampleFromKaimingUniform(Shape, NonLinear=NonLinear)
 

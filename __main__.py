@@ -1,6 +1,5 @@
 # type: ignore
 # makes pylance ignore this file.
-
 # for running scripts inside this package
 import sys
 import traceback
@@ -86,11 +85,13 @@ if __name__=="__main__":
         elif Param1 in ["vae_mnist", "mnist_vae"]:
             Param2 = TaskList[2]
             if Param2 in ["conv"]:
-                DLUtils.example.vae_conv()
+                DLUtils.example.vae_mnist_conv()
             elif Param2 in ["mlp"]:
                 DLUtils.example.vae_mnist_mlp()
             else:
                 raise Exception()
+        elif Param1 in ["vit"]:
+            DLUtils.example.vision_transformer_imagenet_1k()
         else:
             raise Exception(SubTask)
     elif Task in ["cifar10", "cifar"]:
@@ -105,3 +106,22 @@ if __name__=="__main__":
             )
     else:
         raise Exception()
+
+def ParseCmdArgs():
+    parser = argparse.ArgumentParser()
+    # parser.add_argument("task", nargs="?", default="DoTasksFromFile")
+    parser.add_argument("-t", "--task", dest="task", nargs="?", default="CopyProject2DirAndRun")
+    parser.add_argument("-t2", "--task2", dest="task2", default="DoTasksFromFile")
+    parser.add_argument("-id", "--IsDebug", dest="IsDebug", default=True)
+
+    # If Args.task in ['CopyProject2DirAndRun'], this argument will be used to designate file to be run.
+    parser.add_argument("-sd", "--SaveDir", dest="SaveDir", default=None)
+    # parser.add_argument("-sd", "--SaveDir", dest="SaveDir", default="./log/DoTasksFromFile-2021-10-16-16:04:16/")
+    parser.add_argument("-tf", "--TaskFile", dest="TaskFile", default="./task.jsonc")
+    parser.add_argument("-tn", "--TaskName", dest="TaskName", default="Main")
+    # parser.add_argument("-tn", "--TaskName", dest="TaskName", default="AddAnalysis")
+
+    # If Args.task in ['CopyProject2DirAndRun'], this argument will be used to designate file to be run.
+    parser.add_argument("-ms", "--MainScript", dest="MainScript", default="main.py")
+    CmdArgs = parser.parse_args()
+    return Namespace2PyObj(CmdArgs) # CmdArgs is of type namespace

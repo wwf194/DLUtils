@@ -5,13 +5,14 @@ import torch.nn.functional as F
 import DLUtils
 # from DLUtils.transform.SingleLayer import SingleLayer
 #from .AbstractModule import AbstractNetwork
-from .LinearLayer import LinearLayer
+from .linear import LinearLayer
 
 class NonLinearLayer(LinearLayer):
     SetParamMap = DLUtils.IterableKeyToElement({
         ("NonLinear"): "NonLinear.Type",
         ("InNum, inputNum, InputNum"): "In.Num",
-        ("OutNum, outputNum, OutputNum"): "Out.Num"
+        ("OutNum, outputNum, OutputNum"): "Out.Num",
+        ("Bias"): "Bias.Enable"
     })
     def __init__(self, InNum=None, OutNum=None, NonLinear=None, **Dict):
         super().__init__(InNum=InNum, OutNum=OutNum, NonLinear=NonLinear, **Dict)
@@ -74,8 +75,12 @@ class NonLinearLayer(LinearLayer):
                 Param.Bias.setdefault("Enable", True)
                 if Param.Bias.Enable:
                     Param.Bias.setdefault("Trainable", True)
-                    if not Param.Bias.hasattr("Value"):
-                        self.SetDefaultBias()
+                    if self.IsInit(): 
+                        if not Param.Bias.hasattr("Value"):
+                            self.SetDefaultBias()
+                    else:
+                        assert Param.Bias.hasattr("Value")
+    
             else:
                 assert Param.Weight.hasattr("Value")
         super().Init(IsSuper=True, **Dict)
@@ -85,7 +90,7 @@ class NonLinearLayer(LinearLayer):
         self.SetTrainParam(
             Name="Weight", Path="Weight.Value",
             Value=DLUtils.DefaultNonLinearLayerWeight(
-                (Param.In.Num, Param.Out.Num),
+                Shape=(Param.In.Num, Param.Out.Num),
                 NonLinear=Param.NonLinear.Type,
             )
         )
@@ -106,3 +111,4 @@ class NonLinearLayer(LinearLayer):
             self.SetTrainable("Bias")
         return self
 NonLinear = NonLinearLayer
+

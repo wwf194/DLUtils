@@ -21,7 +21,7 @@ class CrossEntropyNClass(DLUtils.module.AbstractModule):
             self.AfterOperation = lambda x:torch.mean(x)
         else:
             self.AfterOperation = lambda x:x
-        return super().Init(IsSuper, IsRoot)
+        return super().Init(IsSuper=True, IsRoot=IsRoot)
 CrossEntropy = CrossEntropyNClass
 
 class SoftMax1D(DLUtils.module.AbstractModule):

@@ -134,6 +134,12 @@ def DeleteFile(FilePath, RaiseIfNonExist=False):
     else:
         os.remove(FilePath)
 
+def DeleteAllFilesAndSubFolders(DirPath):
+    for FilePath in ListFilesPath(DirPath):
+        DeleteFile(FilePath)
+    for DirPath in ListDirsPath(DirPath):
+        DeleteTree(DirPath)
+
 def DeleteTree(FolderPath, RaiseIfNonExist=False):
     if not FolderExists(FolderPath):
         Msg = f"DLUtils.DeleteFile: FolderPath {FolderPath} does not exist."
@@ -251,7 +257,7 @@ def IsEmptyDir(DirPath):
     return len(Files) == 0 and len(Dirs) == 0
 
 def ListFilesName(DirPath):
-    assert os.path.exists(DirPath), "Non-existing DirPath: %s"%DirPath
+    assert ExistsDir(DirPath), "Non-existing DirPath: %s"%DirPath
     assert os.path.isdir(DirPath), "Not a Dir: %s"%DirPath
     Items = os.listdir(DirPath)
     Files = []
@@ -280,6 +286,12 @@ def ListDirs(DirPath):
             Dir = Name + "/"
             Dirs.append(Dir)
     return Dirs
+def ListDirsPath(DirPath):
+    if not DirPath.endswith("/"):
+        DirPath += "/"
+    DirNameList = ListDirs(DirPath)
+    return [DirPath + DirName for DirName in DirNameList]
+
 ListAllDirs = GetAllDirs = ListDirs
 ListAllFolders = ListDirs
 
@@ -1023,3 +1035,15 @@ def JsonDict2JsonFile(JsonDict, FilePath):
     JsonStr = JsonDict2Str(JsonDict)
     Str2TextFile(JsonStr, FilePath)
 JsonDict2File = JsonDict2JsonFile
+
+import cv2
+def Jpg2NpArray(Path):
+    Path = DLUtils.StandardizePath(Path)
+    assert FileExists(Path)
+    Image = cv2.imread(Path)
+    assert Image is not None
+    return Image
+JPG2NpArray = Jpeg2NpArray = Jpg2NpArray
+
+def RemoveAllPNGFile():
+    DLUtils.file.RemoveMatchedFiles("./", r".*\.png")

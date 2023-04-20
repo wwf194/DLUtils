@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 import DLUtils
-from DLUtils.attr import *
 
 def Build(param):
     model = NonLinearLayer()

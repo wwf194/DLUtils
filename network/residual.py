@@ -1,8 +1,7 @@
-import torch
 import numpy as np
 
 import DLUtils
-class ResLayer(DLUtils.module.AbstractNetwork):
+class ResidualLayer(DLUtils.module.AbstractNetwork):
     def __init__(self, SubModule=None):
         super().__init__()
         if SubModule is not None:
@@ -15,4 +14,4 @@ class ResLayer(DLUtils.module.AbstractNetwork):
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         assert Param.hasattr("SubModule")
-        return super().Init(IsSuper, IsRoot)
+        return super().Init(IsSuper=True, IsRoot=IsRoot)

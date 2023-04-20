@@ -47,24 +47,7 @@ def JsonFile2ParamObj(FilePath):
     Obj = utils.JsonStyleObj2Param(JsonDict)
     return Obj
 
-def ParseCmdArgs():
-    parser = argparse.ArgumentParser()
-    # parser.add_argument("task", nargs="?", default="DoTasksFromFile")
-    parser.add_argument("-t", "--task", dest="task", nargs="?", default="CopyProject2DirAndRun")
-    parser.add_argument("-t2", "--task2", dest="task2", default="DoTasksFromFile")
-    parser.add_argument("-id", "--IsDebug", dest="IsDebug", default=True)
 
-    # If Args.task in ['CopyProject2DirAndRun'], this argument will be used to designate file to be run.
-    parser.add_argument("-sd", "--SaveDir", dest="SaveDir", default=None)
-    # parser.add_argument("-sd", "--SaveDir", dest="SaveDir", default="./log/DoTasksFromFile-2021-10-16-16:04:16/")
-    parser.add_argument("-tf", "--TaskFile", dest="TaskFile", default="./task.jsonc")
-    parser.add_argument("-tn", "--TaskName", dest="TaskName", default="Main")
-    # parser.add_argument("-tn", "--TaskName", dest="TaskName", default="AddAnalysis")
-
-    # If Args.task in ['CopyProject2DirAndRun'], this argument will be used to designate file to be run.
-    parser.add_argument("-ms", "--MainScript", dest="MainScript", default="main.py")
-    CmdArgs = parser.parse_args()
-    return Namespace2PyObj(CmdArgs) # CmdArgs is of type namespace
 
 def Namespace2PyObj(Namespace):
     return DLUtils.json.JsonObj2PyObj(Namespace2Dict(Namespace))
@@ -85,64 +68,9 @@ def ParseTaskName(task):
     else:
         pass
     return task
-
-# def Main(**kw):
-#     GlobalParam = DLUtils.GetGlobalParam()
-#     SetAttrs(GlobalParam, "time.StartTime", value=DLUtils.system.GetTime())
-    
-#     #try:
-#     CmdArgs = kw.get("CmdArgs")
-#     if CmdArgs is None:
-#         CmdArgs = ParseCmdArgs()
-#     else:
-#         CmdArgs = Namespace2PyObj(CmdArgs)
-#     TaskFilePath = CmdArgs.TaskFile # All sciprt loads a task file, and keep doing tasks in it.
-#     CmdArgs.task = ParseTaskName(CmdArgs.task)
-#     task = CmdArgs.task
-#     if task in ["CleanLog"]:
-#         CleanLog()
-#     elif task in ["CleanFigure"]:
-#         CleanFigure()
-#     elif task in ["DoTasksFromFile"]:
-#         TaskObj = DLUtils.LoadTaskFile(TaskFilePath)
-#         Tasks = getattr(TaskObj, CmdArgs.TaskName)
-#         if not CmdArgs.IsDebug:
-#             try: # catch all unhandled exceptions
-#                 DLUtils.DoTasks(Tasks, ObjRoot=DLUtils.GetGlobalParam())
-#             except Exception:
-#                 DLUtils.Log(traceback.format_exc())
-#                 raise Exception()
-#         else:
-#             DLUtils.DoTasks(Tasks, ObjRoot=DLUtils.GetGlobalParam())
-#     elif task in ["TotalLines"]:
-#         DLUtils.CalculateGitProjectTotalLines()
-#     elif task in ["QuickScript"]:
-#         QuickScript = kw.get("QuickScript")
-#         QuickScript(CmdArgs)
-#     elif task in ["CopyProject2FolderAndRun"]:
-#         GlobalParam = DLUtils.GetGlobalParam()
-#         CopyFilesAndDirs2DestDir(
-#             GlobalParam.config.Project.Files, 
-#             "./", 
-#             DLUtils.GetMainSaveDir() + "src/"
-#         )
-#         CmdArgs.task = CmdArgs.task2
-#         delattr(CmdArgs, "task2")
-#         DLUtils.system.RunPythonScript(
-#             DLUtils.GetMainSaveDir() + "src/" + CmdArgs.MainScript,
-#             ParsedArgs2CmdArgs(CmdArgs)
-#         )
-#     elif task in ["TotalLines"]:
-#         DLUtils.CalculateGitProjectTotalLines()
-#     else:
-#         raise Exception("Inavlid Task: %s"%CmdArgs.task)
-
-#     GlobalParam = DLUtils.GetGlobalParam()
-    
 #     SetAttrs(GlobalParam, "time.EndTime", value=DLUtils.system.GetTime())
 #     DurationTime = DLUtils.system.GetTimeDifferenceFromStr(GlobalParam.time.StartTime, GlobalParam.time.EndTime)
 #     SetAttrs(GlobalParam, "time.DurationTime", value=DurationTime)
-#     _StartEndTime2File()
 
 def _StartEndTime2File():
     GlobalParam = DLUtils.GetGlobalParam()
@@ -167,166 +95,6 @@ def CopyProjectFolderAndRunSameCommand(Dir):
 
 def CleanLog():
     DLUtils.file.RemoveAllFilesAndDirsUnderDir("./log/")
-
-def CleanFigure():
-    DLUtils.file.RemoveMatchedFiles("./", r".*\.png")
-
-def ParseTaskList(TaskList, InPlace=True, **kw):
-    TaskListParsed = []
-    for Index, Task in enumerate(TaskList):
-        if isinstance(Task, _str):
-            TaskParsed = DLUtils.PyObj({
-                "Type": Task,
-                "Args": {}
-            })
-            if InPlace:
-                TaskList[Index] = TaskParsed
-            else:
-                TaskListParsed.append(TaskParsed)
-        elif DLUtils.IsDictLikePyObj(Task):
-            if hasattr(Task, "Type") and hasattr(Task, "Args"):
-                if InPlace:
-                    pass
-                else:
-                    TaskListParsed.append(Task)
-            else:
-                for key, value in ListAttrsAndValues(Task):
-                    TaskParsed = DLUtils.PyObj({
-                        "Type": key, "Args": value
-                    })
-
-                    if InPlace:
-                        TaskList[Index] = TaskParsed
-                    else:
-                        TaskListParsed.append(TaskParsed)
-        elif DLUtils.IsListLikePyObj(Task) or isinstance(Task, list) or isinstance(Task, tuple):
-            TaskParsed = DLUtils.PyObj({
-                "Type": Task[0],
-                "Args": Task[1]
-            })
-            if InPlace:
-                TaskList[Index] = TaskParsed
-            else:
-                TaskListParsed.append(TaskParsed)
-        else:
-            raise Exception(type(Task))
-        
-    if InPlace:
-        return TaskList
-    else:
-        return DLUtils.PyObj(TaskListParsed)
-
-def ParseTaskObj(TaskObj, Save=True, **kw):
-    kw.setdefault("ObjRoot", DLUtils.GetGlobalParam())
-    if isinstance(TaskObj, _str):
-        TaskObj = DLUtils.parse.ResolveStr(TaskObj, **kw)
-    if DLUtils.IsDictLikePyObj(TaskObj):
-        if hasattr(TaskObj, "__Tasks__"):
-            TaskObj.__Tasks__ = ParseTaskList(TaskObj.__Tasks__, **kw)
-            TaskList = TaskObj.__Tasks__
-        else:
-            TaskObj.__Tasks__ = ParseTaskList(ListAttrsAndValues(TaskObj), InPlace=False, **kw)
-            for Attr, Value in ListAttrsAndValues(TaskObj, Exceptions=["__Tasks__"]):
-                delattr(TaskObj, Attr)
-            TaskList = TaskObj.__Tasks__
-    elif DLUtils.IsListLikePyObj(TaskObj):
-        TaskObj.__Tasks__ = ParseTaskList(TaskObj, InPlace=False, **kw)
-        delattr(TaskObj, "__value__")
-        TaskList = TaskObj.__Tasks__
-    else:
-        raise Exception()
-    TaskObj.SetResolveBase(True)
-    TaskList.SetResolveBase(False)
-    for Index, Task in enumerate(TaskList):
-        Task.SetResolveBase() # So that "&" in each Task resolves to the task object it is inside.
-
-    if Save:
-        DLUtils.json.PyObj2JsonFile(TaskList, DLUtils.GetMainSaveDir() + "task_loaded.jsonc")
-    DLUtils.parse.ParsePyObjStatic(TaskObj, ObjCurrent=TaskList, ObjRoot=DLUtils.GetGlobalParam(), InPlace=True)
-    if Save:
-        DLUtils.json.PyObj2JsonFile(TaskList, DLUtils.GetMainSaveDir() + "task_parsed.jsonc")
-    return TaskObj
-
-
-def DoTasks(Tasks, **kw):
-    if not kw.get("DoNotChangeObjCurrent"):
-        kw["ObjCurrent"] = Tasks
-    if isinstance(Tasks, _str) and "&" in Tasks:
-        Tasks = DLUtils.parse.ResolveStr(Tasks, **kw)
-    Tasks = DLUtils.ParseTaskObj(Tasks)
-
-    In = kw.get("In")
-    if In is not None:
-        Tasks.cache.In = DLUtils.PyObj(In)
-    for Index, Task in enumerate(Tasks.__Tasks__):
-        if not kw.get("DoNotChangeObjCurrent"):
-            kw["ObjCurrent"] = Task
-        #DLUtils.EnsureAttrs(Task, "Args", default={})
-        DLUtils.DoTask(Task, **kw)
-
-def DoTask(Task, **kw):
-    ObjRoot = kw.setdefault("ObjRoot", None)
-    ObjCurrent = kw.setdefault("ObjCurrent", None)
-    #Task = DLUtils.parse.ParsePyObjDynamic(Task, RaiseFailedParse=False, InPlace=False, **kw)
-    TaskType = Task.Type
-    TaskArgs = Task.Args
-    if isinstance(TaskArgs, _str) and "&" in TaskArgs:
-        TaskArgs = DLUtils.parse.ResolveStr(TaskArgs, kw)
-    if TaskType in ["BuildObjFromParam", "BuildObjectFromParam"]:
-        BuildObjFromParam(TaskArgs, **kw)
-    elif TaskType in ["FunctionCall"]:
-        DLUtils.CallFunctions(TaskArgs, **kw)
-    elif TaskType in ["CallGraph"]:
-        if hasattr(TaskArgs, "Router"):
-            Router = TaskArgs.Router
-        else:
-            Router = TaskArgs
-        if isinstance(Router, _str):
-            Router = DLUtils.parse.ResolveStr(Router)
-        # Require that router is already parsed.
-        #RouterParsed = DLUtils.router.ParseRouterStaticAndDynamic(Router, ObjRefList=[Router], **kw)
-        InParsed = DLUtils.parse.ParsePyObjDynamic(TaskArgs.In, RaiseFailedParse=True, InPlace=False, **kw)
-        #InParsed = DLUtils.parse.ParsePyObjDynamic(Router, RaiseFailedParse=True, InPlace=False, **kw)
-        DLUtils.CallGraph(Router, InParsed)
-    elif TaskType in ["RemoveObj"]:
-        RemoveObj(TaskArgs, **kw)
-    elif TaskType in ["LoadObjFromFile"]:
-        LoadObjFromFile(TaskArgs, **kw)
-    elif TaskType in ["LoadObj"]:
-        DLUtils.LoadObj(TaskArgs, **kw)
-    # elif TaskType in ["AddLibraryPath"]:
-    #     AddLibraryPath(TaskArgs)
-    elif TaskType in ["LoadJsonFile"]:
-        LoadJsonFile(TaskArgs)
-    elif TaskType in ["LoadParamFile"]:
-        DLUtils.LoadParamFromFile(TaskArgs, ObjRoot=DLUtils.GetGlobalParam())
-    elif TaskType in ["ParseParam", "ParseParamStatic"]:
-        DLUtils.parse.ParseParamStatic(TaskArgs)
-    elif TaskType in ["ParseParamDynamic"]:
-        DLUtils.parse.ParseParamDynamic(TaskArgs)
-    elif TaskType in ["BuildObj"]:
-        DLUtils.BuildObj(TaskArgs, **kw)
-    elif TaskType in ["BuildObjFromFile", "BuildObjectFromFile"]:
-        DLUtils.BuildObjFromFile(TaskArgs, ObjRoot=DLUtils.GetGlobalParam())
-    elif TaskType in ["BuildObjFromParam", "BuildObjectFromParam"]:
-        DLUtils.BuildObjFromParam(TaskArgs, ObjRoot=DLUtils.GetGlobalParam())
-    elif TaskType in ["SetTensorLocation"]:
-        SetTensorLocation(TaskArgs)
-    elif TaskType in ["Train"]:
-        DLUtils.train.Train(
-            TaskArgs,
-            ObjRoot=DLUtils.GetGlobalParam(),
-            Logger=DLUtils.GetDataLogger()
-        )
-    elif TaskType in ["DoTasks"]:
-        _TaskList = DLUtils.ParseTaskObj(TaskArgs, ObjRoot=DLUtils.GetGlobalParam())
-        DoTasks(_TaskList, **kw)
-    elif TaskType in ["SaveObj"]:
-        DLUtils.SaveObj(TaskArgs, ObjRoot=DLUtils.GetGlobalParam())
-
-    else:
-        DLUtils.AddWarning("Unknown Task.Type: %s"%TaskType)
-        raise Exception(TaskType)
 
 def GetTensorLocation(Method="auto"):
     if Method in ["Auto", "auto"]:
@@ -635,15 +403,18 @@ def ToTrainableTorchTensor(data):
     else:
         raise Exception(type(data))
 
-def ToTorchTensor(data):
-    if isinstance(data, np.ndarray):
-        return NpArray2Tensor(data)
-    elif isinstance(data, list):
-        return NpArray2Tensor(List2NpArray(data))
-    elif isinstance(data, torch.Tensor):
-        return data
+def ToTorchTensor(Data, Device=None):
+    if isinstance(Data, np.ndarray):
+        _Data = NpArray2Tensor(Data)
+    elif isinstance(Data, list):
+        _Data = NpArray2Tensor(List2NpArray(Data))
+    elif isinstance(Data, torch.Tensor):
+        _Data = Data
     else:
-        raise Exception(type(data))
+        raise Exception(type(Data))
+    if Device is not None:
+        _Data = _Data.to(Device)
+    return _Data
 
 def ToTorchTensorOrNum(data):
     if isinstance(data, float):

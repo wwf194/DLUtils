@@ -2052,10 +2052,12 @@ def NpArray2ImageFileGreyFloat01PIL(Image, ImageFilePath):
 import matplotlib.image
 def NpArray2ImageFileFloat01MPL(Data, ImageFilePath):
     # requires Data is float, values in [0.0, 1.0].
+    # Data: (Height, Width, ChannelNum)
+        # ChannelNum: RGB or RGBA
     DLUtils.EnsureFileDir(ImageFilePath)
     ImageFilePath = DLUtils.file.RenameFileIfExists(ImageFilePath)
     matplotlib.image.imsave(ImageFilePath, Data)
-
+    return
 NpArray2ImageFile = NpArray2ImageFileFloat01MPL
 NpArray2ImageFileFloat = NpArray2ImageFileFloat01MPL
 NpArray2ImageFileInt255 = NpArray2ImageFileFloat01MPL

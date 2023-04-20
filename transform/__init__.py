@@ -5,6 +5,8 @@ from .norm import NormOnColorChannel
 import torch
 import numpy as np
 import DLUtils
+import DLUtils.transform.nonlinear as nonlinear
+
 class Sum(DLUtils.module.AbstractOperator):
     def Receive(self, *List):
         return sum(List)
@@ -52,7 +54,6 @@ class NpArray2TorchTensor(DLUtils.module.AbstractOperator):
     def SetDevice(self, Device=None, IsRoot=True):
         self.Device = Device
         return super().SetDevice(Device=Device, IsRoot=IsRoot)
-    
 
 class MoveTensor2Device(DLUtils.module.AbstractOperator):
     def Receive(self, In):
