@@ -24,58 +24,107 @@ def vae_conv_anal(SaveDir):
     TrainSession.SimulateAfterTrain(AnalLoss)
 
 
-
-def init_ViT(
-        # dataset setting
-        ClassNum = 1000,
-        ImageSize = 256,
-        PatchSize = 32,
-        # network setting
-        LayerNum = 6,
-        TokenFeatureNum = 1024,
-        MSAHeadNum = 16,
-        MLPHiddenUnitNum = 2048,
-    ):
-    assert ImageSize % PatchSize == 0
-    
-    MLPInputNum = TokenFeatureNum
-    MLPOutputNum = TokenFeatureNum
-
-    MultiHeadSelfAttentionLayerList = {}
-    for LayerIndex in range(LayerNum):
-        MultiHeadSelfAttentionLayer = network.ModuleGraph().AddSubModule(
-            MSA = network.MultiHeadSelfAttention(   
+class VisionTransformer(DLUtils.module.AbstractNetwork):
+    SetParamMap = DLUtils.IterableKeyToElement({
+        ("LayerNum"): "Layer.Num",
+        ("TokenSize", "FeatureSize"): ("Token.Size"),
+        ("QKSize"): "MSA.Attention.QK.Size", # total size. not size of each head.
+        ("VSize"): "MSA.Attention.V.Size", # total size. not size of each head.
+        ("HeadNum"): "MSA.Attention.Head.Num",
+        ("MLPSize"): "MLP.HiddenLayer.Size",
+        ("NonLinear", "MLPNonLinear"): "MLP.NonLinear",
+        ("PatchNumX", "PatchXNum"): "Patch.NumX",
+        ("PatchNumY", "PatchYNum"): "Patch.NumY",
+        ("ClassNum", "NumClass"): "Task.Class.Num"
+    })
+    def __init__(self, **Dict):
+        super().__init__(**Dict)
+    def Receive(self, X):
+        X = self.Preprocess(X) # (BatchSize, TokenNum, TokenSize)
+        X = torch.concat([self.ImageToken, X], dim=1) # (BatchSize, TokenNum + 1, TokenSize)
+        X += self.PositionEmbedding
+        X = self.TransformerEncoder(X) # multi-head self attention
+        Y = self.ClassificationHead(X)
+        return Y
+    def Init(self, IsSuper=False, IsRoot=True):
+        Param = self.Param
+        self.TokenSize = Param.Token.Size
+        self.PatchNumX = Param.Patch.NumX
+        self.PatchNumY = Param.Patch.NumY
+        if self.IsInit():
+            self.AddSubModule(
+                Preprocess=network.ModuleList().AddSubModule(
+                    # input: (BatchSize, ChannelNum, Height, Width)
+                    Move2Device=network.MoveTensor2Device(),
+                    Norm=network.ShiftRange(0.0, 256.0, 0.0, 1.0),
+                    Crop=network.CenterCrop(224, 224),
+                    Image2PatchList=network.Image2PatchList(
+                        PatchNumX=Param.Patch.NumX, PatchNumY=Param.Patch.NumY,
+                        ImageHeight=224, ImageWidth=224
+                    ) # (BatchSize, PatchListSize, Height * Width * ChannelNum)
+                ),
+                TransformerEncoder=network.TransformerEncoder(
+                    LayerNum = 6,
+                    TokenSize = Param.Token.Size,
+                    QKSize = Param.MSA.Attention.QK.Size,
+                    VSize = Param.MSA.Attention.V.Size,
+                    HeadNum = Param.MSA.Attention.Head.Num,
+                    MLPNonLinear = Param.MLP.NonLinear,
+                    MLPSize = Param.MLP.HiddenLayer.Size
+                )
             )
-            , # multi-head self attention
-            MLP = network.MLP(
-                UnitNum = [
-                    MLPInputNum,
-                    MLPHiddenUnitNum,
-                    MLPOutputNum,
-                ],
-                BiasOnLastLayer=False,
-                NonLinearOnLastLayer=False
+            Param.ImageToken.Data = DLUtils.SampleFromNormalDistribution(
+                Shape=(1, 1, self.TokenSize),
+                Mean=0.0, Std=1.0
             )
-        )
-        MultiHeadSelfAttentionLayerList.append(MultiHeadSelfAttentionLayer)
+            self.RegisterTrainParam(
+                Name="ImageToken", # token representing the entire imge.
+                Path="ImageToken.Data",
+            )
+            Param.PositionEmbedding.Data = DLUtils.SampleFromNormalDistribution(
+                Shape=(1, self.PatchNumX * self.PatchNumY + 1, self.TokenSize),
+                Mean=0.0, Std=1.0
+            )
+            self.RegisterTrainParam(
+                Name="PositionEmbedding",
+                Path="PositionEmbedding.Data"
+            )
+            
+            self.AddSubModule(
+                ClassificationHead=network.ModuleList(
+                    LayerNorm=network.LayerNorm(
+                        NormShape=(self.TokenSize)
+                    ),
+                    LinearLayer=network.LinearLayer(
+                        InSize=self.TokenSize,
+                        OutSize = Param.Task.Class.Num
+                    )
+                )
+            )
+        return super().Init(IsSuper=True, IsRoot=IsRoot)
 
-    ViT = network.ModuleGraph()
-    for LayerIndex in range(LayerNum):
-        ViT.AddSubModule(
-            "MultiHeadSelfAttentionLayer%d"%LayerIndex,
-            MultiHeadSelfAttentionLayerList[LayerIndex]
-        )
-    return ViT, ViTClassificationHeader
+def vision_transformer_imagenet_1k_patch_test(SaveDir, PatchNum, Device):
 
 
-def vision_transformer_imagenet_1k_patch_test(SaveDir, Preprocess, PatchNum, Device):
     TestImage = DLUtils.Jpg2NpArray(
         # "~/Data/imagenet/ILSVRC/Data/CLS-LOC/test/ILSVRC2012_test_00011424.JPEG"
         "./example/vit_imagenet/test/test_image.png"
     )
     print("TestImage shape: %s. dtype: %s"%(str(TestImage.shape), str(TestImage.dtype)))
     # return
-    PatchList = Preprocess.Receive(
+    PatchNum = 4
+    Preprocess=network.ModuleList().AddSubModule(
+        # input: (BatchSize, ChannelNum, Height, Width)
+        Move2Device=network.MoveTensor2Device(),
+        Norm=network.ShiftRange(0.0, 256.0, 0.0, 1.0),
+        Crop=network.CenterCrop(224, 224),
+        Image2PatchList=network.Image2PatchList(
+            PatchNumX=PatchNum, PatchNumY=PatchNum,
+            ImageHeight=224, ImageWidth=224
+        ) # (BatchSize, PatchListSize, Height * Width * ChannelNum)
+    ).Init().SetDevice(Device)
+    
+    PatchList = Preprocess(
         DLUtils.ToTorchTensor(TestImage).to(Device).permute(2, 0, 1).unsqueeze(0)
     )
     # DLUtils.DeleteAllFilesAndSubFolders("./example/vit_imagenet/test/")
@@ -92,40 +141,72 @@ def vision_transformer_imagenet_1k_patch_test(SaveDir, Preprocess, PatchNum, Dev
 def vision_transformer_imagenet_1k(SaveDir="./example/vit_imagenet/"):
     SaveDir = DLUtils.file.ToStandardPathStr(SaveDir)
     # DLUtils.file.ClearDir(SaveDir)
-    XNum = 28 * 28
     LatentUnitNum = 2
     EpochNum = 30
     BatchSize = 128
-    Device = "cuda:0"
-    PatchNum = 4
-    Preprocess = network.ModuleList().AddSubModule(
-        # input: (BatchSize, ChannelNum, Height, Width)
-        Move2Device=network.MoveTensor2Device(),
-        Norm=network.ShiftRange(0.0, 256.0, 0.0, 1.0),
-        Crop=network.CenterCrop(224, 224),
-        Image2PatchList=network.Image2PatchList(
-            PatchNumX=PatchNum, PatchNumY=PatchNum,
-            ImageHeight=224, ImageWidth=224
-        ) # (BatchSize, PatchListSize, Height * Width * ChannelNum)
-    )
-    
-    HeadNum = 16
+    Device = "cuda:1"
+    PatchNum = 16
+
+
+    # load imagenet-1k / ILSVRC 2012
+    from torchvision import transforms
+    import torch
+    import torchvision
+    from tqdm import tqdm
+    model = torchvision.models.resnet50(weights="DEFAULT")
+    model.eval().to(Device) # Needs CUDA, don't bother on CPUs
+    mean = (0.485, 0.456, 0.406)
+    std = (0.229, 0.224, 0.225)
+    transform_val = transforms.Compose(
+                [
+                    transforms.Resize(256),
+                    transforms.CenterCrop(224),
+                    transforms.ToTensor(),
+                    transforms.Normalize(mean, std),
+                ]
+            )
+    from task import ImageNet1k
+    Task = ImageNet1k(
+        DataPath="~/Data/imagenet",
+        Mode="Validation",
+        Transform=transform_val
+    ).Init()
+    DataLoader = Task.DataLoader(
+                BatchSize=64, # may need to reduce this depending on your GPU 
+                ThreadNum=8, # may need to reduce this depending on your num of CPUs and RAM
+                Shuffle=False,
+                DropLast=False,
+                PinMemory=True
+            )
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for x, y in tqdm(DataLoader):
+            y_pred = model(x.to(Device))
+            correct += (y_pred.argmax(axis=1) == y.to(Device)).sum().item()
+            total += len(y)
+    print(correct / total)
+
     QKVSize = 512
-    PatchFeatureNum = 224 * 224 * 3 // (PatchNum * PatchNum)
-    ViT = network.ModuleList().AddSubModule(
-        Preprocess=Preprocess,
-        MSA=network.MultiHeadSelfAttention(
-            QKSize = QKVSize,
-            VSize = QKVSize,
-            HeadNum = HeadNum,
-            InNum = PatchFeatureNum,
-            OutNum = PatchFeatureNum
-        )
+    HeadNum = 16
+    MLPSize = 512
+    TokenSize = 224 * 224 * 3 // (PatchNum * PatchNum)
+    ViT = VisionTransformer(
+        LayerNum = 6,
+        TokenSize = TokenSize,
+        QKSize = QKVSize,
+        VSize = QKVSize,
+        HeadNum = HeadNum,
+        MLPNonLinear = "ReLU", 
+        MLPSize = MLPSize,
+        PatchNumX = PatchNum,
+        PatchNumY = PatchNum,
+        ClassNum=1000
     ).Init().SetDevice(Device)
 
     # test image2patch
     vision_transformer_imagenet_1k_patch_test(
-        SaveDir, Preprocess, PatchNum, Device
+        SaveDir, PatchNum, Device
     )
 
     TestImage = DLUtils.Jpg2NpArray(
@@ -134,52 +215,11 @@ def vision_transformer_imagenet_1k(SaveDir="./example/vit_imagenet/"):
         "./example/vit_imagenet/test/test_image.png"
     )
 
-    Out = ViT(
+    # test input image
+    TestOut = ViT(
         DLUtils.ToTorchTensor(TestImage).to(Device).permute(2, 0, 1).unsqueeze(0)
     )
-    return
-    Decoder = network.ModuleList().AddSubModule(
-        Linear1=network.NonLinear(InNum=2, OutNum=64 * 7 * 7, NonLinear="ReLU"),
-        Reshape1=network.Reshape(-1, 64, 7, 7),
-        UpConv1=network.UpConv2D(
-            InNum=64, OutNum=64, KernelSize=3,
-            Stride=2, Padding=1, NonLinear="ReLU",
-            OutputPadding=1
-        ), # [BatchSize, 14, 14, 64]
-        UpConv2=network.UpConv2D(
-            InNum=64, OutNum=32, KernelSize=3, 
-            Stride=2, Padding=1, NonLinear="ReLU",
-            OutputPadding=1
-        ), # [BatchSize, 28, 28, 32]
-        Conv3=network.Conv2D(
-            InNum=32, OutNum=1, KernelSize=3, 
-            Stride=1, Padding=1, NonLinear="Sigmoid",
-            OutputPadding=0
-        ), # [BatchSize, 28, 28, 1]
-        Reshape2=network.Reshape(-1, 28, 28)
-    )
 
-    Model = network.ModuleGraph().AddSubModule(
-            PreProcess=PreProcess,
-            Encoder=Encoder,
-            Decoder=Decoder
-        ).AddRoute(
-            PreProcess=["X", "XIn"],
-            Encoder=["XIn", {"Mu", "LogOfVar", "Z"}],
-            Decoder=["Z", "XPred"]
-        # ).SetParam(OutType="AllInDict", OutName=["Z", "XPred"]) \
-        ).SetDictOut("Z", "XPred", "Mu", "LogOfVar", "XIn").SetIn("X") \
-        .Init().SetDevice(Device).SetRoot()
-
-    # test input
-    TestIn = DLUtils.SampleFromUniformDistribution((10, 28, 28), -1.0, 1.0)
-    TestIn = DLUtils.ToTorchTensor(TestIn).to(Device)
-    TestOut = Model(TestIn)
-
-    Out = DLUtils.param(TestOut)
-    Z, XPred = Out.Z, Out.XPred
-    XPred = DLUtils.ToNpArray(XPred)
-    DLUtils.plot.PlotGreyImage(XPred[0], SaveDir + "image-decode/" + "test.png")
     Loss = network.ModuleGraph() \
         .AddSubModule(
             LossReconstruct=loss.CrossEntropy2Class(AfterOperation="Mean"),
@@ -200,12 +240,10 @@ def vision_transformer_imagenet_1k(SaveDir="./example/vit_imagenet/"):
         ).SetOut(Loss="LossTotal", LossKL="LossKL", LossReconstruct="LossReconstruct") \
         .SetDictIn().Init()
 
+    return
+
     Evaluator = DLUtils.Evaluator("PredAndTarget").SetLoss(Loss)
     EvaluationLog = DLUtils.EvaluationLog("PredAndTarget")
-
-    # Optimizer = DLUtils.Optimizer().GradientDescend().SGD(
-    #         LR=0.01, Momentum=0.9, Nesterov=True
-    #     ).Bind(Model=Model, Evaluator=Evaluator)
     
     Optimizer = DLUtils.Optimizer().GradientDescend().Adam(
         LearningRate=0.001, Alpha=0.9, Beta=0.998

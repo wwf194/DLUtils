@@ -369,14 +369,14 @@ class Param(param):
         Node = _Tree2Param(Tree)
         self.FromParam(Node)
         return self
-    def hasattrs(self, Keys):
+    def hasattrs(self, *Keys):
         for Key in Keys:
             if not self.hasattr(Key):
                 return False
         return True
     def hasattr(self, *Keys):
         if len(Keys) > 1:
-            return self.hasattrs(Keys)
+            return self.hasattrs(*Keys)
         Key = Keys[0]
         KeyList = Key.split(".")
         Base = self

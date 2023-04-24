@@ -156,7 +156,7 @@ class Test(EventAfterEpoch):
         TestData = Dict.TestData
         Evaluator = Dict.Evaluator
         Model = Dict.Model
-        BatchNum = TestData.BatchNum()
+        BatchNum = TestData.GetBatchNum()
         DictTest = DLUtils.param({
             "Model": Model,
             "BatchNum": BatchNum,
@@ -538,3 +538,78 @@ def PlotLossBatch(TrainSession, SaveDir=None):
         Title="Epoch ~ Loss Relationship",
         SavePath = SaveDir + "train-curve/" + "Epoch ~ Loss.svg"
     )
+
+class DataLoaderForEpochBatchTrain(torch.utils.data.DataLoader, DLUtils.module.AbstractModule):
+    SetParamMap = DLUtils.IterableKeyToElement({
+        ("BatchSize"): "Batch.Size",
+        ("BatchNum", "NumBatch"): "Batch.Num",
+        ("DropLast"): "Batch.DropLast",
+        ("Shuffle"): "Batch.Shuffle",
+        ("ThreadNum"): "Thread.Num"
+    })
+    def __init__(self, DataFetcher=None, **Dict):
+        self.DataFetcher = DataFetcher
+        DLUtils.module.AbstractModule.__init__(self, **Dict)
+        # DataFetcher: get sample input and output according to index.
+        if DataFetcher is not None:
+            self.SetDataFetcher(DataFetcher)
+
+        torch.utils.data.DataLoader.__init__(
+            self,
+            dataset=self.DataFetcher,
+            **self.GetTorchDataLoaderParam()
+            # Setting num_workers > 1 might severely slow down speed.
+        )
+
+    def SetDataFetcher(self, DataFetcher):
+        self.DataFetcher = DataFetcher
+    def BeforeEpoch(self, Dict):
+        self.Reset()
+    def AfterEpoch(self, Dict):
+        self.Reset()
+    def GetNextBatch(self, BatchIndex):
+        In, OutTarget = next(self.Iter)
+        return In, OutTarget
+    Get = GetNextBatch
+    # single device situation
+    def SetDevice(self, Device, IsRoot=True):
+        self.DataFetcher.SetDevice(Device)
+        self.Device = Device
+        return self
+    def GetBatchNum(self):
+        return self.BatchNum
+    def Reset(self):
+        self.Iter = iter(self)
+        return self
+    TorchDataLoaderParamMap = DLUtils.IterableKeyToElement({
+        ("Thread.Num"): "num_workers",
+        ("PinMemory"): "pin_memory",
+        ("Batch.DropLast"): "drop_last",
+        ("Batch.Size"): "batch_size",
+        ("Batch.Shuffle"): "shuffle"
+    })
+    def GetTorchDataLoaderParam(self):
+        Dict = {}
+        Param = self.Param
+        for NameInParam, NameForTorch in self.TorchDataLoaderParamMap.items():
+            if Param.hasattr(NameInParam):
+                Dict[NameForTorch] = Param.getattr(NameInParam)
+            else:
+                pass
+        return Dict
+    def Init(self, IsSuper=False, IsRoot=True):
+        Param = self.Param
+        Param.Thread.setdefault("Num", 1)
+        assert isinstance(Param.Thread.Num, int)
+        assert hasattr(self, "DataFetcher")
+
+        self.BatchSize = Param.Batch.Size
+        self.BatchNum = Param.Batch.Num
+
+        # device setting
+        if hasattr(self.DataFetcher, "Device"):
+            self.Device = self.DataFetcher.Device
+        
+        super().Init(IsSuper=True, IsRoot=IsRoot)
+        self.Reset()
+        return self

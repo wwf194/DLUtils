@@ -70,7 +70,7 @@ def PlotLabelClusters(Dict, ShowImage=True):
     LabelList = []
     ZMeanList = []
     Device = Dict.getdefault("Device", "cuda:0")
-    for BatchIndex in range(Data.BatchNum()):
+    for BatchIndex in range(Data.GetBatchNum()):
         In, OutTarget = Data.Get(BatchIndex)
         In = DLUtils.ToTorchTensor(In).to(Device)
         In = Model.PreProcess(In)

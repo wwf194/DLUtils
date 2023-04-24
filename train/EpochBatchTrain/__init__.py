@@ -1,6 +1,8 @@
 import DLUtils
 import numpy as np
 
+
+
 class EpochBatchTrainComponent(DLUtils.module.AbstractModule):
     def __init__(self, *List, **Dict):
         super().__init__(*List, **Dict)
@@ -205,7 +207,7 @@ class EpochBatchTrainSession(DLUtils.module.AbstractModule):
         Task = self.Task
         TrainData = Task.TrainData(BatchSize=Param.Batch.Size)
         TestData  = Task.TestData(BatchSize=Param.Batch.Size)
-        self.BatchNum = TrainData.BatchNum()
+        self.BatchNum = TrainData.GetBatchNum()
         self.BindModule("TrainData", TrainData)
         self.BindModule("TestData", TestData)
         # self.TrainData = TrainData
@@ -403,6 +405,7 @@ class EpochBatchTrainSession(DLUtils.module.AbstractModule):
 from .Component import \
     Save, \
     Test, \
-    AnalysisAfterTrain, EvaluatorPredAndTargetSelect1FromN
+    AnalysisAfterTrain, EvaluatorPredAndTargetSelect1FromN, \
+    DataLoaderForEpochBatchTrain
 
 import DLUtils.train.Select1FromN as Select1FromN

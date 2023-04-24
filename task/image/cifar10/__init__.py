@@ -226,10 +226,10 @@ def DataSetConfig(DataSetFolderPath, SaveDir=None):
 def DataSetStat(Data):
     Stat = DLUtils.Param()
     ColorChannelStat = Stat.Image.ColorChannel
-    ColorChannelStat.Train.Mean = np.nanmean(Data.Train.Image, axis=(0, 1, 2)) # [ImageNum, 32, 32, 3]
-    ColorChannelStat.Train.Std = np.nanstd(Data.Train.Image, axis=(0, 1, 2)) # [ImageNum, 32, 32, 3]
-    ColorChannelStat.Test.Mean = np.nanmean(Data.Test.Image, axis=(0, 1, 2)) # [ImageNum, 32, 32, 3]
-    ColorChannelStat.Test.Std = np.nanstd(Data.Test.Image, axis=(0, 1, 2)) # [ImageNum, 32, 32, 3]
+    ColorChannelStat.Train.Mean = np.nanmean(Data.Train.Image, axis=(0, 1, 2)) # (ImageNum, 32, 32, 3)
+    ColorChannelStat.Train.Std = np.nanstd(Data.Train.Image, axis=(0, 1, 2)) # (ImageNum, 32, 32, 3)
+    ColorChannelStat.Test.Mean = np.nanmean(Data.Test.Image, axis=(0, 1, 2)) # (ImageNum, 32, 32, 3)
+    ColorChannelStat.Test.Std = np.nanstd(Data.Test.Image, axis=(0, 1, 2)) # (ImageNum, 32, 32, 3)
     return Stat
 
 class DataFetcher(torch.utils.data.Dataset, DLUtils.module.AbstractModule):
@@ -243,7 +243,7 @@ class DataFetcher(torch.utils.data.Dataset, DLUtils.module.AbstractModule):
         self.Device = Device
         self.Log(f"change device to {Device}")
         return self
-    def __getitem__(self, Index):
+    def __getitem__(self, Index): # get train data with Index.
         Image = self.Image[Index]
         Label = self.Label[Index]
         return Image, Label
@@ -255,9 +255,9 @@ class DataLoader(torch.utils.data.DataLoader, DLUtils.module.AbstractModule):
         self.DataFetcher = DataFetcher
         DLUtils.module.AbstractModule.__init__(self)
         torch.utils.data.DataLoader.__init__(
-            self, 
-            dataset=DataFetcher, 
-            batch_size=BatchSize, 
+            self,
+            dataset=DataFetcher,
+            batch_size=BatchSize,
             # num_workers=2 # Setting num_workers > 1 might severely slow down speed.
         )
         self.BatchSize = BatchSize
@@ -269,9 +269,11 @@ class DataLoader(torch.utils.data.DataLoader, DLUtils.module.AbstractModule):
         self.Reset()
     def AfterEpoch(self, Dict):
         self.Reset()
-    def Get(self, BatchIndex):
+    def GetNextBatch(self, BatchIndex):
         Image, Label = next(self.Iter)
-        return Image.to(self.Device), Label.to(self.Device)
+        # return Image.to(self.Device), Label.to(self.Device)
+        Image, Label
+    Get = GetNextBatch
     def SetDevice(self, Device, IsRoot=True):
         self.DataFetcher.SetDevice(Device)
         self.Device = Device

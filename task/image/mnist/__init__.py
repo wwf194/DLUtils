@@ -40,7 +40,8 @@ class MNIST(ImageClassificationTask):
         return self.DataLoader("Test", BatchSize)
     def TrainData(self, BatchSize=64):
         return self.DataLoader("Train", BatchSize)
-    def DataLoader(self, Type, BatchSize=64):
+    # generate a dataloader
+    def GetDataLoader(self, Type, BatchSize=64):
         if not hasattr(self, "Data"):
             self.Data = LoadDataSet(self.DataPath)
         Data = self.Data
@@ -50,14 +51,15 @@ class MNIST(ImageClassificationTask):
         else:
             Data = Data.Test
             BatchNum=self.TestBatchNum(BatchSize)
-        _DataLoader = DataLoader(
-            DataFetcher(Data.Image, Data.Label),
+        DataLoader = DataLoader(
+            DataFetcher=DataFetcher(Data.Image, Data.Label),
             BatchSize=BatchSize, BatchNum=BatchNum
         )
-        self.DataLoaderList.add(_DataLoader)
+        self.DataLoaderList.add(DataLoader)
+        # device setting
         if hasattr(self, "Device"):
-            _DataLoader.SetDevice(self.Device)
-        return _DataLoader
+            DataLoader.SetDevice(self.Device)
+        return DataLoader
     def TrainBatchNum(self, BatchSize):
         Param = self.Param
         BatchNum = Param.Train.Num // BatchSize
@@ -79,24 +81,24 @@ class MNIST(ImageClassificationTask):
         return DLUtils.param(self.Data.Train)
 
 def LoadImage(file_name):
-    ##   在读取或写入一个文件之前，你必须使用 Python 内置open()函数来打开它。##
-    ##   file object = open(file_name [, access_mode][, buffering])          ##
-    ##   file_name是包含您要访问的文件名的字符串值。                         ##
-    ##   access_mode指定该文件已被打开，即读，写，追加等方式。               ##
-    ##   0表示不使用缓冲，1表示在访问一个文件时进行缓冲。                    ##
-    ##   这里rb表示只能以二进制读取的方式打开一个文件                        ##
+    # 在读取或写入一个文件之前，你必须使用 Python 内置open()函数来打开它.
+    # file object = open(file_name [, access_mode][, buffering])
+    # file_name是包含您要访问的文件名的字符串值.
+    # access_mode指定该文件已被打开，即读，写，追加等方式.
+    # 0表示不使用缓冲，1表示在访问一个文件时进行缓冲.
+    # 这里rb表示只能以二进制读取的方式打开一个文件.
     binfile = open(file_name, 'rb') 
-    ##   从一个打开的文件读取数据
+    # 从一个打开的文件读取数据
     buffers = binfile.read()
-    ##   读取image文件前4个整型数字
-    magic,num,rows,cols = struct.unpack_from('>IIII',buffers, 0)
-    ##   整个images数据大小为60000*28*28
+    # 读取image文件前4个整型数字
+    magic, num, rows, cols = struct.unpack_from('>IIII',buffers, 0)
+    # 整个images数据大小为60000*28*28
     bits = num * rows * cols
-    ##   读取images数据
+    # 读取images数据
     images = struct.unpack_from('>' + str(bits) + 'B', buffers, struct.calcsize('>IIII'))
-    ##   关闭文件
+    # 关闭文件
     binfile.close()
-    ##   转换为[60000,784]型数组
+    # 转换为[60000,784]型数组
     images = np.reshape(images, [num, rows * cols])
     
     # np.int64 -> np.uint8
@@ -160,38 +162,22 @@ class DataFetcher(torch.utils.data.Dataset, AbstractModule):
     def __len__(self):
         return self.Image.shape[0]
 
-class DataLoader(torch.utils.data.DataLoader, AbstractModule):
-    def __init__(self, DataFetcher, BatchSize, BatchNum):
-        self.DataFetcher = DataFetcher
-        AbstractModule.__init__(self)
-        torch.utils.data.DataLoader.__init__(
-            self, 
-            dataset=DataFetcher, 
-            batch_size=BatchSize, 
-            # num_workers=2 # Setting num_workers > 1 might severely slow down speed.
-        )
-        self.BatchSize = BatchSize
-        self._BatchNum = BatchNum
-        if hasattr(DataFetcher, "Device"):
-            self.Device = DataFetcher.Device
-        self.Reset()
-    def BeforeEpoch(self, Dict):
-        self.Reset()
-    def AfterEpoch(self, Dict):
-        self.Reset()
-    def Get(self, BatchIndex):
-        Image, Label = next(self.Iter)
-        # return Image.to(self.Device), Label.to(self.Device)
-        return Image, Label
-    def SetDevice(self, Device, IsRoot=True):
-        self.DataFetcher.SetDevice(Device)
-        self.Device = Device
-        return self
-    def BatchNum(self):
-        return self._BatchNum
-    def Reset(self):
-        self.Iter = iter(self)
-        return self
+class DataLoader(DLUtils.train.DataLoaderForEpochBatchTrain):
+    # def __init__(self, DataFetcher, BatchSize, BatchNum):
+    #     self.DataFetcher = DataFetcher
+    #     AbstractModule.__init__(self)
+    #     torch.utils.data.DataLoader.__init__(
+    #         self, 
+    #         dataset=DataFetcher, 
+    #         batch_size=BatchSize,
+    #         # num_workers=2 # Setting num_workers > 1 might severely slow down speed.
+    #     )
+    #     self.BatchSize = BatchSize
+    #     self._BatchNum = BatchNum
+    #     if hasattr(DataFetcher, "Device"):
+    #         self.Device = DataFetcher.Device
+    #     self.Reset()
+    pass
     
 def ExtractDataSet(Path, MoveCompressedFile2ExtractFolder=True):
     Path = DLUtils.file.ToAbsPath(Path)

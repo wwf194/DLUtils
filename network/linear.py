@@ -7,15 +7,17 @@ import numpy as np
 import DLUtils
 
 class LinearLayer(DLUtils.module.AbstractNetwork):
-    def __init__(self, InNum=None, OutNum=None, **Dict):
-        if InNum is not None:
-            Dict["InNum"] = InNum
-        if OutNum is not None:
-            Dict["OutNum"] = OutNum      
+    SetParamMap = DLUtils.IterableKeyToElement({
+        ("InNum, inputNum, InputNum", "InSize"): "In.Size",
+        ("OutNum, outputNum, OutputNum", "OutSize"): "Out.Size",
+        ("Bias"): "Bias.Enable"
+    })
+    def __init__(self, InSize=None, OutSize=None, **Dict):
+        if InSize is not None:
+            Dict["InSize"] = InSize
+        if OutSize is not None:
+            Dict["OutSize"] = OutSize      
         super().__init__(**Dict)
-    def LoadParam(self, Param):
-        super().LoadParam(Param)
-        return self
     def SetMode(self, Mode):
         Param = self.Param
         Param.Mode = Mode
@@ -33,23 +35,23 @@ class LinearLayer(DLUtils.module.AbstractNetwork):
         else:
             raise Exception(Mode)
     def ReceiveMulWx(self, In): #Wx
-        return torch.mm(In, self.Weight)
+        return torch.matmul(In, self.Weight)
     def ReceiveAddMulWxb(self, In): # Wx+b
-        return torch.mm(In, self.Weight) + self.Bias
+        return torch.matmul(In, self.Weight) + self.Bias
     def ReceiveMulWAddxb(self, In): # W(x+b)
-        return torch.mm(In + self.Bias, self.Weight)
+        return torch.matmul(In + self.Bias, self.Weight)
     def SetWeight(self, Weight, Trainable=True):
         Weight = DLUtils.ToNpArrayOrNum(Weight)
         Param = self.Param
         Param.Weight.Value = Weight
-        Param.In.Num = Weight.shape[0]
-        Param.Out.Num = Weight.shape[1]
+        Param.In.Size = Weight.shape[0]
+        Param.Out.Size = Weight.shape[1]
         assert len(Weight.shape) == 2
         # if Data.HasAttr("Bias") and Param.HasAttr("Mode"):
         #     if Param.Mode == "Wx+b":
-        #         assert Param.Out.Num == Data.Weight.shape[1]
+        #         assert Param.Out.Size == Data.Weight.shape[1]
         #     else:
-        #         assert Param.In.Num == Data.Weight.shape[0]
+        #         assert Param.In.Size == Data.Weight.shape[0]
         if Trainable:
             self.RegisterTrainParam(Name="Weight", Path="Weight.Value")
         else:
@@ -60,9 +62,9 @@ class LinearLayer(DLUtils.module.AbstractNetwork):
         if isinstance(Bias, str):
             assert Param.hasattr("Mode")
             if Param.Mode in ["Wx+b"]:
-                Num = Param.Out.Num
+                Num = Param.Out.Size
             elif Param.Mode in ["W(x+b)"]:
-                Num = Param.In.Num
+                Num = Param.In.Size
             else:
                 raise Exception()
 
@@ -77,22 +79,20 @@ class LinearLayer(DLUtils.module.AbstractNetwork):
         
         if isinstance(Bias, np.ndarray):
             Param.Tensor.add("Bias")
-        if Trainable:
-            assert isinstance(Bias, np.ndarray)
-            self.RegisterTrainParam(Name="Bias", Path="Bias.Value")
+            self.SetTensor(
+                Name="Bias", Path="Bias.Value",
+                Value=Bias
+            )
+            if Trainable:
+                self.RegisterTrainParam(Name="Bias", Path="Bias.Value")
         else:
-            if isinstance(Bias, np.ndarray):
-                self.RegisterTensor(Name="Bias", Path="Bias.Value")
-            else:
-                assert isinstance(Bias, float)
-
-        Param.Bias.Value = Bias
+            assert isinstance(Bias, float)
+        Param.Bias.Data = Bias
         return self
     def Init(self, IsSuper=True, **Dict):
         if IsSuper:
             return super().Init(IsSuper=True, **Dict)
         Param = self.Param
-
         if self.IsInit():
             Mode = Param.setdefault("Mode", "Wx+b")
 
@@ -109,28 +109,30 @@ class LinearLayer(DLUtils.module.AbstractNetwork):
                 pass
             else:
                 # bias setting
-                if not Param.Bias.hasattr("Value"):
+                if not Param.Bias.hasattr("Data"):
                     # set default bias
                     if Mode in ["Wx+b"]:
-                        self.SetTrainParam("Bias", "Bias.Value", 
-                            DLUtils.DefaultNonLinearLayerBias(Param.Out.Num)
+                        self.SetTrainParam(
+                            "Bias",
+                            "Bias.Data", 
+                            DLUtils.DefaultLinearLayerBias(Shape=Param.Out.Size)
                         )
                     elif Mode in ["W(x+b)"]:
-                        self.SetTrainParam("Bias", "Bias.Value", 
-                            DLUtils.DefaultNonLinearLayerBias(Param.In.Num)
+                        self.SetTrainParam(
+                            "Bias",
+                            "Bias.Data", 
+                            DLUtils.DefaultLinearLayerBias(Shape=Param.In.Size)
                         )
                     else:
                         raise Exception()
         else:
             assert Param.hasattr("Mode")
-            assert Param.Weight.hasattr("Value")
+            assert Param.Weight.hasattr("Data")
             assert Param.Bias.hasattr("Enable")
             if Param.Bias.Enable:
-                assert Param.Bias.hasattr("Value")
+                assert Param.Bias.hasattr("Data")
 
-        if Param.Bias.Enable:
-            self.Bias = Param.Bias.Value
-        else:
+        if not Param.Bias.Enable:
             self.Bias = 0.0
 
         self.SetReceiveMethod()
@@ -139,8 +141,9 @@ class LinearLayer(DLUtils.module.AbstractNetwork):
     def SetWeightDefault(self):
         Param = self.Param
         self.SetTrainParam(
-            "Weight", "Weight.Value",
-            DLUtils.DefaultLinearLayerWeight((Param.In.Num, Param.Out.Num))
+            "Weight",
+            "Weight.Data",
+            DLUtils.DefaultLinearLayerWeight((Param.In.Size, Param.Out.Size))
         )
         return self
 

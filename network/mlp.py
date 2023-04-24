@@ -1,7 +1,8 @@
 import DLUtils
-from .NonLinearLayer import NonLinearLayer
-from ..module import ModuleList
-class MLP(ModuleList):
+from .nonlinear import NonLinearLayer
+from ..module import _ModuleList
+
+class MLP(_ModuleList):
     SetParamMap = DLUtils.IterableKeyToElement({
         ("NonLinear"): "NonLinear.DefaultType",
         ("NonLinearOnLastLayer"): "NonLinear.ApplyOnLastLayer",
@@ -38,14 +39,13 @@ class MLP(ModuleList):
             if Param.Bias.Enable:
                 Param.Bias.setdefault("ApplyOnLastLayer", True)
 
-
             for Index in range(Param.Layer.Num):
                 NonLinearStr = self.GetNonLinear(Index, LayerNum)
                 self.AppendSubModule(
                     Name="L%d"%Index,
                     SubModule=NonLinearLayer(
-                        InNum=Param.Layer.Unit.Num[Index],
-                        OutNum=Param.Layer.Unit.Num[Index + 1],
+                        InSize=Param.Layer.Unit.Num[Index],
+                        OutSize=Param.Layer.Unit.Num[Index + 1],
                         NonLinear=NonLinearStr,
                         Bias=True
                     )

@@ -1,17 +1,20 @@
 
 import DLUtils
 from ..module import AbstractModuleGroup
-class ModuleSeries(AbstractModuleGroup):
+
+class _ModuleSeries(AbstractModuleGroup):
     SetParamMap = DLUtils.IterableKeyToElement({
         ("OutName", "OutputName"): "Out.Name"
     })
+    def __init__(self, **Dict):
+        super().__init__(**Dict)
     def LoadParam(self, Param):
         super().LoadParam(Param)
-        Param = self.Param
-        self.ModuleList = []
-        for Name, SubModuleParam in Param.SubModules.items():
-            self.ModuleList.append(self.SubModules[Name])
-        Param.Module.Num = self.ModuleNum = len(self.ModuleList)
+        # Param = self.Param
+        # self.ModuleList = []
+        # for Name, SubModuleParam in Param.SubModules.items():
+        #     self.ModuleList.append(self.SubModules[Name])
+        # Param.Module.Num = self.ModuleNum = len(self.ModuleList)
         return self
     def AddSubModule(self, Name=None, SubModule=None, **Dict):
         if Name is not None:
@@ -59,6 +62,11 @@ class ModuleSeries(AbstractModuleGroup):
             self.ModuleList = list(self.SubModules.values())
         
         Param = self.Param
+        self.ModuleList = []
+        for Name, SubModuleParam in Param.SubModules.items():
+            self.ModuleList.append(self.SubModules[Name])
+        Param.Module.Num = self.ModuleNum = len(self.ModuleList)
+
         OutType = Param.Out.setdefault("Type", "Out")
         import functools
 
@@ -81,6 +89,14 @@ class ModuleSeries(AbstractModuleGroup):
                 self.OutNameList = ["L%d"%LayerIndex for LayerIndex in range(self.LayerNum)]
 
         return self
-    
+
+class ModuleSeries(_ModuleSeries):
+    # slight different in __init__
+    def __init__(self, **SubModules):
+        super().__init__()
+        if len(SubModules) > 0:
+            for SubModuleName, SubModule in SubModules.items():
+                self.AddSubModule(SubModuleName, SubModule)
 
 ModuleList = ModuleSeries
+_ModuleList = _ModuleSeries

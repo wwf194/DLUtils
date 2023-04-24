@@ -256,7 +256,7 @@ def IsEmptyDir(DirPath):
     Files, Dirs = ListAllFilesAndDirs(DirPath)
     return len(Files) == 0 and len(Dirs) == 0
 
-def ListFilesName(DirPath):
+def ListFileNames(DirPath):
     assert ExistsDir(DirPath), "Non-existing DirPath: %s"%DirPath
     assert os.path.isdir(DirPath), "Not a Dir: %s"%DirPath
     Items = os.listdir(DirPath)
@@ -267,12 +267,14 @@ def ListFilesName(DirPath):
             Files.append(Item)
     return Files
 
-def ListFilesPath(DirPath):
+ListAllFiles = ListAllFileNames = GetAllFiles = ListFilesName = ListFileNames
+
+def ListFilePaths(DirPath):
     DirPath = StandardizePath(DirPath)
     FileNameList = ListFilesName(DirPath)
     return [DirPath + FileName for FileName in FileNameList]
 
-ListAllFiles = GetAllFiles = ListFilesName
+ListAllFilesPath = ListAllFilePaths = GetAllFilePaths = GetAllFilesPath = ListFilePaths
 
 def ListDirs(DirPath):
     if not os.path.exists(DirPath):
@@ -870,7 +872,7 @@ def Data2TextFile(data, Name=None, FilePath=None):
     DLUtils.Str2File(str(data), FilePath)
 
 from .json import PyObj2DataFile, DataFile2PyObj, PyObj2JsonFile, \
-    JsonFile2PyObj, JsonFile2JsonDict, JsonObj2JsonFile, DataFile2JsonObj
+    JsonFile2PyObj, JsonFile2JsonDict, JsonObj2JsonFile, DataFile2JsonObj, JsonFile2Dict
 
 from ._param import JsonDict2Str
 

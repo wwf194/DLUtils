@@ -1,5 +1,6 @@
 from .reshape import Reshape, Index2OneHot, ChangeDimOrder, Permute
-from .norm import ShiftRange
+from .norm import LayerNorm, BatchNorm
+from .norm import ShiftRange 
 from .norm import NormOnColorChannel
 
 import torch

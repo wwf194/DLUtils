@@ -6,12 +6,18 @@ import math
 def ShapeWithSameValue(Shape, Value):
     return np.full(Shape, Value)
 
-
 import math
 def DefaultNonLinearLayerWeight(Shape, NonLinear):
     return SampleFromKaimingUniform(Shape, NonLinear=NonLinear)
 
-def DefaultNonLinearLayerBias(UnitNum):
+def DefaultNonLinearLayerBias(Shape):
+    if isinstance(Shape, list) or isinstance(Shape, tuple):
+        UnitNum = Shape[0]
+    elif isinstance(Shape, int):
+        UnitNum = Shape
+    else:
+        raise Exception()
+        
     Min = - 1.0 / math.sqrt(UnitNum)
     Max = - Min
     return SampleFromUniformDistribution((UnitNum), Min, Max)
@@ -147,6 +153,9 @@ def SampleFromXaiverNormal(Shape, NonLinearFunction, **Dict):
     else:
         raise Exception()
     return SampleFromNormalDistribution(Shape, 0.0, Std)
+
+def SampleFrom01NormalDistribution(Shape):
+    return np.random.normal(size=Shape, loc=0.0, scale=1.0)
 
 def SampleFromNormalDistribution(Shape, Mean=0.0, Std=1.0):
     return np.random.normal(size=Shape, loc=Mean, scale=Std)

@@ -10,12 +10,12 @@ from .linear import LinearLayer
 class NonLinearLayer(LinearLayer):
     SetParamMap = DLUtils.IterableKeyToElement({
         ("NonLinear"): "NonLinear.Type",
-        ("InNum, inputNum, InputNum"): "In.Num",
-        ("OutNum, outputNum, OutputNum"): "Out.Num",
+        ("InNum, inputNum, InputNum", "InSize"): "In.Size",
+        ("OutNum, outputNum, OutputNum", "OutSize"): "Out.Size",
         ("Bias"): "Bias.Enable"
     })
-    def __init__(self, InNum=None, OutNum=None, NonLinear=None, **Dict):
-        super().__init__(InNum=InNum, OutNum=OutNum, NonLinear=NonLinear, **Dict)
+    def __init__(self, **Dict):
+        super().__init__(**Dict)
     def SetMode(self, Mode):
         Param = self.Param
         Param.Mode = Mode
@@ -28,11 +28,11 @@ class NonLinearLayer(LinearLayer):
         self.NonLinear = self.SubModules.NonLinear
         return self
     def ReceiveFAddMulWxb(self, In):
-        return self.NonLinear(torch.mm(In, self.Weight) + self.Bias)
+        return self.NonLinear(torch.matmul(In, self.Weight) + self.Bias)
     def ReceiveAddFMulWxb(self, In):
-        return self.NonLinear(torch.mm(In, self.Weight)) + self.Bias
+        return self.NonLinear(torch.matmul(In, self.Weight)) + self.Bias
     def ReceiveFMulWAddxb(self, In):
-        return self.NonLinear(torch.mm(In, self.Weight)) + self.Bias
+        return self.NonLinear(torch.matmul(In, self.Weight)) + self.Bias
     ReceiveMethodMap = DLUtils.IterableKeyToElement({
         "f(Wx+b)": ReceiveFAddMulWxb,
         "f(W(x+b))": ReceiveFMulWAddxb,
@@ -58,6 +58,8 @@ class NonLinearLayer(LinearLayer):
     # SetBias(...) # inherit
     def Init(self, IsSuper=False, **Dict):
         Param = self.Param
+        assert Param.hasattrs("In.Size", "Out.Size")
+        
         if not IsSuper:
             self.SetReceiveMethod()
             if self.IsInit():
@@ -68,7 +70,7 @@ class NonLinearLayer(LinearLayer):
                 )
 
                 # weight setting
-                if not Param.Weight.hasattr("Value"):
+                if not Param.Weight.hasattr("Data"):
                     self.SetDefaultWeight()
                 
                 # bias setting
@@ -76,10 +78,10 @@ class NonLinearLayer(LinearLayer):
                 if Param.Bias.Enable:
                     Param.Bias.setdefault("Trainable", True)
                     if self.IsInit(): 
-                        if not Param.Bias.hasattr("Value"):
+                        if not Param.Bias.hasattr("Data"):
                             self.SetDefaultBias()
                     else:
-                        assert Param.Bias.hasattr("Value")
+                        assert Param.Bias.hasattr("Data")
     
             else:
                 assert Param.Weight.hasattr("Value")
@@ -88,9 +90,10 @@ class NonLinearLayer(LinearLayer):
     def SetDefaultWeight(self):
         Param = self.Param
         self.SetTrainParam(
-            Name="Weight", Path="Weight.Value",
+            Name="Weight",
+            Path="Weight.Data",
             Value=DLUtils.DefaultNonLinearLayerWeight(
-                Shape=(Param.In.Num, Param.Out.Num),
+                Shape=(Param.In.Size, Param.Out.Size),
                 NonLinear=Param.NonLinear.Type,
             )
         )
@@ -98,13 +101,14 @@ class NonLinearLayer(LinearLayer):
     def SetDefaultBias(self):
         Param = self.Param
         if Param.Mode in ["f(Wx+b)", "f(Wx)+b"]:
-            UnitNum = Param.Out.Num
+            UnitNum = Param.Out.Size
         elif Param.Mode in ["f(W(x+b))"]:
-            UnitNum = Param.In.Num
+            UnitNum = Param.In.Size
         else:
             raise Exception()
         self.SetTrainParam(
-            Name="Bias", Path="Bias.Value",
+            Name="Bias",
+            Path="Bias.Data",
             Value=DLUtils.DefaultNonLinearLayerBias(UnitNum)
         )
         if Param.Bias.Trainable:

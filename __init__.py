@@ -58,11 +58,12 @@ from DLUtils.data.utils import \
     SampleFromXaiverUniform, \
     SampleFromConstantDistribution, \
     SampleFromNormalDistribution, \
+    SampleFrom01NormalDistribution, \
     SampleFromGaussianDistribution, \
     SampleFromUniformDistribution, \
     DefaultConv2DKernel, DefaultUpConv2DKernel, ShapeWithSameValue, \
     DefaultNonLinearLayerWeight, DefaultNonLinearLayerBias, DefaultLinearLayerWeight, \
-    DefaultUpConv2DBias, DefaultConv2DBias
+    DefaultUpConv2DBias, DefaultConv2DBias, DefaultLinearLayerBias
 
 import DLUtils.geometry2D as geometry2D
 
