@@ -183,7 +183,7 @@ def vae_conv(SaveDir="./example/vae_conv/"):
             Task=Task, Optimizer=Optimizer, 
             Test=Test, Save=Save,
             OnlineMonitor = train.Select1FromN.OnlineReporterMultiLoss(BatchNum//5) \
-                .AddLogAndReportItem("Loss", Type="Float") \
+                .AddLogAndReportItem("LossTotal", Type="Float") \
                 .AddLogAndReportItem("LossKL", Type="Float") \
                 .AddLogAndReportItem("LossReconstruct", Type="Float")
         ).Bind(

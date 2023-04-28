@@ -22,12 +22,13 @@ class ShiftRange(AbstractOperator):
         self.Min2 = Param.Min2
         self.Max2 = Param.Max2
         self.Scale = (self.Max2 - self.Min2) / (self.Max1 - self.Min1)
-        super().Init(IsSuper=IsSuper, IsRoot=IsRoot)
+        super().Init(IsSuper=True, IsRoot=IsRoot)
         return self
 
 class NormOnColorChannel(AbstractOperator):
     def __init__(self, Mean0=None, Std0=None, Mean1=None, Std1=None):
         super().__init__()
+        Param = self.Param
         if Mean0 is not None:
             Param.Before.Min = Mean0
         if Std0 is not None:
@@ -53,5 +54,5 @@ class NormOnColorChannel(AbstractOperator):
 
         if self.Mean1 == 0.0 and self.Std1 == 1.0:
             self.Receive = self._ReceiveMean0Std1
-        super().Init(IsSuper=IsSuper, IsRoot=IsRoot)
+        super().Init(IsSuper=True, IsRoot=IsRoot)
         return self

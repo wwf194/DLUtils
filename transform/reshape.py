@@ -32,7 +32,7 @@ class Reshape(AbstractOperator):
         super().Init(IsSuper=True, IsRoot=IsRoot)
 
 class ChangeDimOrder(AbstractOperator):
-    SetParamMap = DLUtils.IterableKeyToElement({
+    ParamMap = DLUtils.IterableKeyToElement({
         ("Order"): "Order"
     })
     def __init__(self, *List, **Dict):
@@ -52,6 +52,7 @@ Permute = ChangeDimOrder
 class Index2OneHot(AbstractOperator):
     def __init__(self, FeatureNum):
         super().__init__()
+        Param = self.Param
         Param.FeatureNum = FeatureNum
     def Receive(self, In):
         return F.one_hot(In.long(), num_classes=self.FeatureNum)

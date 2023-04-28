@@ -15,7 +15,8 @@ import DLUtils.train.evaluate as evaluate
 import DLUtils.loss as loss
 
 import DLUtils.train.EpochBatchTrain as EpochBatchTrain
-from .EpochBatchTrain import EpochBatchTrainSession, DataLoaderForEpochBatchTrain
+from .EpochBatchTrain import EpochBatchTrainSession, \
+    DataLoaderForEpochBatchTrain, DataFetcherForEpochBatchTrain
 
 import DLUtils.train.Select1FromN as Select1FromN
 
@@ -25,32 +26,32 @@ def TrainSession(Type="EpochBatchTrain"):
     else:
         raise Exception()
 
-def NotifyEpochIndex(ObjList, EpochIndex):
-    for Obj in ObjList:
-        Obj.NotifyEpochIndex(EpochIndex)
+# def NotifyEpochIndex(ObjList, EpochIndex):
+#     for Obj in ObjList:
+#         Obj.NotifyEpochIndex(EpochIndex)
 
-def NotifyBatchIndex(ObjList, BatchIndex):
-    for Obj in ObjList:
-        Obj.NotifyBatchIndex(BatchIndex)
+# def NotifyBatchIndex(ObjList, BatchIndex):
+#     for Obj in ObjList:
+#         Obj.NotifyBatchIndex(BatchIndex)
 
-def NotifyEpochNum(ObjList, EpochNum):
-    for Obj in ObjList:
-        Obj.NotifyEpochNum(EpochNum)
+# def NotifyEpochNum(ObjList, EpochNum):
+#     for Obj in ObjList:
+#         Obj.NotifyEpochNum(EpochNum)
 
-def NotifyBatchNum(ObjList, BatchNum):
-    for Obj in ObjList:
-        Obj.NotifyBatchNum(BatchNum)
+# def NotifyBatchNum(ObjList, BatchNum):
+#     for Obj in ObjList:
+#         Obj.NotifyBatchNum(BatchNum)
 
-def ParseRoutersFromOptimizeParam(param, **kw):
-    Routers = DLUtils.PyObj()
-    for Name, RouterParam in ListAttrsAndValues(param.Batch.Routers):
-        Router = DLUtils.router.ParseRouterStaticAndDynamic(RouterParam, ObjRefList=[RouterParam, param], **kw)
-        setattr(Routers, Name, Router)
-    return Routers
+# def ParseRoutersFromOptimizeParam(param, **kw):
+#     Routers = DLUtils.PyObj()
+#     for Name, RouterParam in ListAttrsAndValues(param.Batch.Routers):
+#         Router = DLUtils.router.ParseRouterStaticAndDynamic(RouterParam, ObjRefList=[RouterParam, param], **kw)
+#         setattr(Routers, Name, Router)
+#     return Routers
 
-def SetSaveDirForSavedModel(EpochIndex, BatchIndex):
-    SaveDirForSavedModel = DLUtils.GetMainSaveDir() + "SavedModel/" + "Epoch%d-Batch%d/"%(EpochIndex, BatchIndex)
-    DLUtils.SetSubSaveDir(SaveDirForSavedModel, Type="Obj")
+# def SetSaveDirForSavedModel(EpochIndex, BatchIndex):
+#     SaveDirForSavedModel = DLUtils.GetMainSaveDir() + "SavedModel/" + "Epoch%d-Batch%d/"%(EpochIndex, BatchIndex)
+#     DLUtils.SetSubSaveDir(SaveDirForSavedModel, Type="Obj")
 
 def ParseEpochBatchFromStr(Str):
     MatchResult = re.match(r"^.*Epoch(-?\d*)-Batch(\d*).*$", Str)

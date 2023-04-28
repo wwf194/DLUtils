@@ -2,7 +2,7 @@ import torch
 import numpy as np
 import DLUtils
 class LayerNorm(DLUtils.module.AbstractNetwork):
-    SetParamMap = DLUtils.IterableKeyToElement({
+    ParamMap = DLUtils.IterableKeyToElement({
         ("NormShape"): "Norm.Shape",
         ("Eps"): "Eps.Data",
         ("Affine"): "Affine.Enable"

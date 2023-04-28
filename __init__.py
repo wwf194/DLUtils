@@ -27,6 +27,7 @@ import DLUtils.utils.func as function
 import DLUtils.utils.math as math
 import DLUtils.utils.__struct__ as struct
 import DLUtils.utils.system as system
+import DLUtils.python as python
 from .utils.__struct__ import FixedSizeQueuePassiveOutInt, FixedSizeQueuePassiveOutFloat
 
 

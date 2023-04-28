@@ -7,7 +7,7 @@ import numpy as np
 import DLUtils
 
 class LinearLayer(DLUtils.module.AbstractNetwork):
-    SetParamMap = DLUtils.IterableKeyToElement({
+    ParamMap = DLUtils.IterableKeyToElement({
         ("InNum, inputNum, InputNum", "InSize"): "In.Size",
         ("OutNum, outputNum, OutputNum", "OutSize"): "Out.Size",
         ("Bias"): "Bias.Enable"

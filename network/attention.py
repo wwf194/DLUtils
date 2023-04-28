@@ -7,7 +7,7 @@ import DLUtils
 import DLUtils.network as network
 class TransformerEncoder(DLUtils.module.AbstractNetwork):
     # a stack of multiple multi-head self-attention layer
-    SetParamMap = DLUtils.IterableKeyToElement({
+    ParamMap = DLUtils.IterableKeyToElement({
         ("LayerNum"): "Layer.Num",
         ("TokenSize", "FeatureSize"): ("Token.Size"),
         ("QKSize"): "MSA.Attention.QK.Size", # total size. not size of each head.
@@ -52,7 +52,7 @@ class TransformerEncoder(DLUtils.module.AbstractNetwork):
         return super().Init(IsSuper=True, IsRoot=IsRoot)
 
 class MultiheadSelfAttentionLayer(DLUtils.module.AbstractNetwork):
-    SetParamMap = DLUtils.IterableKeyToElement({
+    ParamMap = DLUtils.IterableKeyToElement({
         ("InSize", "InNum", "InTokenSize"): "In.Token.Size",
         ("OutSize", "OutNum", "OutTokenSize"): "Out.Token.Size",
         ("QKSize"): "MSA.Attention.QK.Size", # total size. not size of each head.
@@ -108,7 +108,6 @@ class MultiheadSelfAttentionLayer(DLUtils.module.AbstractNetwork):
             # 2-layer mlp
             if not self.HasSubModule("MLP"):
                 Param.MLP.setdefault("NonLinear", "ReLU")
-                
                 MLPUnitNum = [
                     Param.MSA.Out.Token.Size,
                     Param.MLP.HiddenLayer.Size,
@@ -134,7 +133,7 @@ class MultiheadSelfAttentionLayer(DLUtils.module.AbstractNetwork):
                 self.AddSubModule(
                     "LayerNorm2", network.LayerNorm(NormShape=(Param.Out.Token.Size), Affine=True)
                 )
-            
+
             # operation order setting.
             self.OperationOrder = Param.setdefault("OperationOrder", "NormTransformResidual")
         
@@ -147,12 +146,10 @@ class MultiheadSelfAttentionLayer(DLUtils.module.AbstractNetwork):
         else:
             raise Exception()
         
-        
-        
         return super().Init(IsSuper=True, IsRoot=IsRoot)
 
 class MultiHeadAttention(DLUtils.module.AbstractNetwork):
-    SetParamMap = DLUtils.IterableKeyToElement({
+    ParamMap = DLUtils.IterableKeyToElement({
         ("HeadNum"): "Attention.Head.Num",
         ("InSize", "InNum", "OutTokenSize"): "In.Token.Size",
         ("OutSize", "OutNum", "OutTokenSize"): "Out.Token.Size",
@@ -175,7 +172,7 @@ class MultiHeadAttention(DLUtils.module.AbstractNetwork):
             # (BatchSize, TokenNumKV, QKSizeTotal)
         V1 = torch.matmul(V, self.WeightV)
             # (BatchSize, TokenNumKV, VSizeTotal)
-    
+
         Q1 = Q1.view(BatchSize, TokenNumQ, self.HeadNum, self.QKSizeHead)
         K1 = K1.view(BatchSize, TokenNumKV, self.HeadNum, self.QKSizeHead)
         V1 = V1.view(BatchSize, TokenNumKV, self.HeadNum, self.VSizeHead)

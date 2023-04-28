@@ -5,7 +5,7 @@ import DLUtils
 class Adam(GradientDescend):
     def __init__(self):
         super().__init__()
-        SetParamMap = super().SetParamMap.update(DLUtils.IterableKeyToElement({
+        ParamMap = super().ParamMap.update(DLUtils.IterableKeyToElement({
             # ("Beta"): "GradientNorm.Enable"
         }))
     def SetParam(self, **Dict):

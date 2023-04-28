@@ -5,7 +5,7 @@ import numpy as np
 import DLUtils
 class Conv2D(DLUtils.module.AbstractNetwork):
 
-    SetParamMap = DLUtils.IterableKeyToElement({
+    ParamMap = DLUtils.IterableKeyToElement({
         ("KernelSize", "Kernel.Size"): "Kernel.Size",
         ("Padding"): "Padding.Value",
         ("GroupNum", "NumGroup", "Group.Num"): "Group.Num",

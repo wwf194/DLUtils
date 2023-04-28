@@ -10,7 +10,7 @@ class AddDimAfterLastDim(DLUtils.module.AbstractNetwork):
         return torch.unsqueeze(X, -1)
 
 class InsertDim(DLUtils.module.AbstractNetwork):
-    SetParamMap = DLUtils.IterableKeyToElement({
+    ParamMap = DLUtils.IterableKeyToElement({
         ("DimensionIndex", "InsertIndex", "Dim"): "InsertIndex"
     })
     def __init__(self, InsertIndex=None, **Dict):

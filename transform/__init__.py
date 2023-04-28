@@ -57,14 +57,20 @@ class NpArray2TorchTensor(DLUtils.module.AbstractOperator):
         return super().SetDevice(Device=Device, IsRoot=IsRoot)
 
 class MoveTensor2Device(DLUtils.module.AbstractOperator):
+    ParamMap = DLUtils.IterableKeyToElement({
+        ("Device"): "Device.Target"
+    })
+    def __init__(self, Device=None, **Dict):
+        if Device is not None:
+            Dict["Device"] = Device
+        super().__init__(**Dict)
     def Receive(self, In):
-        return In.to(self.Device)
+        return In.to(self.DeviceTarget)
     def Init(self, IsSuper=False, IsRoot=True):
-        if not hasattr(self, "Device"):
-            self.Device = "cpu"
-        else:
-            raise Exception()
+        Param = self.Param
+        Param.Device.setdefault("Target", "cpu")
+        self.DeviceTarget = Param.Device.Target
         return super().Init(IsSuper=True, IsRoot=IsRoot)
     def SetDevice(self, Device=None, IsRoot=True):
-        self.Device = Device
+        self.DeviceTarget = self.Param.Device.Target = Device
         return super().SetDevice(Device=Device, IsRoot=IsRoot)

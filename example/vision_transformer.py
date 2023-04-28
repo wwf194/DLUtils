@@ -1,3 +1,5 @@
+# nohup python __main__.py -t example vit imagenet &>./example/vit_imagenet/log.txt &
+
 import torch
 import functools
 
@@ -23,9 +25,10 @@ def vae_conv_anal(SaveDir):
     AnalLoss = train.EpochBatchTrain.AnalysisAfterTrain().AddItem("LossBatch")
     TrainSession.SimulateAfterTrain(AnalLoss)
 
-
 class VisionTransformer(DLUtils.module.AbstractNetwork):
-    SetParamMap = DLUtils.IterableKeyToElement({
+    # preprocess: divide image to patches, flatten each patch to 1D.
+    # multiple transformer layer with same in and out size.
+    ParamMap = DLUtils.IterableKeyToElement({
         ("LayerNum"): "Layer.Num",
         ("TokenSize", "FeatureSize"): ("Token.Size"),
         ("QKSize"): "MSA.Attention.QK.Size", # total size. not size of each head.
@@ -40,12 +43,18 @@ class VisionTransformer(DLUtils.module.AbstractNetwork):
     def __init__(self, **Dict):
         super().__init__(**Dict)
     def Receive(self, X):
+        # X: (BatchSize, ChannelNum, Height, Width)
+        BatchSize = X.size(0)
         X = self.Preprocess(X) # (BatchSize, TokenNum, TokenSize)
-        X = torch.concat([self.ImageToken, X], dim=1) # (BatchSize, TokenNum + 1, TokenSize)
+        ImageToken = self.ImageToken.expand(BatchSize, -1, -1)
+        X = torch.concat([ImageToken, X], dim=1) # (BatchSize, TokenNum + 1, TokenSize)
         X += self.PositionEmbedding
         X = self.TransformerEncoder(X) # multi-head self attention
+            # (BatchSize, TokenNum + 1, TokenSize)
+        X = X[:, 0, :] # (BatchSize, TokenSize)
         Y = self.ClassificationHead(X)
-        return Y
+        # (BatchSize, ClassNum)
+        return {"Out": Y}
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         self.TokenSize = Param.Token.Size
@@ -55,9 +64,9 @@ class VisionTransformer(DLUtils.module.AbstractNetwork):
             self.AddSubModule(
                 Preprocess=network.ModuleList().AddSubModule(
                     # input: (BatchSize, ChannelNum, Height, Width)
-                    Move2Device=network.MoveTensor2Device(),
-                    Norm=network.ShiftRange(0.0, 256.0, 0.0, 1.0),
-                    Crop=network.CenterCrop(224, 224),
+                    # Move2Device=network.MoveTensor2Device(),
+                    # Norm=network.ShiftRange(0.0, 256.0, 0.0, 1.0),
+                    # Crop=network.CenterCrop(224, 224),
                     Image2PatchList=network.Image2PatchList(
                         PatchNumX=Param.Patch.NumX, PatchNumY=Param.Patch.NumY,
                         ImageHeight=224, ImageWidth=224
@@ -104,8 +113,6 @@ class VisionTransformer(DLUtils.module.AbstractNetwork):
         return super().Init(IsSuper=True, IsRoot=IsRoot)
 
 def vision_transformer_imagenet_1k_patch_test(SaveDir, PatchNum, Device):
-
-
     TestImage = DLUtils.Jpg2NpArray(
         # "~/Data/imagenet/ILSVRC/Data/CLS-LOC/test/ILSVRC2012_test_00011424.JPEG"
         "./example/vit_imagenet/test/test_image.png"
@@ -115,7 +122,7 @@ def vision_transformer_imagenet_1k_patch_test(SaveDir, PatchNum, Device):
     PatchNum = 4
     Preprocess=network.ModuleList().AddSubModule(
         # input: (BatchSize, ChannelNum, Height, Width)
-        Move2Device=network.MoveTensor2Device(),
+        # Move2Device=network.MoveTensor2Device(),
         Norm=network.ShiftRange(0.0, 256.0, 0.0, 1.0),
         Crop=network.CenterCrop(224, 224),
         Image2PatchList=network.Image2PatchList(
@@ -143,18 +150,16 @@ def vision_transformer_imagenet_1k(SaveDir="./example/vit_imagenet/"):
     # DLUtils.file.ClearDir(SaveDir)
     LatentUnitNum = 2
     EpochNum = 30
-    BatchSize = 128
+    BatchSize = 256
     Device = "cuda:1"
-    PatchNum = 16
-
-
+    
     # load imagenet-1k / ILSVRC 2012
     from torchvision import transforms
     import torch
     import torchvision
     from tqdm import tqdm
-    model = torchvision.models.resnet50(weights="DEFAULT")
-    model.eval().to(Device) # Needs CUDA, don't bother on CPUs
+    # model = torchvision.models.resnet50(weights="DEFAULT")
+    # model.eval().to(Device) # Needs CUDA, don't bother on CPUs
     mean = (0.485, 0.456, 0.406)
     std = (0.229, 0.224, 0.225)
     transform_val = transforms.Compose(
@@ -165,33 +170,30 @@ def vision_transformer_imagenet_1k(SaveDir="./example/vit_imagenet/"):
                     transforms.Normalize(mean, std),
                 ]
             )
+    
     from task import ImageNet1k
     Task = ImageNet1k(
         DataPath="~/Data/imagenet",
         Mode="Validation",
         Transform=transform_val
-    ).Init()
-    DataLoader = Task.DataLoader(
-                BatchSize=64, # may need to reduce this depending on your GPU 
-                ThreadNum=8, # may need to reduce this depending on your num of CPUs and RAM
-                Shuffle=False,
-                DropLast=False,
-                PinMemory=True
-            )
-    correct = 0
-    total = 0
-    with torch.no_grad():
-        for x, y in tqdm(DataLoader):
-            y_pred = model(x.to(Device))
-            correct += (y_pred.argmax(axis=1) == y.to(Device)).sum().item()
-            total += len(y)
-    print(correct / total)
+    ).Init().SetDevice(Device)
+
+
+    # correct = 0
+    # total = 0
+    # with torch.no_grad():
+    #     for x, y in tqdm(DataLoader):
+    #         y_pred = model(x.to(Device))
+    #         correct += (y_pred.argmax(axis=1) == y.to(Device)).sum().item()
+    #         total += len(y)
+    # print(correct / total)
 
     QKVSize = 512
     HeadNum = 16
     MLPSize = 512
+    PatchNum = 14
     TokenSize = 224 * 224 * 3 // (PatchNum * PatchNum)
-    ViT = VisionTransformer(
+    ViT = Model = VisionTransformer(
         LayerNum = 6,
         TokenSize = TokenSize,
         QKSize = QKVSize,
@@ -209,95 +211,111 @@ def vision_transformer_imagenet_1k(SaveDir="./example/vit_imagenet/"):
         SaveDir, PatchNum, Device
     )
 
-    TestImage = DLUtils.Jpg2NpArray(
-        # "~/Data/imagenet/ILSVRC/Data/CLS-LOC/test/ILSVRC2012_test_00011424.JPEG"
-        # "~/Data/imagenet/ILSVRC/Data/CLS-LOC/train/n01820546/n01820546_4054.JPEG"
-        "./example/vit_imagenet/test/test_image.png"
-    )
+    # TestImage = DLUtils.Jpg2NpArray(
+    #     # "~/Data/imagenet/ILSVRC/Data/CLS-LOC/test/ILSVRC2012_test_00011424.JPEG"
+    #     # "~/Data/imagenet/ILSVRC/Data/CLS-LOC/train/n01820546/n01820546_4054.JPEG"
+    #     "./example/vit_imagenet/test/test_image.png"
+    # )
+    TrainData = Task.DataLoader(
+                Type="Train",
+                BatchSize=BatchSize, # may need to reduce this depending on your GPU 
+                ThreadNum=8, # may need to reduce this depending on your num of CPUs and RAM
+                Shuffle=True,
+                DropLast=False,
+                PinMemory=True
+            )
 
-    # test input image
-    TestOut = ViT(
-        DLUtils.ToTorchTensor(TestImage).to(Device).permute(2, 0, 1).unsqueeze(0)
-    )
+    ValidationData = Task.DataLoader(
+                Type="Validation",
+                BatchSize=BatchSize, # may need to reduce this depending on your GPU 
+                ThreadNum=8, # may need to reduce this depending on your num of CPUs and RAM
+                DropLast=False,
+            )
+
+    # Image, ClassIndex = TrainData.GetNextBatch() # (BatchSize, ChannelNum, Height, Width)
+    
+    # # test input image
+    # TestOut = ViT(
+    #     Image
+    # )
+
+    torch.cuda.empty_cache()
 
     Loss = network.ModuleGraph() \
         .AddSubModule(
-            LossReconstruct=loss.CrossEntropy2Class(AfterOperation="Mean"),
-            #LossReconstruct=loss.MSELoss(AfterOperation="Mean"),
-            LossKL=loss.KLNormMuSigmaAndNorm01().SetParam(AfterOperation="Mean"),
-            Sum=network.WeightedSum(1.0, 1.0)
+            ClassIndex2OneHot=network.Index2OneHot(1000),
+            LossClassification=loss.SoftMaxAndCrossEntropy(AfterOperation="Mean"),
+            Sum=network.WeightedSum(1.0),
+            # Move2Device=network.MoveTensor2Device(Device)
         ).AddRoute(
             AddDictItem="Out",
-            LossKL=(("Mu","LogOfVar"), "LossKL"),
-            LossReconstruct=(["XPred", "XIn"], "LossReconstruct"),
+            # LossKL=(("Mu","LogOfVar"), "LossKL"),
+            # LossReconstruct=(["XPred", "XIn"], "LossReconstruct"),
+            # Move2Device=("OutTarget", "OutTarget"),
+            ClassIndex2OneHot=("OutTarget", "OutTargetProb"),
+            LossClassification=(("Out", "OutTargetProb"), "LossClassification"),
             Sum=(
                 [
-                    "LossKL",
-                    "LossReconstruct"
+                    "LossClassification",
                 ], 
                 "LossTotal"
             )
-        ).SetOut(Loss="LossTotal", LossKL="LossKL", LossReconstruct="LossReconstruct") \
+        ).SetDictOut(Loss="LossTotal") \
         .SetDictIn().Init()
 
-    return
-
-    Evaluator = DLUtils.Evaluator("PredAndTarget").SetLoss(Loss)
-    EvaluationLog = DLUtils.EvaluationLog("PredAndTarget")
+    Evaluator = DLUtils.Evaluator("ImageClassification").SetLoss(Loss)
+    EvaluationLog = DLUtils.EvaluationLog("ImageClassification")
     
     Optimizer = DLUtils.Optimizer().GradientDescend().Adam(
-        LearningRate=0.001, Alpha=0.9, Beta=0.998
+        LearningRate=0.001, Alpha=0.9, Beta=0.999,
+        WeightDecay=0.1
     ).Bind(Model=Model, Evaluator=Evaluator)
     
-    Task = DLUtils.Task().ImageClassification().MNIST().SetDataPath("~/Data/mnist.zip")
     Save = train.EpochBatchTrain.Save(Num=10, SaveDir=SaveDir)
-    Test = train.EpochBatchTrain.Test(TestNum="All")
-    
+    Validate = train.EpochBatchTrain.Validate(
+        TestNum="All", TriggerEventBeforeTrain=True
+    ).AddSubModule(
+        OnlineMonitor = train.Select1FromN.OnlineReporterMultiLoss(
+            BatchInterval=10
+            # NumPerEpoch=5
+        ) \
+        .AddLogAndReportItem(WatchName="Loss", Type="Float") \
+        .AddLogItem("NumTotal") \
+        .AddLogItem("NumCorrectTop5") \
+        .AddLogItem("NumCorrect") \
+        .AddReportItem(LogName=("NumCorrect", "NumTotal"), ReportName="AccTop1", Type="Acc") \
+        .AddReportItem(LogName=("NumCorrectTop5", "NumTotal"), ReportName="AccTop5", Type="Acc")
+    )
     Log = DLUtils.log.SeriesLog()
 
-    BatchNum = Task.TrainBatchNum(BatchSize)
+    # BatchNum = DataLoader.BatchNum(BatchSize)
     TrainSession = DLUtils.EpochBatchTrainSession(
-            EpochNum=EpochNum, BatchSize=BatchSize,
-            BatchNum=BatchNum, SaveDir=SaveDir
+            EpochNum=EpochNum, BatchSize=BatchSize, SaveDir=SaveDir
         ).SetLog(Log).AddSubModule(
             Evaluator=Evaluator, EvaluationLog=EvaluationLog,
             Task=Task, Optimizer=Optimizer, 
-            Test=Test, Save=Save,
-            OnlineMonitor = train.Select1FromN.OnlineReporterMultiLoss(BatchNum//5) \
-                .AddLogAndReportItem("Loss", Type="Float") \
-                .AddLogAndReportItem("LossKL", Type="Float") \
-                .AddLogAndReportItem("LossReconstruct", Type="Float")
+            Validate=Validate, Save=Save,
+            OnlineMonitor = train.Select1FromN.OnlineReporterMultiLoss(
+                BatchInterval=10
+                # NumPerEpoch=5
+            ) \
+            .AddLogAndReportItem(WatchName="Loss", Type="Float") \
+            .AddLogItem("NumCorrect") \
+            .AddLogItem("NumCorrectTop5") \
+            .AddLogItem("NumTotal") \
+            .AddReportItem(LogName=("NumCorrect", "NumTotal"), ReportName="AccTop1", Type="Acc") \
+            .AddReportItem(LogName=("NumCorrectTop5", "NumTotal"), ReportName="AccTop5", Type="Acc")
         ).Bind(
             Model=Model,
-            AnalOnline = train.EpochBatchTrain.EventAfterEveryEpoch().SetEvent(
-                functools.partial(SampleImage, LatentUnitNum=LatentUnitNum)
-            )
+            TrainData=TrainData.Reset(),
+            ValidationData=ValidationData.Reset()
+            # AnalOnline = train.EpochBatchTrain.EventAfterEveryEpoch().SetEvent(
+            #     functools.partial(SampleImage, LatentUnitNum=LatentUnitNum)
+            # )
         ).Init().SetDevice(Device).Start().ToFile(SaveDir + "TrainSession.dat")
 
     del TrainSession
     del Model
-
-    torch.cuda.empty_cache()
-    vae_conv_anal(SaveDir=SaveDir)
-
-def SampleImage(Dict, LatentUnitNum):
-    Model, SaveDir = Dict.Model, Dict.SaveDir
-    # test input
-    #Z = DLUtils.SampleFromGaussianDistribution((10, LatentUnitNum))
-    import numpy as np
-    Z = np.full((10, LatentUnitNum), 0.1)
-    #Z = np.full((10, LatentUnitNum), 0.0)
-    XPred = Model.Decoder(
-        DLUtils.ToTorchTensor(Z).to(Model.Device)
-    )
-    XPred = DLUtils.ToNpArray(XPred)
-
-    if len(Z[0]) < 4:
-        ZStr = "(" + ", ".join(["%.2f"%ZElement for ZElement in Z[0]]) + ")"
-    else:
-        ZStr = "(" + ", ".join(["%.2f"%ZElement for ZElement in Z[0, 0:4]]) + "...)"
-    DLUtils.plot.PlotGreyImage(XPred[0], SaveDir + "image-decode/" + "Epoch%d-Z=%s.png"
-        %(Dict.EpochIndex, ZStr))
     
 def AfterTrainAnalysis(Dict):
     PlotLatentSpace(Dict)

@@ -7,7 +7,7 @@ def GradientDescendOptimizer(Type, **Dict):
     return GradientDescend(SubType=SubType)
 
 class GradientDescend(DLUtils.module.AbstractModule):
-    SetParamMap = DLUtils.IterableKeyToElement({
+    ParamMap = DLUtils.IterableKeyToElement({
         ("LearningRate", "LR", "lr"): "LearningRate",
         ("Nesterov"): "Nesterov.Enable",
         ("Alpha"): "Momentum.Value",

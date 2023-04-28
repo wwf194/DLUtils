@@ -3,11 +3,11 @@ import torch.nn.functional as F
 import DLUtils
 
 class CrossEntropyNClass(DLUtils.module.AbstractModule):
-    def __init__(self):
-        super().__init__()
-        Param = self.Param
-        Param._CLASS = "DLUtils.train.loss.CrossEntropy"
-        return
+    ParamMap = {
+        ("AfterOperation"): "Operation.After"
+    }
+    def __init__(self, **Dict):
+        super().__init__(**Dict)
     def Receive(self, Pred, Target):
         # Input:  [BatchSize, OutNum, Probability]
         # Output: [BatchSize, OutNum, Probability]
@@ -19,8 +19,10 @@ class CrossEntropyNClass(DLUtils.module.AbstractModule):
         Param.Operation.setdefault("After", "Mean")
         if Param.Operation.After in ["Mean"]:
             self.AfterOperation = lambda x:torch.mean(x)
-        else:
+        elif Param.Operation.After in ["Sum"]:
             self.AfterOperation = lambda x:x
+        else:
+            raise Exception()
         return super().Init(IsSuper=True, IsRoot=IsRoot)
 CrossEntropy = CrossEntropyNClass
 
@@ -35,27 +37,31 @@ class SoftMax1D(DLUtils.module.AbstractModule):
 SoftMax = SoftMax1D
 
 class SoftMaxAndCrossEntropy(DLUtils.module.AbstractModule):
-    def __init__(self):
-        super().__init__()
-        Param = self.Param
-        Param._CLASS = "DLUtils.loss.SoftMaxAndCrossEntropy"
+    ParamMap = {
+        ("AfterOperation"): "Operation.After"
+    }
+    def __init__(self, **Dict):
+        super().__init__(**Dict)
     def Receive(self, Out=None, OutTarget=None):
         # Out: logits.
         OutProb = self.SoftMax(Out)
         Loss = self.CrossEntropy(OutProb, OutTarget)
         return Loss
     def Init(self, IsSuper=False, IsRoot=True):
-        self.AddSubModule(
-            "CrossEntropy", CrossEntropy()
-        )
+        Param = self.Param
         self.AddSubModule(
             "SoftMax", SoftMax()
         )
-        super().Init(IsSuper=IsSuper, IsRoot=IsRoot)
+        self.AddSubModule(
+            "CrossEntropy", CrossEntropy(
+                AfterOperation = Param.Operation.After
+            )
+        )
+        super().Init(IsSuper=True, IsRoot=IsRoot)
         return self
 
 class CrossEntropy2Class(DLUtils.module.AbstractNetwork):
-    SetParamMap = {
+    ParamMap = {
         ("AfterOperation"): "Operation.After"
     }
     def __init__(self, *List, **Dict):

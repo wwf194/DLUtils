@@ -154,6 +154,12 @@ class param:
         return Key in self._DICT
     def addattr(self, Key, Value):
         self._DICT[Key] = Value
+    def setemptyattr(self, Key):
+        if self.Get("_IS_FALSE") is True:
+            self.SubstantiateAlongSpine(NODE_TYPE.SPINE, NODE_FORMAT.DICT)
+        SubNode = DLUtils.param({})
+        self._DICT[Key] = SubNode
+        return SubNode
     def setattr(self, Key, Value):
         self.GetAttr("_DICT")[Key] = Value
         return self

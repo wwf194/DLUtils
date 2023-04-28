@@ -67,7 +67,7 @@ class LogComponent:
             self._Log.Add(log)
         return self
 
-from .abstract_module import AbstractModule
+from .abstract_module import AbstractModule, EmptyModule
 
 class AbstractOperator(AbstractModule):
     # operation module without trainable parameter

@@ -3,7 +3,7 @@ import numpy as np
 
 import DLUtils
 class SampleFromNormalDistribution(DLUtils.module.AbstractNetwork):
-    SetParamMap = DLUtils.IterableKeyToElement({
+    ParamMap = DLUtils.IterableKeyToElement({
         "ReceiveFormat": "Receive.Format",
         ("InType", "InputType"): "In.Type",
     })

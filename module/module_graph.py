@@ -116,6 +116,7 @@ class ModuleGraph(AbstractModuleGroup):
         for Index, OutName in enumerate(Route.OutNameList):
             Nodes[OutName] = OutList[Index]
     def _AddDictItem(self, Nodes, Route, Dict):
+        # 1 node is dict. get one of dict value into nodes.
         for Key, Value in Nodes[Route.InName].items():
             Nodes[Key] = Value
     def _InStr(self, *List, **Dict):

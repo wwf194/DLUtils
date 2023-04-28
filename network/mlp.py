@@ -3,7 +3,7 @@ from .nonlinear import NonLinearLayer
 from ..module import _ModuleList
 
 class MLP(_ModuleList):
-    SetParamMap = DLUtils.IterableKeyToElement({
+    ParamMap = DLUtils.IterableKeyToElement({
         ("NonLinear"): "NonLinear.DefaultType",
         ("NonLinearOnLastLayer"): "NonLinear.ApplyOnLastLayer",
         ("BiasOnLastLayer"): "Bias.ApplyOnLastLayer",

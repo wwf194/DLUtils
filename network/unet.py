@@ -266,7 +266,7 @@ class UNetUpSampleBlock(ModuleSeries):
             Param.delattr("Conv")
         return super().Init(IsSuper, IsRoot)
 
-_SetParamMap = DLUtils.IterableKeyToElement({
+_ParamMap = DLUtils.IterableKeyToElement({
     ("In", "InNum", "In.Num"): "In.Num",
     ("Out", "OutNum", "Out.Num"): "Out.Num",
     ("GroupNum", "NumGroup", "Group.Num"): "Group.Num",
@@ -274,8 +274,8 @@ _SetParamMap = DLUtils.IterableKeyToElement({
     "BaseNum": "Base.Num",
 
 })
-UNet.SetParamMap = _SetParamMap
-UNetDownPath.SetParamMap = _SetParamMap
-UNetUpPath.SetParamMap = _SetParamMap
-UNetDownSampleBlock.SetParamMap = _SetParamMap
-UNetUpSampleBlock.SetParamMap = _SetParamMap
+UNet.ParamMap = _ParamMap
+UNetDownPath.ParamMap = _ParamMap
+UNetUpPath.ParamMap = _ParamMap
+UNetDownSampleBlock.ParamMap = _ParamMap
+UNetUpSampleBlock.ParamMap = _ParamMap

@@ -28,54 +28,75 @@ class OnlineReporterMultiLossAndAcc(EventAfterFixedBatch):
     def OnlineReport(self, Dict):
         RateCorrect = self.OnlineMonitorNumCorrectList.Sum() / self.OnlineMonitorNumTotalList.Sum()
         if Dict.get("IsTest"):
-            print("TestEpoch %3d Batch %3d RateCorrect:%.3f"%(Dict.EpochIndex, Dict.BatchIndex, RateCorrect))
+            print("TestEpoch %3d Batch %3d RateCorrect:%.4f"%(Dict.EpochIndex, Dict.BatchIndex, RateCorrect))
         else:
-            print("Epoch %3d Batch %3d RateCorrect:%.3f"%(Dict.EpochIndex, Dict.BatchIndex, RateCorrect))
+            print("Epoch %3d Batch %3d RateCorrect:%.4f"%(Dict.EpochIndex, Dict.BatchIndex, RateCorrect))
     Event = OnlineReport
 
 class OnlineReporterMultiLoss(EventAfterFixedBatch):
-    def __init__(self, *List, **Dict):
-        super().__init__(*List, **Dict)
+    def __init__(self, BatchInterval=None, NumPerEpoch=None):
+        Dict = {}
+        if BatchInterval is not None:
+            Dict["BatchInterval"] = BatchInterval
+        elif NumPerEpoch is not None:
+            Dict["NumPerEpoch"] = NumPerEpoch
+        else:
+            raise Exception()
+        super().__init__(BatchInterval)
         Param = self.Param
         Param.Log.setdefault("List", [])
         Param.Report.setdefault("List", [])
-    def AddLogAndReportItem(self, Name, WatchName=None, ReportName=None, Type="Float"):
-        self.AddLogItem(Name, WatchName, Type)
-        self.AddReportItem(Name, ReportName, Type)
+    def AddLogAndReportItem(self, WatchName=None, ReportName=None, LogName=None, Type="Float"):
+        if LogName is None:
+            LogName = WatchName
+        if ReportName is None:
+            ReportName = LogName
+        self.AddLogItem(WatchName=WatchName, LogName=LogName, Type=Type)
+        self.AddReportItem(LogName=LogName, ReportName=ReportName, Type=Type)
         return self
-    def AddLogItem(self, Name, WatchName=None, Type="Float"):
+    def AddLogItem(self, LogName, WatchName=None, Type="Float"):
         Param = self.Param
         if WatchName is None:
-            WatchName = Name
+            WatchName = LogName
         Param.Log.List.append(
             DLUtils.Param({
-                "Name": Name, "WatchName": Name, "Type": Type
+                "LogName": LogName, "WatchName": LogName, "Type": Type
             })
         )
         return self
-    def AddReportItem(self, Name, ReportName=None, Type="Float"):
+    def AddReportItem(self, LogName, ReportName=None, Type="Float"):
         Param = self.Param
-        assert isinstance(Name, str) or isinstance(Name, list)
+        assert isinstance(LogName, str) or isinstance(LogName, list) or isinstance(LogName, tuple)
         if ReportName is None:
-            ReportName = Name
+            ReportName = LogName
         Param.Report.List.append(
             DLUtils.Param({
-                "Name": Name, "ReportName": ReportName, "Type": Type
+                "ReportName": ReportName, "LogName": LogName, "Type": Type
             })
         )
         return self
     def OnlineReport(self, Dict):
-        ReportStrList = ["Epoch %3d Batch %3d"%(Dict.EpochIndex, Dict.BatchIndex)]
+        if Dict.IsValidate:
+            ReportStrList = ["TestEpoch %3d/%3d Batch %3d/%3d"%(Dict.TrainEpochIndex, Dict.TrainEpochNum, Dict.BatchIndex, Dict.BatchNum)]
+        else:
+            ReportStrList = ["Epoch %3d/%3d Batch %3d/%3d"%(Dict.EpochIndex, Dict.EpochNum, Dict.BatchIndex, Dict.BatchNum)]
         for Index in self.ReportIndexList:
-            Value = self.ReportFuncList[Index]()
-            ReportStrList.append("%s:%.3f"%(self.ReportNameList[Index], Value))
+            # Value = self.ReportFuncList[Index]()
+            # ReportStrList.append("%s:%.3f"%(self.ReportNameList[Index], Value))
+            ReportStrList.append("%s:%s"%(self.ReportNameList[Index], self.ReportStrFuncList[Index]()))
         ReportStr = " ".join(ReportStrList)
         print(ReportStr)
         return ReportStr
     def _ReportFloat(self, Log):
         return Log.Average()
+    def _ReportFloatStr(self, Log):
+        return "%.4e"%(Log.Average())
     def _ReportAcc(self, LogCorrect, LogTotal):
         return LogCorrect.Sum() / LogTotal.Sum()
+    def _ReportAccStr(self, LogCorrect, LogTotal):
+        NumCorrect = LogCorrect.Sum()
+        NumTotal = LogTotal.Sum()
+        return "%.4f(%d/%d)"%(NumCorrect / NumTotal, NumCorrect, NumTotal)
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         self.ReportBatchInterval = Param.setdefault("Batch.Interval", 50)
@@ -83,38 +104,48 @@ class OnlineReporterMultiLoss(EventAfterFixedBatch):
         self.LogItemDict = {}
         self.LogNameList = []
         for LogItem in Param.Log.List:
-            LogName = LogItem.Name
+            LogName = LogItem.LogName
             WatchName = LogItem.WatchName
             Log = DLUtils.FixedSizeQueuePassiveOutFloat(self.ReportBatchInterval)
             self.LogItemDict[LogName] = Log
             self.LogNameList.append((WatchName, LogName))
+        
         # set report item
         self.ReportFuncList = []
         self.ReportNameList = []
+        self.ReportStrFuncList = []
         self.ReportValue2StrFuncList = []
+
+        # report items
         Param.Report.Num = len(Param.Report.List)
         self.ReportIndexList = range(Param.Report.Num)
         for ReportItem in Param.Report.List:
             if ReportItem.Type in ["Float"]:
-                Log = self.LogItemDict[ReportItem.Name]
-                self.ReportFuncList.append(
-                    functools.partial(self._ReportFloat, Log=Log)
+                Log = self.LogItemDict[ReportItem.LogName]
+                self.ReportStrFuncList.append(
+                    functools.partial(self._ReportFloatStr, Log=Log)
                 )
-            elif ReportItem.Type in ["Acc"]:
-                ReportNameCorrect = LogItem.Name[0]
-                ReportNameTotal = LogItem.Name[1]
-                self.ReportFuncList.append(
-                    functools.partial(self._ReportAcc, ReportNameCorrect, ReportNameTotal)
+                # self.ReportValue2StrFuncList.append(lambda Float:"%.4e"%Float)
+            elif ReportItem.Type in ["Acc", "RateCorrect", "AccTop1"]:
+                ReportNameCorrect = self.LogItemDict[ReportItem.LogName[0]]
+                ReportNameTotal = self.LogItemDict[ReportItem.LogName[1]]
+                # self.ReportFuncList.append(
+                #     functools.partial(self._ReportAcc, ReportNameCorrect, ReportNameTotal)
+                # )
+                self.ReportStrFuncList.append(
+                    functools.partial(self._ReportAccStr, ReportNameCorrect, ReportNameTotal)
                 )
-                self.ReportValue2StrFuncList.append(self._Float2Str)
+                # self.ReportValue2StrFuncList.append(lambda RateAccurate:"%.4f"%RateAccurate)
+            
             else:
                 raise Exception()
             self.ReportNameList.append(ReportItem.ReportName)
+        
         self.Event = self.OnlineReport
-        return super().Init(IsSuper=IsSuper, IsRoot=IsRoot)
+        return super().Init(IsSuper=True, IsRoot=IsRoot)
     def AfterBatch(self, Dict):
         self.LogAfterBatch(Dict)
-        super().AfterBatch(Dict)
+        super().AfterBatchSuper(Dict)
         return self
     def LogAfterBatch(self, Dict):
         for WatchName, LogName in self.LogNameList:
@@ -127,11 +158,11 @@ class EvaluationLogSelect1FromN(EvaluationLog):
     def AfterBatch(self, Dict):
         Evaluation = Dict.Evaluation
         EpochLog = self.EpochLog
-        Num = Evaluation.NumTotal
+        NumTotal = Evaluation.NumTotal
         NumCorrect = Evaluation.NumCorrect
-        EpochLog.NumTotal.append(Num)
+        EpochLog.NumTotal.append(NumTotal)
         EpochLog.NumCorrect.append(NumCorrect)
-        EpochLog.RateCorrectList.append(1.0 * NumCorrect / Num)
+        EpochLog.RateCorrectList.append(1.0 * NumCorrect / NumTotal)
         EpochLog.LossList.append(Evaluation.Loss.item())
         self.BatchNum += 1
         return self

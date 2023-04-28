@@ -13,7 +13,7 @@ class MNIST(ImageClassificationTask):
         Param = self.Param
         Param._CLASS = "DLUtils.task.image.classification.MNIST"
         Param.Train.Num = 50000
-        Param.Test.Num = 10000
+        Param.Validation.Num = 10000
         self.DataLoaderList = set()
         return self
     def SetDataPath(self, DataPath, CheckIntegrity=True):
@@ -36,8 +36,8 @@ class MNIST(ImageClassificationTask):
     #     assert self.IsDataPathBind
     #     Data = LoadDataSet(self.DataPath)
     #     return self
-    def TestData(self, BatchSize=64):
-        return self.DataLoader("Test", BatchSize)
+    def ValidationData(self, BatchSize=64):
+        return self.DataLoader("Validation", BatchSize)
     def TrainData(self, BatchSize=64):
         return self.DataLoader("Train", BatchSize)
     # generate a dataloader
@@ -49,8 +49,8 @@ class MNIST(ImageClassificationTask):
             Data = Data.Train
             BatchNum=self.TrainBatchNum(BatchSize)
         else:
-            Data = Data.Test
-            BatchNum=self.TestBatchNum(BatchSize)
+            Data = Data.Validation
+            BatchNum=self.ValidationBatchNum(BatchSize)
         DataLoader = DataLoader(
             DataFetcher=DataFetcher(Data.Image, Data.Label),
             BatchSize=BatchSize, BatchNum=BatchNum
@@ -66,10 +66,10 @@ class MNIST(ImageClassificationTask):
         if Param.Train.Num // BatchSize > 0:
             BatchNum += 1
         return BatchNum
-    def TestBatchNum(self, BatchSize):
+    def ValidationBatchNum(self, BatchSize):
         Param = self.Param
-        BatchNum = Param.Test.Num // BatchSize
-        if Param.Test.Num // BatchSize > 0:
+        BatchNum = Param.Validation.Num // BatchSize
+        if Param.Validation.Num // BatchSize > 0:
             BatchNum += 1
         return BatchNum
     def SetDevice(self, Device, IsRoot=True):
@@ -129,9 +129,9 @@ def ExtractImage(Data, IndexList=None, PlotNum=10, SavePath="./"):
         IndexList = DLUtils.MultipleRandomIntInRange(0, 70000, PlotNum)
     for Index in IndexList:
         if Index >= 60000:
-            Type = "Test"
-            Image = Data.Test.Image[Index - 60000]
-            Label = Data.Test.Label[Index - 60000]
+            Type = "Validation"
+            Image = Data.Validation.Image[Index - 60000]
+            Label = Data.Validation.Label[Index - 60000]
         else:
             Type = "Train"
             Image = Data.Train.Image[Index]
@@ -226,8 +226,8 @@ def ExtractDataSet(Path, MoveCompressedFile2ExtractFolder=True):
 def LoadDataSet(FolderPath, PlotExampleImage=True):
     TrainImagePath = FolderPath + 'train-images-idx3-ubyte'
     TrainLabelPath = FolderPath + 'train-labels-idx1-ubyte'
-    TestImagePath =  FolderPath + 't10k-images-idx3-ubyte'
-    TestLabelPath =  FolderPath + 't10k-labels-idx1-ubyte'
+    ValidationImagePath =  FolderPath + 't10k-images-idx3-ubyte'
+    ValidationLabelPath =  FolderPath + 't10k-labels-idx1-ubyte'
 
     Data = DLUtils.param({
         "Train":{
@@ -235,9 +235,9 @@ def LoadDataSet(FolderPath, PlotExampleImage=True):
             "Image": LoadImage(TrainImagePath), 
             "Label": LoadLabel(TrainLabelPath)
         },
-        "Test":{
-            "Image": LoadImage(TestImagePath),
-            "Label": LoadLabel(TestLabelPath)
+        "Validation":{
+            "Image": LoadImage(ValidationImagePath),
+            "Label": LoadLabel(ValidationLabelPath)
         }
     })
 

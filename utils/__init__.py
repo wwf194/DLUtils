@@ -1,11 +1,9 @@
 import os
 import re
-import sys
 import functools
 import threading
 import time
 import warnings
-import pickle
 import random
 
 from typing import Iterable, List
@@ -1146,13 +1144,7 @@ def RandomImage(Height=512, Width=512, ChannelNum=None,
         raise Exception()
 
 NoiseImage = RandomImage
-def IterableKeyToElement(Dict):
-    for Key, Value in dict(Dict).items():
-        if isinstance(Key, tuple) or isinstance(Key, set):
-            for _Key in Key:
-                Dict[_Key] = Value
-            Dict.pop(Key)
-    return Dict
+
 
 def NormWithinNStd2Range(Data, Min, Max, N=1.0, Clip=True):
     Mean0 = Data.mean()

@@ -3,7 +3,7 @@ import DLUtils
 # from einops import rearrange, reduce, repeat
 import torch
 class Image2PatchList(DLUtils.module.AbstractNetwork):
-    SetParamMap = DLUtils.IterableKeyToElement({
+    ParamMap = DLUtils.IterableKeyToElement({
         ("Width", "PatchWidth"): "Patch.Width",
         ("Height", "PatchHeight"): "Patch.Height",
         ("ImageWidth"): "Image.Width",

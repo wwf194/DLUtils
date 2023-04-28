@@ -14,16 +14,16 @@ class EvaluationLog(EventAfterEveryBatch):
             pass
         else:
             self.Event = self.Log
-    def BindTestSession(self, TestSession):
+    def BindValSession(self, ValSession):
         Param = self.Param
         # if Param.OnlineMonitor.Enable:
         #     OnlineMonitor = DLUtils.train.EpochBatchTrain.EventAfterFixedBatch(
         #         BatchInterval=self.OnlineMonitorBatchNum,
         #         Event=self.OnlineReport
         #     ).Init()
-        #     # OnlineMonitor.AfterEpoch = lambda self, Dict: Dict.TestSession.RemoveSubModule(self)
-        #     OnlineMonitor.AfterEpoch = lambda Dict: Dict.TestSession.RemoveSubModule("OnlineMonitor")
-        #     TestSession.Bind(OnlineMonitor=OnlineMonitor)
+        #     # OnlineMonitor.AfterEpoch = lambda self, Dict: Dict.ValSession.RemoveSubModule(self)
+        #     OnlineMonitor.AfterEpoch = lambda Dict: Dict.ValSession.RemoveSubModule("OnlineMonitor")
+        #     ValSession.Bind(OnlineMonitor=OnlineMonitor)
         return self
     def BindTrainSession(self, TrainSession):
         Param = self.Param
@@ -37,7 +37,7 @@ class EvaluationLog(EventAfterEveryBatch):
         return super().BindTrainSession(TrainSession)
     def BeforeTrain(self, Dict):
         Param = self.Param
-        Param.Epochs.Test.setdefault("IndexList", [])
+        Param.Epochs.Val.setdefault("IndexList", [])
         Param.Epochs.Train.setdefault("IndexList", [])
         return self
     def BeforeEpoch(self, Dict, EpochLogName=None, IsTrain=True):
@@ -45,7 +45,7 @@ class EvaluationLog(EventAfterEveryBatch):
         if IsTrain:
             Param.Epochs.Train.IndexList.append(Dict.EpochIndex)
         else:
-            Param.Epochs.Test.IndexList.append(Dict.EpochIndex)
+            Param.Epochs.Val.IndexList.append(Dict.EpochIndex)
         if EpochLogName is None:
             EpochLog = Param.setemptyattr("Epoch%d"%Dict.EpochIndex)
         else:
@@ -54,14 +54,14 @@ class EvaluationLog(EventAfterEveryBatch):
         EpochLog.Epoch.Index = Dict.EpochIndex
         self.EpochLog = EpochLog
         return self
-    def BeforeTestEpoch(self, Dict):
-        self.BeforeEpoch(Dict, EpochLogName="TestEpoch%d"%Dict.EpochIndex, IsTrain=False)
+    def BeforeValEpoch(self, Dict):
+        self.BeforeEpoch(Dict, EpochLogName="ValEpoch%d"%Dict.EpochIndex, IsTrain=False)
         return self
-    def AfterTestBatch(self, Dict):
-        Dict.IsTest = True
+    def AfterValBatch(self, Dict):
+        Dict.IsValidate = True
         self.AfterBatch(Dict)
         return self
-    def AfterTestEpoch(self, Dict):
+    def AfterValEpoch(self, Dict):
         self.AfterEpoch(Dict)
         return self
     def AfterEpoch(self, Dict):
@@ -71,7 +71,7 @@ class EvaluationLog(EventAfterEveryBatch):
         if IsTrain:
             EpochLog = Param.getattr("Epoch%d"%EpochIndex)
         else:
-            EpochLog = Param.getattr("TestEpoch%d"%EpochIndex)
+            EpochLog = Param.getattr("ValEpoch%d"%EpochIndex)
         return EpochLog
     def BatchIndexFloatList1Epoch(self, EpochIndex, IsTrain=True):
         Param = self.Param
@@ -96,7 +96,7 @@ class EvaluationLog(EventAfterEveryBatch):
         if IsTrain:
             EpochIndexList = Param.Epochs.Train.IndexList
         else:
-            EpochIndexList = Param.Epochs.Test.IndexList
+            EpochIndexList = Param.Epochs.Val.IndexList
         for EpochIndex in EpochIndexList:
             BatchIndexList = self.BatchIndexFloatInEpoch(EpochIndex, IsTrain=IsTrain)
             BatchIndexListAllEpoch.append(BatchIndexList)
@@ -113,12 +113,12 @@ class EvaluationLog(EventAfterEveryBatch):
                     LossList.append(Param.getattr("Epoch%d"%EpochIndex).Loss)
             return LossList
         else:
-            if Param.Epochs.Test.hasattr("LossList"):
-                return Param.Epochs.Test.LossList
+            if Param.Epochs.Val.hasattr("LossList"):
+                return Param.Epochs.Val.LossList
             else:
-                LossList = Param.Epochs.Test.LossList = []
-                for EpochIndex in Param.Epochs.Test.IndexList:
-                    LossList.append(Param.getattr("TestEpoch%d"%EpochIndex).Loss)
+                LossList = Param.Epochs.Val.LossList = []
+                for EpochIndex in Param.Epochs.Val.IndexList:
+                    LossList.append(Param.getattr("ValEpoch%d"%EpochIndex).Loss)
             return LossList
     def LossListBatch(self, IsTrain=True):
         Param = self.Param
@@ -127,7 +127,7 @@ class EvaluationLog(EventAfterEveryBatch):
         if IsTrain:
             EpochIndexList = Param.Epochs.Train.IndexList
         else:
-            EpochIndexList = Param.Epochs.Test.IndexList
+            EpochIndexList = Param.Epochs.Val.IndexList
         for EpochIndex in EpochIndexList:
             BatchIndexFloatList1Epoch = self.BatchIndexFloatList1Epoch(EpochIndex, IsTrain=IsTrain)
             LossList1Epoch = self.LossList1Epoch(EpochIndex, IsTrain=IsTrain)
@@ -147,179 +147,197 @@ class EvaluationLog(EventAfterEveryBatch):
         #     self.OnlineMonitorNumCorrectList = DLUtils.FixedSizeQueuePassiveOutInt(self.OnlineMonitorBatchNum)
         return super().Init(IsSuper=True, IsRoot=IsRoot)
     
-class Test(EventAfterEpoch):
+class Validate(EventAfterEpoch):
     def __init__(self, **Dict):
         super().__init__(**Dict)
         Param = self.Param
-        self.Event = self.Test # to be called
-    def Test(self, Dict):
-        TestData = Dict.TestData
+        self.Event = self.ValidateEpoch # to be called
+    def ValidateEpoch(self, Dict):
+        ValidationData = Dict.ValidationData
         Evaluator = Dict.Evaluator
         Model = Dict.Model
-        BatchNum = TestData.GetBatchNum()
-        DictTest = DLUtils.param({
+        BatchNum = ValidationData.GetBatchNum()
+        DictValidate = DLUtils.param({
             "Model": Model,
             "BatchNum": BatchNum,
             "EpochIndex": Dict.EpochIndex,
-            "TestSession": self
+            "ValidationSession": self,
+            "Session": self,
+            "IsValidate": True,
+            "TrainEpochIndex": Dict.EpochIndex,
+            "TrainEpochNum": Dict.EpochNum
         })
         EvaluationLog = Dict.EvaluationLog
-        # assert isinstance(EvaluationLog, DLUtils.train.Select1FromN.EvaluationLog)
-        EvaluationLog.BindTestSession(self)
+        EvaluationLog.BindValSession(self)
         self.Bind(EvaluationLog=EvaluationLog)
-        self.BeforeTest(DictTest)
-        self.BeforeTestEpoch(DictTest)
-        for TestBatchIndex in range(BatchNum):
-            DictTest.BatchIndex = TestBatchIndex
-            self.BeforeTestBatch(DictTest)
-            In, OutTarget = TestData.Get(TestBatchIndex)
-            DLUtils.NpArray2Str
-            Out = Model(In)
-            DictTest.In = In
-            DictTest.Out = Out
-            DictTest.OutTarget = OutTarget
-            Evaluation = Evaluator.Evaluate(DictTest)
-            DictTest.Evaluation = Evaluation
-            self.AfterTestBatch(DictTest)
-        self.AfterTestEpoch(DictTest)
+        self.BeforeVal(DictValidate)
+        self.BeforeValEpoch(DictValidate)
+
+        with torch.no_grad():
+            # since no optimizer in validate epoch. grad needs to be be turned off.
+            # otherwise cuda memory will explode without grad clear.
+            for ValBatchIndex in range(BatchNum):
+                DictValidate.BatchIndex = ValBatchIndex
+                self.BeforeValBatch(DictValidate)
+                In, OutTarget = ValidationData.Get(ValBatchIndex)
+                Out = Model(In)
+                DictValidate.In = In
+                DictValidate.Out = Out
+                DictValidate.OutTarget = OutTarget
+                Evaluation = Evaluator.Evaluate(DictValidate)
+                DictValidate.Evaluation = Evaluation
+                self.AfterValBatch(DictValidate)
+        self.AfterValEpoch(DictValidate)
         self.UnBind("EvaluationLog")
         return self
+    Validate = ValidateEpoch
     def Bind(self, **Dict):
         for Name, SubModule in Dict.items():
             super().Bind(Name, SubModule)
-            if hasattr(SubModule, "BeforeTest"):
-                self.AddBeforeTestEvent(SubModule.BeforeTest)
-            elif hasattr(SubModule, "BeforeTrain"):
-                self.AddBeforeTestEvent(SubModule.BeforeTrain)
+        return self
+    def RegisterEvent(self, Module):
+        if hasattr(Module, "BeforeVal"):
+            self.AddBeforeValEvent(Module.BeforeVal)
+        elif hasattr(Module, "BeforeTrain"):
+            self.AddBeforeValEvent(Module.BeforeTrain)
 
-            if hasattr(SubModule, "BeforeTestEpoch"):
-                self.AddBeforeTestEpochEvent(SubModule.BeforeTestEpoch)
-            elif hasattr(SubModule, "BeforeEpoch"):
-                self.AddBeforeTestEpochEvent(SubModule.BeforeEpoch)
+        if hasattr(Module, "BeforeValEpoch"):
+            self.AddBeforeValEpochEvent(Module.BeforeValEpoch)
+        elif hasattr(Module, "BeforeEpoch"):
+            self.AddBeforeValEpochEvent(Module.BeforeEpoch)
 
-            if hasattr(SubModule, "BeforeTestBatch"):
-                self.AddBeforeTestBatchEvent(SubModule.BeforeTestBatch)
-            elif hasattr(SubModule, "BeforeBatch"):
-                self.AddBeforeTestBatchEvent(SubModule.BeforeBatch)
-                
-            if hasattr(SubModule, "AfterTestBatch"):
-                self.AddAfterTestBatchEvent(SubModule.AfterTestBatch)
-            elif hasattr(SubModule, "AfterBatch"):
-                self.AddAfterTestBatchEvent(SubModule.AfterBatch)
+        if hasattr(Module, "BeforeValBatch"):
+            self.AddBeforeValBatchEvent(Module.BeforeValBatch)
+        elif hasattr(Module, "BeforeBatch"):
+            self.AddBeforeValBatchEvent(Module.BeforeBatch)
             
-            if hasattr(SubModule, "AfterTestEpoch"):
-                self.AddAfterTestEpochEvent(SubModule.AfterTestEpoch)
-            elif hasattr(SubModule, "AfterEpoch"):
-                self.AddAfterTestEpochEvent(SubModule.AfterEpoch)
+        if hasattr(Module, "AfterValBatch"):
+            self.AddAfterValBatchEvent(Module.AfterValBatch)
+        elif hasattr(Module, "AfterBatch"):
+            self.AddAfterValBatchEvent(Module.AfterBatch)
+        
+        if hasattr(Module, "AfterValEpoch"):
+            self.AddAfterValEpochEvent(Module.AfterValEpoch)
+        elif hasattr(Module, "AfterEpoch"):
+            self.AddAfterValEpochEvent(Module.AfterEpoch)
 
-            if hasattr(SubModule, "AfterTest"):
-                self.AddAfterTestEvent(SubModule.AfterTest)
-            elif hasattr(SubModule, "AfterTrain"):
-                self.AddAfterTestEvent(SubModule.AfterTrain)
+        if hasattr(Module, "AfterVal"):
+            self.AddAfterValEvent(Module.AfterVal)
+        elif hasattr(Module, "AfterTrain"):
+            self.AddAfterValEvent(Module.AfterTrain)
         return self
-    def AddBeforeTestEvent(self, Event):
-        self.BeforeTestEventList.append(Event)
+    def AddBeforeValEvent(self, Event):
+        self.BeforeValEventList.append(Event)
         return self
-    def RemoveBeforeTestEvent(self, Event):
-        self.BeforeTestEventList.remove(Event)
+    def RemoveBeforeValEvent(self, Event):
+        self.BeforeValEventList.remove(Event)
         return self
-    def AddBeforeTestEpochEvent(self, Event):
-        self.BeforeTestEpochEventList.append(Event)
+    def AddBeforeValEpochEvent(self, Event):
+        self.BeforeValEpochEventList.append(Event)
         return self
-    def RemoveBeforeTestEpochEvent(self, Event):
-        self.BeforeTestEpochEventList.remove(Event)
+    def RemoveBeforeValEpochEvent(self, Event):
+        self.BeforeValEpochEventList.remove(Event)
         return self
-    def AddBeforeTestBatchEvent(self, Event):
-        self.BeforeTestBatchEventList.append(Event)
+    def AddBeforeValBatchEvent(self, Event):
+        self.BeforeValBatchEventList.append(Event)
         return self
-    def RemoveBeforeTestBatchEvent(self, Event):
-        self.BeforeTestBatchEventList.remove(Event)
+    def RemoveBeforeValBatchEvent(self, Event):
+        self.BeforeValBatchEventList.remove(Event)
         return self
-    def AddAfterTestBatchEvent(self, Event):
-        self.AfterTestBatchEventList.append(Event)
+    def AddAfterValBatchEvent(self, Event):
+        self.AfterValBatchEventList.append(Event)
         return self
-    def RemoveAfterTestBatchEvent(self, Event):
-        self.AfterTestBatchEventList.remove(Event)
+    def RemoveAfterValBatchEvent(self, Event):
+        self.AfterValBatchEventList.remove(Event)
         return self
-    def AddAfterTestEpochEvent(self, Event):
-        self.AfterTestEpochEventList.append(Event)
+    def AddAfterValEpochEvent(self, Event):
+        self.AfterValEpochEventList.append(Event)
         return self
-    def RemoveAfterTestEpochEvent(self, Event):
-        self.AfterTestEpochEventList.remove(Event)
+    def RemoveAfterValEpochEvent(self, Event):
+        self.AfterValEpochEventList.remove(Event)
         return self
-    def AddAfterTestEvent(self, Event):
-        self.AfterTestEventList.append(Event)
+    def AddAfterValEvent(self, Event):
+        self.AfterValEventList.append(Event)
         return self
-    def RemoveAfterTestEvent(self, Event):
-        self.AfterTestEventList.remove(Event)
+    def RemoveAfterValEvent(self, Event):
+        self.AfterValEventList.remove(Event)
         return self
-    def BeforeTest(self, Dict):
-        for Event in list(self.BeforeTestEventList):
+    def BeforeVal(self, Dict):
+        for Event in list(self.BeforeValEventList):
             Event(Dict)
         return self
-    def BeforeTestEpoch(self, Dict):
-        for Event in list(self.BeforeTestEpochEventList):
+    def BeforeValEpoch(self, Dict):
+        for Event in list(self.BeforeValEpochEventList):
             Event(Dict)
         return self
-    def BeforeTestBatch(self, Dict):
-        for Event in list(self.BeforeTestBatchEventList):
+    def BeforeValBatch(self, Dict):
+        for Event in list(self.BeforeValBatchEventList):
             Event(Dict)
         return self
-    def AfterTestBatch(self, Dict):
-        for Event in list(self.AfterTestBatchEventList):
+    def AfterValBatch(self, Dict):
+        for Event in list(self.AfterValBatchEventList):
             Event(Dict)
         return self
-    def AfterTestEpoch(self, Dict):
-        for Event in list(self.AfterTestEpochEventList):
+    def AfterValEpoch(self, Dict):
+        for Event in list(self.AfterValEpochEventList):
             Event(Dict)
         return self
-    def AfterTest(self, Dict):
-        for Event in list(self.AfterTestEventList):
+    def AfterVal(self, Dict):
+        for Event in list(self.AfterValEventList):
             Event(Dict)
         return self
-    def Init(self, IsSuper=False, IsRoot=True):
-        self.BeforeTestEventList = []
-        self.BeforeTestEpochEventList = []
-        self.BeforeTestBatchEventList = []
-        self.AfterTestBatchEventList = []
-        self.AfterTestEpochEventList = []
-        self.AfterTestEventList = []
-        return super().Init(IsSuper=True, IsRoot=IsRoot)
     def RemoveSubModule(self, Name=None, SubModule=None):
         if SubModule is None:
             SubModule = self.GetSubModule(Name)
 
-        if hasattr(SubModule, "BeforeTest"):
-            self.RemoveBeforeTestEvent(SubModule.BeforeTest)
+        if hasattr(SubModule, "BeforeVal"):
+            self.RemoveBeforeValEvent(SubModule.BeforeVal)
         elif hasattr(SubModule, "BeforeTrain"):
-            self.RemoveBeforeTestEvent(SubModule.BeforeTrain)
+            self.RemoveBeforeValEvent(SubModule.BeforeTrain)
 
-        if hasattr(SubModule, "BeforeTestEpoch"):
-            self.RemoveBeforeTestEpochEvent(SubModule.BeforeTestEpoch)
+        if hasattr(SubModule, "BeforeValEpoch"):
+            self.RemoveBeforeValEpochEvent(SubModule.BeforeValEpoch)
         elif hasattr(SubModule, "BeforeEpoch"):
-            self.RemoveBeforeTestEpochEvent(SubModule.BeforeEpoch)
+            self.RemoveBeforeValEpochEvent(SubModule.BeforeEpoch)
 
-        if hasattr(SubModule, "BeforeTestBatch"):
-            self.RemoveBeforeTestBatchEvent(SubModule.BeforeTestBatch)
+        if hasattr(SubModule, "BeforeValBatch"):
+            self.RemoveBeforeValBatchEvent(SubModule.BeforeValBatch)
         elif hasattr(SubModule, "BeforeBatch"):
-            self.RemoveBeforeTestBatchEvent(SubModule.BeforeBatch)
+            self.RemoveBeforeValBatchEvent(SubModule.BeforeBatch)
 
-        if hasattr(SubModule, "AfterTestBatch"):
-            self.RemoveAfterTestBatchEvent(SubModule.AfterTestBatch)
+        if hasattr(SubModule, "AfterValBatch"):
+            self.RemoveAfterValBatchEvent(SubModule.AfterValBatch)
         elif hasattr(SubModule, "AfterBatch"):
-            self.RemoveAfterTestBatchEvent(SubModule.AfterBatch)
+            self.RemoveAfterValBatchEvent(SubModule.AfterBatch)
 
-        if hasattr(SubModule, "AfterTestEpoch"):
-            self.RemoveAfterTestEpochEvent(SubModule.AfterTestEpoch)
+        if hasattr(SubModule, "AfterValEpoch"):
+            self.RemoveAfterValEpochEvent(SubModule.AfterValEpoch)
         elif hasattr(SubModule, "AfterEpoch"):
-            self.RemoveAfterTestEpochEvent(SubModule.AfterEpoch)
+            self.RemoveAfterValEpochEvent(SubModule.AfterEpoch)
 
-        if hasattr(SubModule, "AfterTest"):
-            self.RemoveAfterTestEvent(SubModule.AfterTestEpoch)
+        if hasattr(SubModule, "AfterVal"):
+            self.RemoveAfterValEvent(SubModule.AfterValEpoch)
         elif hasattr(SubModule, "AfterTrain"):
-            self.RemoveAfterTestEvent(SubModule.AfterEpoch)
+            self.RemoveAfterValEvent(SubModule.AfterEpoch)
 
         return super().RemoveSubModule(Name=Name, SubModule=SubModule)
+    def Init(self, IsSuper=False, IsRoot=True):
+        self.BeforeValEventList = []
+        self.BeforeValEpochEventList = []
+        self.BeforeValBatchEventList = []
+        self.AfterValBatchEventList = []
+        self.AfterValEpochEventList = []
+        self.AfterValEventList = []
+
+        super().Init(IsSuper=True, IsRoot=IsRoot)
+        
+        # some module might prepare event function in Init.
+        for ModuleName, Module in self.SubModules.items():
+            self.RegisterEvent(Module)
+        for ModuleName, Module in self.BindModules.items():
+            self.RegisterEvent(Module)
+    
+        return self
 
 class Save(EventAfterEpoch):
     def __init__(self, **Dict):
@@ -351,7 +369,7 @@ class Save(EventAfterEpoch):
         return self
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
-        self.SaveDir = Param.setdefault("SaveDir", "./test/")
+        self.SaveDir = Param.setdefault("SaveDir", "./Val/")
         #assert hasattr(self, "SaveDir")
         Param.Save.setdefault("BeforeTrain", True)
         Param.Save.setdefault("AfterTrain", True)
@@ -379,32 +397,60 @@ class Save(EventAfterEpoch):
 class EvaluatorPredAndTarget(EpochBatchTrainComponent):
     def BeforeTrain(self, Dict):
         self.Log(f"Before Train. {DLUtils.system.Time()}")
-    def SetLoss(self, LossModule, *List, **Dict):
-        if isinstance(LossModule, str):
-            LossModule = DLUtils.Loss(LossModule, *List, **Dict)
-        self.LossModule = LossModule
-        return self
+    def Evaluate(self, Dict):
+        # NumTotal, NumCorrect = RateCorrectSingelClassPrediction(Dict.Out["Out"], OutTarget)
+        # self.NumTotal = NumTotal
+        # self.NumCorrect = NumCorrect
+        EvaluationDict = DLUtils.param({})
+        for Func in self.EvaluateFuncList:
+            Func(Dict, EvaluationDict)
+        return EvaluationDict
     def _Evaluate1Loss(self, Dict):
-        Loss = self.LossModule(Out=Dict.Out, OutTarget=Dict.OutTarget)
+        Loss = self.LossModule(Out=Dict.Out, OutTarget=Dict.OutTarget)["Loss"]
         self.Loss = Loss
         Evaluation = Loss
         return Evaluation
     def _EvaluateNLoss(self, Dict):
-        Loss = self.LossModule(Out=Dict.Out, OutTarget=Dict.OutTarget)
+        Loss = self.LossModule(Out=Dict.Out, OutTarget=Dict.OutTarget)["Loss"]
         self.Loss = Loss
         Evaluation = Loss
         return Evaluation
     def AfterTrain(self, Dict):
         self.Log(f"After Train.")
+    def EvaluateLoss(self, Dict, EvaluationDict):
+        OutTarget = Dict.OutTarget
+        Loss = self.LossModule(Out=Dict.Out, OutTarget=OutTarget)["Loss"]
+        EvaluationDict["Loss"] = Loss
+        self.Loss = Loss
+        return self
+    def AddEvaluationItem(self, **Dict):
+        self.Param.EvaluateItemList.append(DLUtils.Param(Dict))
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
-        Type = Param.setdefault("Type", "1Loss")
-        if Type in ["1Loss"]:
-            self.Evaluate = self._Evaluate1Loss
-        elif Type in ["NLoss"]:
-            self.Evaluate = self._EvaluateNLoss
-        else:
-            raise Exception()
+        if not IsSuper: # subclass EvaluatorPredAndTargetSelect1FromN
+            Type = Param.setdefault("Type", "1Loss")
+            if Type in ["1Loss"]:
+                self.Evaluate = self._Evaluate1Loss
+            elif Type in ["NLoss"]:
+                self.Evaluate = self._EvaluateNLoss
+            else:
+                raise Exception()
+        self.EvaluateFuncList = []
+        for Item in Param.Evaluate.ItemList:
+            Type = Item.Type
+            if Type in ["Loss"]:
+                self.EvaluateFuncList.append(self.EvaluateLoss)
+            elif Type in ["Acc"]:
+                self.EvaluateFuncList.append(self.EvaluateAcc)
+                self.Ks = Item.setdefault("TopK", [1, 5]) # default: calculate top1 and top5
+                self.K2NumCorrectStr = {}
+                for K in self.Ks:
+                    if K == 1:
+                        self.K2NumCorrectStr[K] = "NumCorrect"
+                    else:
+                        self.K2NumCorrectStr[K] = "NumCorrectTop%d"%K
+            else:
+                raise Exception()
         return super().Init(IsSuper=True, IsRoot=IsRoot)
 
 class EvaluatorPredAndTargetSelect1FromN(EvaluatorPredAndTarget):
@@ -419,7 +465,7 @@ class EvaluatorPredAndTargetSelect1FromN(EvaluatorPredAndTarget):
             "Type": "TrainSession",
             "EpochIndex":[], "BatchIndex": [],
             "NumTotal": [], # BatchSize
-            "NumCorrect": [],
+            "NumCorrect": [], # CorrectNum
             "RateCorrect": [] # AccuracyRate
         })
         Param.Log.append(
@@ -427,31 +473,69 @@ class EvaluatorPredAndTargetSelect1FromN(EvaluatorPredAndTarget):
         )
         self.TrainLog = TrainLog
     def Evaluate(self, Dict):
-        Loss = self.LossModule(Out=Dict.Output, OutTarget=Dict.OutputTarget)
-        NumTotal, NumCorrect = RateCorrectSingelClassPrediction(Dict.Output, Dict.OutputTarget)
-        self.Loss = Loss
-        self.NumTotal = NumTotal
-        self.NumCorrect = NumCorrect
-        Evaluation = DLUtils.param({
-            "Loss": Loss, "NumTotal": NumTotal, "NumCorrect": NumCorrect
-        })
-        return Evaluation
+        # NumTotal, NumCorrect = RateCorrectSingelClassPrediction(Dict.Out["Out"], OutTarget)
+        # self.NumTotal = NumTotal
+        # self.NumCorrect = NumCorrect
+        EvaluationDict = DLUtils.param({})
+        for Func in self.EvaluateFuncList:
+            Func(Dict, EvaluationDict)
+        return EvaluationDict
+    def EvaluateAcc(self, Dict, EvaluationDict):
+        NumTotal, NumCorrectList = AccTopK(Dict.Out["Out"], Dict.OutTarget, Ks=self.Ks)
+        EvaluationDict["NumTotal"] = NumTotal
+        for Index, K in enumerate(self.Ks):
+            EvaluationDict[self.K2NumCorrectStr[K]] = NumCorrectList[Index]
+    def Init(self, IsSuper=False, IsRoot=True):
+        Param = self.Param
+        if not Param.Evaluate.hasattr("ItemList"):
+            Param.Evaluate.ItemList = DLUtils.Param([])
+            Param.Evaluate.ItemList.append(
+                DLUtils.Param({
+                    "Type": "Loss"
+                }))
+            Param.Evaluate.ItemList.append(DLUtils.Param({
+                "Type": "Acc",
+                "TopK": (1, 5)
+            }))
+        return super().Init(IsSuper=True, IsRoot=IsRoot)
 
-
-
-def LogAccuracyForSingleClassPrediction(Accuracy, Output, OutputTarget):
-    # Output: np.ndarray. Predicted class indices in shape of [BatchNum]
-    # OutputTarget: np.ndarray. Ground Truth class indices in shape of [BatchNum]
-    NumCorrect, NumTotal = RateCorrectSingelClassPrediction(Output, OutputTarget)
+def LogAccuracyForSingleClassPrediction(Accuracy, Out, OutTarget):
+    # Out: np.ndarray. Predicted class indices in shape of (BatchNum)
+    # OutTarget: np.ndarray. Ground Truth class indices in shape of (BatchNum)
+    NumCorrect, NumTotal = RateCorrectSingelClassPrediction(Out, OutTarget)
     Accuracy.NumTotal += NumTotal
     Accuracy.NumCorrect += NumCorrect
 
 def RateCorrectSingelClassPrediction(ScorePredicted, IndexTruth):
+    # IndexTruth: (BatchSize)
     NumTotal = ScorePredicted.shape[0]
     IndexPredicted = ScorePredicted.argmax(dim=1)
-    #IndexTruth = ScoreTruth.argmax(dim=1)
+    # IndexTruth: (BatchSize, ClassNum)
+    # IndexTruth = ScoreTruth.argmax(dim=1)
     NumCorrect = torch.sum(IndexPredicted==IndexTruth).item()
     return NumTotal, NumCorrect
+
+def AccTopK(ScorePredicted, IndexTruth, Ks=(1,)):
+    # TopK: support multiple k values provided in a tuple.
+        # for example, TopK=(1, 5) will results in calculation of both Top1 and Top5.
+    """Computes the precision@k for the specified values of k"""
+    # IndexTruth: (BatchSize)
+    KMax = max(Ks)
+    BatchSize = IndexTruth.size(0)
+    IndexTruth = IndexTruth.view(BatchSize, 1).expand(BatchSize, KMax) # (BatchSize, KMax)
+
+    Value, TopKIndex = ScorePredicted.topk(KMax, 1, largest=True, sorted=True) # TopKIndex: (BatchSize, KMax)
+    IndexCorrect = TopKIndex.eq(IndexTruth)
+    NumTotal = BatchSize
+    NumCorrectList = []
+    for K in Ks:
+        NumCorrectK = torch.sum(IndexCorrect[:, :K]).item()
+        NumCorrectList.append(NumCorrectK)
+        # NumTotalList.append(BatchSize)
+    return NumTotal, NumCorrectList
+
+import functools
+AccTop5 = functools.partial(AccTopK, K=5)
 
 class AnalysisAfterTrain(EpochBatchTrainComponent):
     def __init__(self, SaveDir=None):
@@ -485,17 +569,17 @@ def PlotRateCorrect(TrainSession, SaveDir=None):
     EvaluationLog = TrainSession.EvaluationLog
     # assert isinstance(EvaluationLog, DLUtils.train.Select1FromN.EvaluationLog)
     XsTrain = EvaluationLog.EpochIndexList(IsTrain=True)
-    XsTest = EvaluationLog.EpochIndexList(IsTrain=False)
+    XsVal = EvaluationLog.EpochIndexList(IsTrain=False)
     YsTrain = EvaluationLog.CorrectRateEpoch(IsTrain=True)
-    YsTest = EvaluationLog.CorrectRateEpoch(IsTrain=False)
+    YsVal = EvaluationLog.CorrectRateEpoch(IsTrain=False)
     DLUtils.plot.PlotMultiLineChart(
-        XsList = [XsTrain, XsTest],
-        YsList = [YsTrain, YsTest],
+        XsList = [XsTrain, XsVal],
+        YsList = [YsTrain, YsVal],
         ColorList = ["Red", "Blue"],
         XLabel="Epoch", YLabel="Correct Rate",
         XTicks="Int", YTicks="Float",
         XRange = [min(XsTrain), max(XsTrain)], YRange=[0.0, 1.0],
-        Labels = ["train", "test"],
+        Labels = ["train", "Val"],
         Title="Epoch - CorrectRate Relationship",
         SavePath=SaveDir + "Epoch ~ CorrectRate.svg"
     )
@@ -505,17 +589,17 @@ def PlotLoss(TrainSession, SaveDir=None):
     EvaluationLog = TrainSession.EvaluationLog
     # assert isinstance(EvaluationLog, DLUtils.train.Select1FromN.EvaluationLog)
     XsTrain = EvaluationLog.EpochIndexList(IsTrain=True)
-    XsTest = EvaluationLog.EpochIndexList(IsTrain=False)
+    XsVal = EvaluationLog.EpochIndexList(IsTrain=False)
     YsTrain = EvaluationLog.LossEpoch(IsTrain=True)
-    YsTest = EvaluationLog.LossEpoch(IsTrain=False)
+    YsVal = EvaluationLog.LossEpoch(IsTrain=False)
     DLUtils.plot.PlotMultiLineChart(
-        XsList = [XsTrain, XsTest],
-        YsList = [YsTrain, YsTest],
+        XsList = [XsTrain, XsVal],
+        YsList = [YsTrain, YsVal],
         ColorList = ["Red", "Blue"],
         XLabel="Epoch", YLabel="Loss",
         XTicks="Int", YTicks="Float",
         XRange = [min(XsTrain), max(XsTrain)], YRange=[0.0, 1.0],
-        Labels = ["train", "test"],
+        Labels = ["train", "Val"],
         Title="Epoch ~ Loss Relationship",
         SavePath = SaveDir + "train-curve/" + "Epoch ~ Loss.svg"
     )
@@ -525,22 +609,35 @@ def PlotLossBatch(TrainSession, SaveDir=None):
     EvaluationLog = TrainSession.EvaluationLog
     assert isinstance(EvaluationLog, DLUtils.train.Select1FromN.EvaluationLog)
     XsTrain, YsTrain = EvaluationLog.LossListBatch(IsTrain=True)
-    XsTest, YsTest = EvaluationLog.LossListBatch(IsTrain=False)     
+    XsVal, YsVal = EvaluationLog.LossListBatch(IsTrain=False)     
 
     DLUtils.plot.PlotMultiLineChart(
-        XsList = [XsTrain, XsTest],
-        YsList = [YsTrain, YsTest],
+        XsList = [XsTrain, XsVal],
+        YsList = [YsTrain, YsVal],
         ColorList = ["Red", "Blue"],
         XLabel="Epoch", YLabel="Loss",
         XTicks="Int", YTicks="Float",
         XRange = [min(XsTrain), max(XsTrain)], YRange=[0.0, 1.0],
-        Labels = ["train", "test"],
+        Labels = ["train", "Val"],
         Title="Epoch ~ Loss Relationship",
         SavePath = SaveDir + "train-curve/" + "Epoch ~ Loss.svg"
     )
 
+class DataFetcherForEpochBatchTrain(torch.utils.data.Dataset):
+    def __init__(self):
+        self.Device = "cpu"
+        super().__init__()
+    def __len__(self):
+        # must be overwritten
+        raise Exception()
+    def __getitem__(self, Index):
+        # must be overwritten
+        raise Exception()
+    def SetDevice(self, Device):
+        self.Device = Device
+
 class DataLoaderForEpochBatchTrain(torch.utils.data.DataLoader, DLUtils.module.AbstractModule):
-    SetParamMap = DLUtils.IterableKeyToElement({
+    ParamMap = DLUtils.IterableKeyToElement({
         ("BatchSize"): "Batch.Size",
         ("BatchNum", "NumBatch"): "Batch.Num",
         ("DropLast"): "Batch.DropLast",
@@ -567,10 +664,10 @@ class DataLoaderForEpochBatchTrain(torch.utils.data.DataLoader, DLUtils.module.A
         self.Reset()
     def AfterEpoch(self, Dict):
         self.Reset()
-    def GetNextBatch(self, BatchIndex):
+    def GetBatch(self, BatchIndex=None):
         In, OutTarget = next(self.Iter)
-        return In, OutTarget
-    Get = GetNextBatch
+        return In.to(self.Device), OutTarget.to(self.Device)
+    Get = GetNextBatch = GetBatch
     # single device situation
     def SetDevice(self, Device, IsRoot=True):
         self.DataFetcher.SetDevice(Device)
@@ -603,13 +700,21 @@ class DataLoaderForEpochBatchTrain(torch.utils.data.DataLoader, DLUtils.module.A
         assert isinstance(Param.Thread.Num, int)
         assert hasattr(self, "DataFetcher")
 
+        assert Param.Batch.hasattr("Size")
         self.BatchSize = Param.Batch.Size
+
+        if not Param.Batch.hasattr("Num"):
+            DataNum = self.DataFetcher.DataNum
+            Param.Batch.Num = DataNum // self.BatchSize
+            if DataNum % self.BatchSize > 0:
+                Param.Batch.Num += 1 
         self.BatchNum = Param.Batch.Num
 
         # device setting
         if hasattr(self.DataFetcher, "Device"):
             self.Device = self.DataFetcher.Device
-        
+
         super().Init(IsSuper=True, IsRoot=IsRoot)
         self.Reset()
+        self.Device = "cpu" # default
         return self

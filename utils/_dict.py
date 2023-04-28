@@ -1,3 +1,9 @@
+
+class DLUtilsDict(dict):
+    def update(self, *List):
+        dict.update(self, *List)
+        return self
+
 def UpdateDict(DictSource, DictTarget, KeyPrefix=None):
     if KeyPrefix is None:
         for Key, Value in DictSource.keys():
@@ -21,3 +27,14 @@ def PrintDict(Dict, Out="Std"):
         return Str
     else:
         raise Exception()
+
+def IterableKeyToElement(Dict):
+    for Key, Value in dict(Dict).items():
+        if isinstance(Key, tuple) or isinstance(Key, set):
+            for _Key in Key:
+                Dict[_Key] = Value
+            Dict.pop(Key)
+
+    if isinstance(Dict, dict):
+        Dict = DLUtilsDict(Dict)
+    return Dict

@@ -67,7 +67,7 @@ def cifar10_conv(SaveDir=None, IsAnal=False):
         .AddSubModule("Loss", DLUtils.Loss("SoftMaxAndCrossEntropy"))\
         .AddRoute("ClassIndex2OneHot", ["OutputTarget"], "OutputTargetProb")\
         .AddRoute("Loss", ["Output", "OutputTargetProb"], "Loss")\
-        .SetOutput("Loss").Init()
+        .SetOut("Loss").Init()
     Evaluator = DLUtils.Evaluator("ImageClassification") \
         .SetLoss(Loss)
     EvaluationLog = DLUtils.EvaluationLog("ImageClassification")
@@ -82,7 +82,7 @@ def cifar10_conv(SaveDir=None, IsAnal=False):
         .Init()
 
     Save = DLUtils.train.EpochBatchTrain.Save().SetParam(EventNum=10, SaveDir=SaveDir)
-    Test = DLUtils.train.EpochBatchTrain.Test().SetParam(EventNum="All")
+    Test = DLUtils.train.EpochBatchTrain.Validate().SetParam(EventNum="All")
     Anal = DLUtils.train.EpochBatchTrain.AnalysisAfterTrain().SetParam(SaveDir=SaveDir)
 
     DLUtils.TrainSession("Epoch-Batch").SetLog(Log) \

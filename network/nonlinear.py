@@ -8,7 +8,7 @@ import DLUtils
 from .linear import LinearLayer
 
 class NonLinearLayer(LinearLayer):
-    SetParamMap = DLUtils.IterableKeyToElement({
+    ParamMap = DLUtils.IterableKeyToElement({
         ("NonLinear"): "NonLinear.Type",
         ("InNum, inputNum, InputNum", "InSize"): "In.Size",
         ("OutNum, outputNum, OutputNum", "OutSize"): "Out.Size",
@@ -84,7 +84,7 @@ class NonLinearLayer(LinearLayer):
                         assert Param.Bias.hasattr("Data")
     
             else:
-                assert Param.Weight.hasattr("Value")
+                assert Param.Weight.hasattr("Data")
         super().Init(IsSuper=True, **Dict)
         return self
     def SetDefaultWeight(self):
