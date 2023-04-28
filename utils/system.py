@@ -35,7 +35,8 @@ def ClassPathStr(Obj):
     return _ClassPathStr
 
 import platform
- 
+import subprocess
+
 def Time():
     return 
 
@@ -55,9 +56,6 @@ def ReportMemoryOccupancy(Obj):
     ByteNum = GetBytesInMemory(Obj)
     return DLUtils.ByteNum2Str(Obj)
 
-
-
-import subprocess
 def RunPythonScript(FilePath, Args):
     ArgsList = ["python", FilePath, *Args]
     ArgsListStr = []
