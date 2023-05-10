@@ -105,10 +105,10 @@ def MoveFolder(FolderPath, FolderPathNew, RaiseIfNonExist=False, Overwrite=True)
     return True
 MoveDir = MoveFolder
 
-def CopyFilesInSameFolder(FileNameList, SourceDir, DestDir):
+def CopyFiles(FileNameList, SourceDir, DestDir):
     for FileName in FileNameList:
-        CopyFilesInSameFolder(FileName, SourceDir, DestDir)
-CopyFiles2DestDir = CopyFiles = CopyFilesInSameFolder
+        CopyFile(FileName, SourceDir, DestDir)
+CopyFiles2DestDir = CopyFilesInSameFolder = CopyFiles
 
 def CopyFile2AllSubDirsUnderDestDir(FileName, SourceDir, DestDir):
     for SubDir in ListAllDirs(DestDir):
@@ -117,9 +117,10 @@ def CopyFile2AllSubDirsUnderDestDir(FileName, SourceDir, DestDir):
         except Exception:
             continue
 
-def CopyFile2Folder(FileName, SourceDir, DestDir):
+def CopyFile(FileName, SourceDir, DestDir):
     EnsureFileDir(DestDir + FileName)
     shutil.copy(SourceDir + FileName, DestDir + FileName)
+CopyFile2Folder = CopyFile
 
 def IsSameFile(FilePath1, FilePath2):
     return os.path.samefile(FilePath1, FilePath2)
@@ -274,7 +275,7 @@ def ListFilePaths(DirPath):
     FileNameList = ListFilesName(DirPath)
     return [DirPath + FileName for FileName in FileNameList]
 
-ListAllFilesPath = ListAllFilePaths = GetAllFilePaths = GetAllFilesPath = ListFilePaths
+ListAllFilesPath = ListAllFilePaths = GetAllFilePaths = GetAllFilesPath = ListFilesPath = ListFilesPaths = ListFilePaths
 
 def ListDirs(DirPath):
     if not os.path.exists(DirPath):

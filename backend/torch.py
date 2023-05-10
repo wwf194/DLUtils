@@ -1,5 +1,5 @@
 import torch
-
+import numpy as np
 import DLUtils
 def ChangeTorchModuleParameter(module:torch.nn.Module):
     ParamDict = dict(module.named_parameters())
@@ -89,9 +89,6 @@ def StateDict2CPURecur(Obj):
     else:
         ObjCPU = Obj
     return ObjCPU
-
-import torch
-import DLUtils
 
 from ..module.abstract_network import AbstractNetwork
 class TorchModuleWrapper(AbstractNetwork):
@@ -195,3 +192,34 @@ class TorchModule(torch.nn.Module):
     def ToFile(self, FilePath, RetainSelf=True):
         self.Parent.ToFile(FilePath, RetainSelf=RetainSelf)
         return self
+
+
+def ToTorchTensor(Data, Device=None):
+    if isinstance(Data, np.ndarray):
+        _Data = NpArray2Tensor(Data)
+    elif isinstance(Data, list):
+        _Data = NpArray2Tensor(List2NpArray(Data))
+    elif isinstance(Data, torch.Tensor):
+        _Data = Data
+    else:
+        raise Exception(type(Data))
+    if Device is not None:
+        _Data = _Data.to(Device)
+    return _Data
+
+def ToTorchTensorOrNum(data):
+    if isinstance(data, float):
+        return data
+    elif isinstance(data, int):
+        return data
+    else:
+        return ToTorchTensor(data)
+
+def NpArray2TorchTensor(data, Location="cpu", DataType=torch.float32, RequiresGrad=False):
+    data = torch.from_numpy(data)
+    data = Tensor2GivenDataType(data, DataType)
+    data = data.to(Location)
+    data.requires_grad = RequiresGrad
+    return data
+
+NpArray2Tensor = NpArray2TorchTensor
