@@ -8,26 +8,24 @@ sys.path.append("../")
 import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument(
-        "-t", "--task", # 数量>=1即可                
-        dest="task", # 这个参数将被存储在args.dest属性中
-        nargs="+",
+        "-t", "--task", dest="task", # 这个参数将被存储在args.dest属性中
+        nargs="+", # 1 or many
         default=None, # 之后的参数必须是 xxx=xxx 的形式 
         help="task type"
     )
 parser.add_argument(
-        "-p", "--path",               
-        dest="path",
-        default=None,
+        "-p", "--path", dest="path", default=None,
+        nargs=1,
         help="file or directory path required by task"
     )
 parser.add_argument(
-        "-a", "--anal",               
-        dest="IsAnal",
-        # nargs=0,
-        action="store_true",
-        default=False,
-        help="is anal"
+        "-a", "--analysis", dest="IsAnalysis",
+        # nargs=0, # 与action冲突
+        action="store_true", default=False,
+        help="whre or not this is an analysis task"
     )
+parser.add_argument("-nn", "--NodeNum", dest="NodeNum", type=int, default=1)
+parser.add_argument("-ni", "--NodeIndex", dest="NodeIndex", type=int, default=0)
 args = parser.parse_args() # parser输入的命令行参数
 
 import DLUtils
@@ -92,6 +90,10 @@ if __name__=="__main__":
                 raise Exception()
         elif Param1 in ["vit"]:
             DLUtils.example.vision_transformer_imagenet_1k()
+        elif Param1 in ["parallel", "parallel_test"]:
+            DLUtils.example.vision_transformer_imagenet_1k_parallel(
+                NodeNum=args.NodeNum, NodeIndex=args.NodeIndex
+            )
         else:
             raise Exception(SubTask)
     elif Task in ["cifar10", "cifar"]:
@@ -104,13 +106,16 @@ if __name__=="__main__":
                 args.path,
                 "./task/image/classification/cifar10/"
             )
+
     else:
         raise Exception()
 
 def ParseCmdArgs():
     parser = argparse.ArgumentParser()
     # parser.add_argument("task", nargs="?", default="DoTasksFromFile")
-    parser.add_argument("-t", "--task", dest="task", nargs="?", default="CopyProject2DirAndRun")
+    parser.add_argument("-t", "--task", dest="task",
+        nargs="?", # 0 or 1
+    default="CopyProject2DirAndRun")
     parser.add_argument("-t2", "--task2", dest="task2", default="DoTasksFromFile")
     parser.add_argument("-id", "--IsDebug", dest="IsDebug", default=True)
 
@@ -119,9 +124,11 @@ def ParseCmdArgs():
     # parser.add_argument("-sd", "--SaveDir", dest="SaveDir", default="./log/DoTasksFromFile-2021-10-16-16:04:16/")
     parser.add_argument("-tf", "--TaskFile", dest="TaskFile", default="./task.jsonc")
     parser.add_argument("-tn", "--TaskName", dest="TaskName", default="Main")
-    # parser.add_argument("-tn", "--TaskName", dest="TaskName", default="AddAnalysis")
 
     # If Args.task in ['CopyProject2DirAndRun'], this argument will be used to designate file to be run.
     parser.add_argument("-ms", "--MainScript", dest="MainScript", default="main.py")
+    
+
+
     CmdArgs = parser.parse_args()
     return Namespace2PyObj(CmdArgs) # CmdArgs is of type namespace

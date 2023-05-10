@@ -1,5 +1,9 @@
 
-from .GradientDescend import GradientDescendOptimizer, GradientDescend
+
+
+
+
+from .gradient_descend import GradientDescendOptimizer, GradientDescend
 from .adam import Adam
 from .sgd import SGD
 import DLUtils
@@ -16,8 +20,6 @@ class Optimizer:
         if Type is not None:
             return OptimizeAlgorithmMap[Type]
     def GradientDescend(self, Type=None):
-
-
         return GradientDescend(Type)
 # def Optimizer(Type):
 #     if Type in ["GradientDescend"]:

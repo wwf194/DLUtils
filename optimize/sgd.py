@@ -1,5 +1,5 @@
 import DLUtils
-from .GradientDescend import GradientDescend
+from .gradient_descend import GradientDescend
 import torch
 
 class SGD(GradientDescend):
@@ -31,15 +31,11 @@ class SGD(GradientDescend):
         return self
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
-        super().Init(IsSuper=True, IsRoot=IsRoot)
-
         # momentum setting
         Param.Momentum.setdefault("Enable", True)
         if not Param.Momentum.hasattr("Value"):
             Param.Momentum.Value = 0.9
-
         self.LearningRate = Param.LearningRate
-        
         self.Nesterov = Param.Nesterov.setdefault("Enable", True)
 
         if Param.Momentum.Enable:
@@ -47,9 +43,14 @@ class SGD(GradientDescend):
         else:
             self.Alpha = 0.0
 
-        self.ResetOptimizer()
-        self.Optimize = self._UpdateParam
+        if self.IsInit():
+            Param.setdefault("WeightDecay", 0.0)
 
+        self.WeightDecay = Param.WeightDecay
+
+        self.Optimize = self._UpdateParam
+        super().Init(IsSuper=True, IsRoot=IsRoot)
+        self.ResetOptimizer()
         return self
     def ResetOptimizer(self, *List, **Dict):
         """
@@ -74,7 +75,7 @@ class SGD(GradientDescend):
                 lr=self.LearningRate,
                 dampening=0.0,
                 momentum=self.Alpha,
-                weight_decay=0.0,
+                weight_decay=self.WeightDecay,
                 nesterov=self.Nesterov
             )
         return self

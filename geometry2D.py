@@ -30,8 +30,8 @@ def FlipAroundNormsAngle(Directions, Norms):
     return 2 * Norms - Directions + np.pi
 
 def RectangleAContainsRectangleB(RectangleA, RectangelB, Strict=False):
-    # RectangleA: list. [XMin, YMin, XMax, YRange]
-    # RectangleB: list. [XMin, YMin, XMax, YRange]
+    # RectangleA: list. (XMin, YMin, XMax, YRange)
+    # RectangleB: list. (XMin, YMin, XMax, YRange)
     if not Strict:
         Condition1 = RectangleA[0] <= RectangelB[0]
         Condition2 = RectangleA[1] <= RectangelB[1]
@@ -218,8 +218,10 @@ def Vectors2RadiansNp(VectorsNp):
 Vectors2DirectionsNp = Vectors2RadiansNp
 
 def Distance2Edges(PointsNp, EdgeVerticesNp, EdgeNormsNp):
-    Points2EdgeVertices = EdgeVerticesNp[np.newaxis, :, :] - PointsNp[:, np.newaxis, :] # [1, VertexNum, 2] - [PointNum, 1, 2] = [PointNum, VertexNum, 2]
-    return np.sum(Points2EdgeVertices * EdgeNormsNp[np.newaxis, :, :], axis=2) # [PointNum, VertexNum, 2] * [1, VertexNum, 2]
+    Points2EdgeVertices = EdgeVerticesNp[np.newaxis, :, :] - PointsNp[:, np.newaxis, :]
+    # (1, VertexNum, 2) - (PointNum, 1, 2) = (PointNum, VertexNum, 2)
+    return np.sum(Points2EdgeVertices * EdgeNormsNp[np.newaxis, :, :], axis=2)
+    # (PointNum, VertexNum, 2) * (1, VertexNum, 2)
 
 def StartEndPoints2VectorsNp(PointsStart, PointsEnd):
     return PointsStart - PointsEnd
@@ -275,8 +277,8 @@ def XY2PixelIndex(X, Y, BoundaryBox, ResolutionX, ResolutionY):
     return round(XIndex), round(YIndex)
 
 def XYs2PixelIndices(XYs, BoundaryBox, ResolutionX, ResolutionY):
-    #return int( (x / box_Width + 0.5) * ResolutionX ), int( (y / box_Height+0.5) * ResolutionY )
-    #print('points shape:'+str(points.shape))
+    # return int( (x / box_Width + 0.5) * ResolutionX ), int( (y / box_Height+0.5) * ResolutionY )
+    # print('points shape:'+str(points.shape))
     XMin, XMax, YMin, YMax = BoundaryBox.XMin, BoundaryBox.XMax, BoundaryBox.YMin, BoundaryBox.YMax
     XRange = XMax - XMin
     YRange = YMax - YMin
@@ -302,7 +304,7 @@ def PixelIndex2XYs(xIndex, yIndex, BoundaryBox, ResolutionX, ResolutionY):
     return xIndex * PixelWidth + XMin + PixelHalfWidth, yIndex * PixelHeight  + YMin + PixelHalfHeight
 
 def PixelIndices2XYs(Indices, BoundaryBox, ResolutionX, ResolutionY):
-    # Indices: np.ndarray with shape [PointNum, (xIndex, yIndex)]
+    # Indices: np.ndarray with shape (PointNum, (xIndex, yIndex))
     XMin, XMax, YMin, YMax = BoundaryBox.XMin, BoundaryBox.XMax, BoundaryBox.YMin, BoundaryBox.YMax
     XRange = XMax - XMin
     YRange = YMax - YMin
@@ -328,9 +330,9 @@ def PointInTriangle(P, A, B, C):
         or ABCrossAP < 0.0 and BCCrossBP < 0.0 and CACrossCP < 0.0
 
 def Triangles2BoundaryBox(ABC):
-    # ABC: [TriangleNum, (A, B, C), (x, y)]
+    # ABC: (TriangleNum, (A, B, C), (x, y))
     XMin = np.min(ABC[:, :, 0], axis=1) # [TriangleNum]
     XMax = np.max(ABC[:, :, 0], axis=1)
     YMin = np.min(ABC[:, :, 1], axis=1)
     YMax = np.max(ABC[:, :, 1], axis=1)
-    BoundaryBox = np.stack([XMin, YMin, XMax, YMax], axis=1) # [TriangleNum, 4]
+    BoundaryBox = np.stack([XMin, YMin, XMax, YMax], axis=1) # (TriangleNum, 4)

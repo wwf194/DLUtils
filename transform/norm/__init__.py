@@ -1,7 +1,7 @@
 
 
 from .layer_norm import LayerNorm
-from .BatchNorm import BatchNorm2D
+from .batch_norm import BatchNorm2D
 import DLUtils
 from DLUtils.module import AbstractOperator
 class ShiftRange(AbstractOperator):

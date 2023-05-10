@@ -40,12 +40,11 @@ def EmptyObj():
     return types.SimpleNamespace()
 GenerateEmptyObj = EmptyObj
 
-def JsonFile2ParamObj(FilePath):
-    JsonDict = JsonFile2JsonDict(FilePath)
-    Obj = utils.JsonStyleObj2Param(JsonDict)
-    return Obj
-
-
+# def JsonFile2ParamObj(FilePath):
+#     JsonDict = JsonFile2JsonDict(FilePath)
+#     Obj = utils.JsonStyleObj2Param(JsonDict)
+#     DLUtils.JsonFile2Param()
+#     return Obj
 
 def Namespace2PyObj(Namespace):
     return DLUtils.json.JsonObj2PyObj(Namespace2Dict(Namespace))

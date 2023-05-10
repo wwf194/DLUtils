@@ -77,6 +77,11 @@ class GradientDescend(DLUtils.module.AbstractModule):
         return self
     def ResetOptimizer(self, *List, **Dict):
         raise Exception()
+    def Init(self, IsSuper=False, IsRoot=True):
+        
+
+        
+        return super().Init(IsSuper=True, IsRoot=IsRoot)
 
 from .sgd import SGD
 from .adam import Adam

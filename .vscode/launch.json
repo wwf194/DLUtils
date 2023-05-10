@@ -13,9 +13,10 @@
             // "args": ["-t", "cifar10", "generate_config", "-p", "~/Data/cifar10"],
             // "args": ["-t", "example", "mnist_vae", "conv", "--anal"],
             // "args": ["-t", "example", "cifar10", "conv"],
-
             // python __main__.py -t example vit imagenet
-            "args": ["-t", "example", "vit", "imagenet"],
+            // "args": ["-t", "example", "vit", "imagenet"],
+            "args": ["-t", "example", "parallel", "--NodeNum", "2", "--NodeIndex", "0"],
+
             "console": "integratedTerminal",
             // "python": "${config.python.pythonPath}",
             "justMyCode": true,

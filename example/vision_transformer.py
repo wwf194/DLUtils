@@ -145,6 +145,27 @@ def vision_transformer_imagenet_1k_patch_test(SaveDir, PatchNum, Device):
         )
     return
 
+import torch.distributed
+import os
+def setup(CurrentMachineIndex, MachineNumTotal):
+    os.environ['MASTER_ADDR'] = 'localhost'
+    os.environ['MASTER_PORT'] = '12355'
+
+    # initialize the process group
+    torch.distributed.init_process_group(
+        "ncll", # backend. gloo, ncll ...
+        rank=CurrentMachineIndex,
+        world_size=MachineNumTotal
+    )
+
+    # Explicitly setting seed to make sure that models created in two processes
+    # start from same random weights and biases.
+    torch.manual_seed(42)
+
+def cleanup():
+    torch.distributed.destroy_process_group()
+
+
 def vision_transformer_imagenet_1k(SaveDir="./example/vit_imagenet/"):
     SaveDir = DLUtils.file.ToStandardPathStr(SaveDir)
     # DLUtils.file.ClearDir(SaveDir)
@@ -178,7 +199,6 @@ def vision_transformer_imagenet_1k(SaveDir="./example/vit_imagenet/"):
         Transform=transform_val
     ).Init().SetDevice(Device)
 
-
     # correct = 0
     # total = 0
     # with torch.no_grad():
@@ -205,6 +225,8 @@ def vision_transformer_imagenet_1k(SaveDir="./example/vit_imagenet/"):
         PatchNumY = PatchNum,
         ClassNum=1000
     ).Init().SetDevice(Device)
+
+    Model = torch.nn.parallel.DistributedDataParallel(Model, device_ids=[args.gpu])
 
     # test image2patch
     vision_transformer_imagenet_1k_patch_test(
@@ -314,9 +336,12 @@ def vision_transformer_imagenet_1k(SaveDir="./example/vit_imagenet/"):
             # )
         ).Init().SetDevice(Device).Start().ToFile(SaveDir + "TrainSession.dat")
 
+
+
+
     del TrainSession
     del Model
-    
+
 def AfterTrainAnalysis(Dict):
     PlotLatentSpace(Dict)
     PlotLabelClusters(Dict)

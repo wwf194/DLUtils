@@ -3,9 +3,16 @@ import torch.nn.functional as F
 import numpy as np
 
 import DLUtils
-class Conv2D(DLUtils.module.AbstractNetwork):
+ConvParamMap = DLUtils.IterableKeyToElement({
+    ("In.Num"): "InNum", # input feature map num
+    ("Out.Num"): "OutNum", # output feature map num
+})
 
+class Conv2D(DLUtils.module.AbstractNetwork):
     ParamMap = DLUtils.IterableKeyToElement({
+        ("InNum"): "In.Num",
+        ("OutNum"): "Out.Num",
+        ("Stride"): "Stride",
         ("KernelSize", "Kernel.Size"): "Kernel.Size",
         ("Padding"): "Padding.Value",
         ("GroupNum", "NumGroup", "Group.Num"): "Group.Num",
@@ -27,12 +34,6 @@ class Conv2D(DLUtils.module.AbstractNetwork):
         Param = self.Param
         _Dict = {}
         for Key, Value in Dict.items():    
-            # if Key in ["In", "InNum", "In.Num"]:
-            #     Param.In.Num = Value
-            #     assert isinstance(Value, int)
-            # elif Key in ["Out", "OutNum", "Out.Num", "OutputNum"]:
-            #     Param.Out.Num = Value
-            #     assert isinstance(Value, int)
             if Key in ["KernelSize", "Kernel.Size"]:
                 Param.Kernel.Size = Value
                 assert isinstance(Value, int)
@@ -46,23 +47,6 @@ class Conv2D(DLUtils.module.AbstractNetwork):
                 _Dict[Key] = Value
         super().SetParam(**_Dict)
         return self
-    # def SetTrainParam(self, **Dict):
-    #     Param = self.Param
-    #     for Name, Value in Dict.items():
-    #         if Name in ["Kernel", "Weight"]:
-    #             Param.Data.Kernel = Value
-    #             InNum, OutNum, Height, Width = Value.shape
-    #             Param.Kernel.In.Num = InNum
-    #             Param.Kernel.Out.Num = OutNum
-    #             Param.Kernel.Height = Height
-    #             Param.Kernel.Width = Width
-    #             Bias = Dict.get("Bias")
-    #             super().SetTrainParam(Kernel=Value)
-    #         elif Name in ["Bias", "bias"]:
-    #             super().SetTrainParam(Bias=Value)
-    #         else:
-    #             raise Exception()
-    #         return self
     def Receive(self, In):
         Out = F.conv2d(
             input=In, weight=self.Kernel, bias=self.Bias,
@@ -73,38 +57,21 @@ class Conv2D(DLUtils.module.AbstractNetwork):
         )
         Output = self.NonLinear(Out)
         return Output
-    def SetDefaultKernel(self):
-        Param = self.Param
-        self.SetKernel(
-            DLUtils.DefaultConv2DKernel(
-                (
-                    Param.In.Num, Param.Out.Num, 
-                    Param.Kernel.Height, Param.Kernel.Width
-                ),
-                GroupNum=Param.Group.Num,
-                # NonLinear="ReLU"
-                # default torch weight initialization does not consider NonLinear.
-            )
-        )
-        return self
     def SetKernel(self, Kernel):
         Param = self.Param
         self.SetTrainParam(
             "Kernel", "Kernel.Value", Kernel
-        ) # [OutNum, InNum // GroupNum, KernelWidth, KernelHeight]
+        ) # (OutNum, InNum // GroupNum, KernelWidth, KernelHeight)
         self.Weight = self.Kernel
         Param.In.Num = Param.Kernel.In.Num * Param.Group.Num
-        Param.Out.Num = Kernel.shape[0]
-        Param.Kernel.In.Num = Kernel.shape[1]
+        Param.Kernel.In.Num = Param.In.Num // Param.Group.Num
         Param.Kernel.Out.Num = Param.Out.Num // Param.Group.Num
+        Param.Kernel.In.Num = Kernel.shape[1]
         Param.Kernel.Height = Kernel.shape[2] # Height at dim 2
         Param.Kernel.Width = Kernel.shape[3] # Width at dim 3
         return self
     def SetBias(self, Bias, Trainable=True):
         Param = self.Param
-        # if isinstance(Bias, float):
-        #     Param.Data.Bias = Bias
-        #     return
         if isinstance(Bias, str):
             if Bias in ["zeros"]:
                 Bias = np.zeros((Param.Out.Num))
@@ -119,14 +86,7 @@ class Conv2D(DLUtils.module.AbstractNetwork):
         return self
     def SetNonLinear(self):
         Param = self.Param
-        Param.NonLinear.setdefault("Enable", True)
-        if Param.NonLinear.Enable:
-            Param.NonLinear.setdefault("Type", "ReLU")
-            self.NonLinear = DLUtils.network.NonLinear()
-            NonLinearModule = DLUtils.network.NonLinearTransform(Param.NonLinear.Type)
-            self.AddSubModule("NonLinear", NonLinearModule)
-        else:
-            self.NonLinear = lambda x:x
+
         return self
     def Init(self, IsSuper=False, IsRoot=True):
         if not IsSuper:
@@ -151,36 +111,63 @@ class Conv2D(DLUtils.module.AbstractNetwork):
 
                 # set kernel / weight
                 # torch group convolution kernel: 
-                #   [OutNum, InNum // GroupNum, KernelHeight, KernelWidth]
+                #   (OutNum, InNum // GroupNum, KernelHeight, KernelWidth)
                 #   In dimension during computation will be divided into groups.
                 assert Param.In.Num % Param.Group.Num == 0
                 assert Param.Out.Num % Param.Group.Num == 0
-                Param.Kernel.Out.Num = Param.Out.Num // Param.Group.Num
                 Param.Kernel.In.Num = Param.In.Num // Param.Group.Num
+                Param.Kernel.Out.Num = Param.Out.Num // Param.Group.Num
                 
-                
-                if not Param.Kernel.hasattr("Value"):
-                    # [OutNum // GroupNum, InpNum, KernelHeight, KernelWidth]
-                    self.SetDefaultKernel()
-                
+                if not Param.Kernel.hasattr("Data"):
+                    # [OutNum // GroupNum, InNum, KernelHeight, KernelWidth]
+                    Param = self.Param
+                    self.SetTrainParam(
+                        Name="Kernel", Path="Kernel.Data",
+                        Data=DLUtils.DefaultConv2DKernel(
+                            (
+                                Param.In.Num, Param.Out.Num, 
+                                Param.Kernel.Height, Param.Kernel.Width
+                            ),
+                            GroupNum=Param.Group.Num,
+                            # NonLinear="ReLU"
+                            # default torch weight initialization does not consider NonLinear.
+                        ) # (InNum, OutNum // GroupNum, KernelHeight, KernelWidth)
+                    )
+                    return self
+
+
                 # bias setting
                 Param.Bias.setdefault("Enable", True)
                 if Param.Bias.Enable:
                     Param.Bias.setdefault("Trainable", True)
-                    if not Param.Bias.hasattr("Value"):
-                        Bias = DLUtils.DefaultConv2DBias(
+                    if not Param.Bias.hasattr("Data"):
+                        self.SetTensor(
+                            Name="Bias", Path="Bias.Data",
+                            Data=DLUtils.DefaultConv2DBias(
                                 (
                                     Param.In.Num, Param.Out.Num, 
                                     Param.Kernel.Height, Param.Kernel.Width
                                 ),
                                 GroupNum=Param.Group.Num
                             )
+                        )
                         if Param.Bias.Trainable:
-                            self.SetTrainParam("Bias", "Bias.Value", Bias)
-                        else:
-                            self.SetUnTrainableParam("Bias", "Bias.Value", Bias)
+                            self.SetTrainable("Bias")
+                else:
+                    Param.Bias.Data = 0.0                
+
                 # set nonlinear setting
-                self.SetNonLinear()
+                Param.NonLinear.setdefault("Enable", True)
+                if Param.NonLinear.Enable:
+                    Param.NonLinear.setdefault("Type", "ReLU")
+                    NonLinearModule = DLUtils.network.NonLinearTransform(Param.NonLinear.Type)
+                    self.AddSubModule("NonLinear", NonLinearModule)
+
+            # nonlinear setting
+            if Param.NonLinear.Enable:
+                assert self.HasSubModule("NonLinear")
+            else:
+                self.NonLinear = lambda x:x
             
             # padding setting
             Padding = Param.Padding.Value
@@ -198,6 +185,7 @@ class Conv2D(DLUtils.module.AbstractNetwork):
             self.Dilation = Param.Dilation # default 1
             self.GroupNum = Param.Group.Num
             self.Stride = Param.Stride
+            self.Bias = Param.Bias.Data
 
         return super().Init(IsSuper=True, IsRoot=IsRoot)
 
@@ -215,7 +203,7 @@ class UpConv2D(Conv2D):
         super().__init__(InNum=InNum, OutNum=OutNum, Stride=Stride, **Dict)
     def Receive(self, In):
         """
-        In: [BatchNum, ChannelNum, Height, Width]
+        In: (BatchNum, ChannelNum, Height, Width)
         """
         Output = F.conv_transpose2d(
             input=In, weight=self.Kernel, bias=self.Bias,
@@ -225,19 +213,18 @@ class UpConv2D(Conv2D):
         )
         Output = self.NonLinear(Output)
         return Output
-    def SetKernel(self, Kernel):
-        Param = self.Param
-        self.SetTrainParam(Kernel=Kernel) # [InNum, OutNum // GroupNum, KernelWidth, KernelHeight]
-        Param.In.Num = Kernel.shape[0]
-        Param.Kernel.In.Num = Param.In.Num // Param.Group.Num
-        Param.Kernel.Out.Num = Kernel.shape[1]
-        Param.Out.Num = Param.Kernel.Out.Num * Param.Group.Num
-        Param.Kernel.Height = Kernel.shape[2] # Height at dim 2
-        Param.Kernel.Width = Kernel.shape[3] # Width at dim 3
+    # def SetKernel(self, Kernel):
+    #     Param = self.Param
+    #     Param.In.Num = Kernel.shape[0]
+    #     Param.Kernel.In.Num = Param.In.Num // Param.Group.Num
+    #     Param.Kernel.Out.Num = Kernel.shape[1]
+    #     Param.Out.Num = Param.Kernel.Out.Num * Param.Group.Num
+    #     Param.Kernel.Height = Kernel.shape[2] # Height at dim 2
+    #     Param.Kernel.Width = Kernel.shape[3] # Width at dim 3
     def Init(self, IsSuper=False, IsRoot=True):
         if not IsSuper:
             Param = self.Param
-            if not self.IsLoad():
+            if self.IsInit():
                 Param.setdefault("Stride", 1)
                 Param.Padding.setdefault("Value", 1)
         
@@ -256,7 +243,7 @@ class UpConv2D(Conv2D):
                         Param.Kernel.Size = Param.Kernel.Height
 
                 # torch group convolution kernel: 
-                #   [OutNum, InNum // GroupNum, KernelHeight, KernelWidth]
+                #   (OutNum, InNum // GroupNum, KernelHeight, KernelWidth)
                 #   In dimension during computation will be divided into groups.
                 assert Param.In.Num % Param.Group.Num == 0
                 assert Param.Out.Num % Param.Group.Num == 0
@@ -264,10 +251,11 @@ class UpConv2D(Conv2D):
                 Param.Kernel.In.Num = Param.In.Num // Param.Group.Num
                 Param.NonLinear.setdefault("Enable", False)
 
-                if not Param.Data.hasattr("Weight"):
-                    # [OutNum // GroupNum, InpNum, KernelHeight, KernelWidth]
-                    self.SetKernel(
-                        DLUtils.DefaultUpConv2DKernel(
+                if not Param.Kernel.hasattr("Data"):
+                    # (OutNum // GroupNum, InNum, KernelHeight, KernelWidth)
+                    self.SetTrainParam(
+                        Name="Kernel", Path="Kernel.Data",
+                        Data=DLUtils.DefaultUpConv2DKernel(
                             (
                                 Param.In.Num, Param.Out.Num, 
                                 Param.Kernel.Height, Param.Kernel.Width
@@ -275,7 +263,7 @@ class UpConv2D(Conv2D):
                             GroupNum=Param.Group.Num,
                             # NonLinear="ReLU"
                             # default torch weight initialization does not consider NonLinear.
-                        )
+                        ) # (InNum, OutNum // GroupNum, KernelWidth, KernelHeight)
                     )
 
                 # bias setting
@@ -325,3 +313,4 @@ class UpConv2D(Conv2D):
             else:
                 self.NonLinear = lambda x:x
         return super().Init(IsSuper=True, IsRoot=IsRoot)
+

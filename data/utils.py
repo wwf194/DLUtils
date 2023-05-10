@@ -29,7 +29,7 @@ def DefaultLinearLayerWeight(Shape):
 
 def DefaultConv2DKernel(Shape, GroupNum=1, **Dict):
     """
-    Shape: [InNum, OutNum, KernelHeight, KernelWidth]
+    Shape: (InNum, OutNum, KernelHeight, KernelWidth)
     torch: w ~ U(-sqrt(k), sqrt(k))
         where k = GroupNum / (InNum * KernelWidth * KernelHeight)
     """
@@ -37,6 +37,7 @@ def DefaultConv2DKernel(Shape, GroupNum=1, **Dict):
     Min = - Max
     assert Shape[0] % GroupNum == 0
     assert Shape[1] % GroupNum == 0
+    # Kernel: (OutNum, InNum // GroupNum, Height, Width). torch.conv2d.
     return SampleFromUniformDistribution((Shape[1], Shape[0] // GroupNum, Shape[2], Shape[3]), Min, Max)
 
 def DefaultConv2DBias(Shape, GroupNum=1, **Dict):
@@ -52,7 +53,7 @@ def DefaultConv2DBias(Shape, GroupNum=1, **Dict):
 
 def DefaultUpConv2DKernel(Shape, GroupNum=1, **Dict):
     """
-    Shape: [InNum, OutNum, KernelHeight, KernelWidth]
+    Shape: (InNum, OutNum, KernelHeight, KernelWidth)
         where k = GroupNum / (OutNum * KernelWidth * KernelHeight)
     pytorch: w ~ U(-sqrt(k), sqrt(k))
     """

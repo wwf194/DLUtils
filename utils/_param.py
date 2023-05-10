@@ -1472,3 +1472,4 @@ def JsonFile2Param(FilePath, SplitKeyByDot=True, SplitKeyException=[]):
 
     Tree = _Paths2Tree(PathTable, RootNode)
     return _Tree2Param(Tree)
+

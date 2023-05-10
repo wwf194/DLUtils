@@ -1,5 +1,5 @@
 
-from .GradientDescend import GradientDescend
+from .gradient_descend import GradientDescend
 import torch
 import DLUtils
 class Adam(GradientDescend):
@@ -33,18 +33,6 @@ class Adam(GradientDescend):
                     raise Exception()
                 Dict.pop(Key)
         return super().SetParam(**Dict)
-    # def Enable(self, Type):
-    #     Param = self.Param
-    #     if Type in ["Momentum"]:
-    #         self.EnableMomentum()
-    #     else:
-    #         raise Exception()
-    #     return self
-    # def EnableMomentum(self):
-    #     Param = self.Param
-    #     Param.Momentum.Enable = True
-    #     Param.Momentum.setdefault("Value", 0.0)
-    #     return self
     def _UpdateParam(self, Dict):
         self.optimizer.zero_grad()
         Dict.Evaluation["Loss"].backward()
@@ -67,6 +55,11 @@ class Adam(GradientDescend):
             self.Beta = Param.GradientNorm.Value
         else:
             self.Beta = 0.0
+
+        if self.IsInit():
+            Param.setdefault("WeightDecay", 0.0)
+
+        self.WeightDecay = Param.WeightDecay
         self.LearningRate = Param.LearningRate
         self.ResetOptimizer()
         self.Optimize = self._UpdateParam
@@ -83,11 +76,9 @@ class Adam(GradientDescend):
             TrainParam = list(self.Model.ExtractTrainParam().values())
         else:
             TrainParam = list(Param.values())
-        
-
 
         if hasattr(self, "optimizer"):
-            StateDict = self.optimizer.state_dict()
+            StateDict = self.optimizer.state_dict() # momentum, historical gradient norm stored here.
             self.optimizer = torch.optim.Adam(TrainParam)
             self.optimizer.load_state_dict(StateDict)
         else:
@@ -97,6 +88,7 @@ class Adam(GradientDescend):
                 betas=[
                     self.Alpha, # Momentum
                     self.Beta   # GradientNorm
-                ]
+                ],
+                weight_decay=self.WeightDecay
             )
         return self

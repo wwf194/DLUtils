@@ -28,7 +28,7 @@ def PrintDict(Dict, Out="Std"):
     else:
         raise Exception()
 
-def IterableKeyToElement(Dict):
+def IterableKeyToKeys(Dict):
     for Key, Value in dict(Dict).items():
         if isinstance(Key, tuple) or isinstance(Key, set):
             for _Key in Key:
@@ -38,3 +38,5 @@ def IterableKeyToElement(Dict):
     if isinstance(Dict, dict):
         Dict = DLUtilsDict(Dict)
     return Dict
+
+IterableKeyToElement = IterableKeyToKeys
