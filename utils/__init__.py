@@ -24,6 +24,8 @@ from .system import GetSystemType, GetSysType
 from .file import Str2File
 from ._dict import *
 
+
+
 def FromFile(FilePath):
     Param = DLUtils.File2Param(FilePath)
     assert hasattr(Param, "_CLASS")
@@ -854,5 +856,6 @@ import functools
 NormWithinStd2Range = functools.partial(NormWithinNStd2Range, N=1.0)
 NormWithin1Std2Range = NormWithinStd2Range
 
+# import DLUtils.utils.network as network
 from ..backend.torch.format import ToTorchTensor, ToTorchTensorOrNum, NpArray2Tensor, NpArray2TorchTensor
 from ..backend.torch import GetTensorByteNum, GetTensorElementNum
