@@ -106,7 +106,10 @@ if __name__=="__main__":
                 args.path,
                 "./task/image/classification/cifar10/"
             )
-
+    elif Task in ["ftp"]:
+        SubTask = TaskList[1]
+        if SubTask in ["test"]:
+            DLUtils.utils.ftp.test()
     else:
         raise Exception()
 
