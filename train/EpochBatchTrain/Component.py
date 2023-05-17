@@ -153,9 +153,10 @@ class Validate(EventAfterEpoch):
         Param = self.Param
         self.Event = self.ValidateEpoch # to be called
     def ValidateEpoch(self, Dict):
+        Model = Dict.Model
+        Model.SetTest()
         ValidationData = Dict.ValidationData
         Evaluator = Dict.Evaluator
-        Model = Dict.Model
         BatchNum = ValidationData.GetBatchNum()
         DictValidate = DLUtils.param({
             "Model": Model,
@@ -172,7 +173,6 @@ class Validate(EventAfterEpoch):
         self.Bind(EvaluationLog=EvaluationLog)
         self.BeforeVal(DictValidate)
         self.BeforeValEpoch(DictValidate)
-
         with torch.no_grad():
             # since no optimizer in validate epoch. grad needs to be be turned off.
             # otherwise cuda memory will explode without grad clear.
@@ -189,6 +189,7 @@ class Validate(EventAfterEpoch):
                 self.AfterValBatch(DictValidate)
         self.AfterValEpoch(DictValidate)
         self.UnBind("EvaluationLog")
+        Model.SetTrain()
         return self
     Validate = ValidateEpoch
     def Bind(self, **Dict):
@@ -356,7 +357,7 @@ class Save(EventAfterEpoch):
             ModelSaveFilePath = self.SaveDir + "model-saved/" + f"model-Epoch{Dict.EpochIndex}.dat"
         Dict.Model.ToFile(ModelSaveFilePath, RetainSelf=False)
         Dict.Model.Clear()
-        Dict.Model = Dict.Model.FromFile(ModelSaveFilePath).Init()
+        Dict.Model = Dict.Model.FromFileAndInit(ModelSaveFilePath, Device=Dict.TrainSession.Device)
         Dict.TrainSession.Model = Dict.Model
         Dict.TrainSession.ToFile(self.SaveDir + "TrainSession.dat")
         Dict.TrainSession.ToJsonFile(self.SaveDir + "TrainSession-config.jsonc")

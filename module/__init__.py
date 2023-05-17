@@ -119,4 +119,4 @@ class AbstractModuleGroup(AbstractNetwork):
 
 from .module_graph import ModuleGraph
 from .module_series import ModuleList, ModuleSeries, _ModuleList, _ModuleSeries
-from ..backend.torch import TorchModuleWrapper
+from ..backend.torch.module import TorchModuleWrapper, TorchModule, TorchModuleParallel

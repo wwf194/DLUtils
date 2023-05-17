@@ -277,12 +277,7 @@ def ToStandardizeTorchDataType(DataType):
     elif DataType in ["Double", "double"]:
         return torch.float64
 
-def ToGivenDataTypeTorch(data, DataType=torch.float32):
-    if data.dtype==DataType:
-        return data
-    else:
-        return data.to(DataType)
-Tensor2GivenDataType = ToGivenDataTypeTorch
+
 
 def DeleteKeysIfExist(Dict, Keys):
     for Key in Keys:
@@ -470,7 +465,7 @@ def import_file(file_from_sys_path):
     module_path = module_path.replace("/", ".")
     return importlib.ImportModule(module_path)
 
-from ..backend.torch import ToTorchTensor, ToTorchTensorOrNum, NpArray2Tensor, NpArray2TorchTensor
+
 
 def CopyDict(Dict):
     return dict(Dict)
@@ -692,24 +687,8 @@ def scan_files(path, pattern, ignore_folder=True, raise_not_found_error=False):
 
     return matched_files
 
-
-def TargetDir_module(path):
-    path = path.lstrip('./')
-    path = path.lstrip('/')
-    if not path.endswith('/'):
-        path += '/'
-    path =  path.replace('/','.')
-    return path
-
-def GetAllMethodsOfModule(ModulePath):
-    from inspect import getmembers, isfunction
-    Module = ImportModule(ModulePath)
-    return getmembers(Module, isfunction)
-
-ListAllMethodsOfModule = GetAllMethodsOfModule
-
 from .math import RandomIntInRange, RandomSelect, RandomSelectFromList
-
+from .format import NpArray2D2Str, NpArray2D2TextFile, NpArray2Str, NpArray2TextFile
 
 def MultipleRandomIntInRange(Left, Right, Num, IncludeRight=False):
     if not IncludeRight:
@@ -874,3 +853,6 @@ def NormWithinNStd2Range(Data, Min, Max, N=1.0, Clip=True):
 import functools
 NormWithinStd2Range = functools.partial(NormWithinNStd2Range, N=1.0)
 NormWithin1Std2Range = NormWithinStd2Range
+
+from ..backend.torch.format import ToTorchTensor, ToTorchTensorOrNum, NpArray2Tensor, NpArray2TorchTensor
+from ..backend.torch import GetTensorByteNum, GetTensorElementNum

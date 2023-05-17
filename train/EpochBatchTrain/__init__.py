@@ -432,7 +432,7 @@ class EpochBatchTrainSession(DLUtils.module.AbstractModule):
                 # if BatchIndex < 3:
                     # DLUtils.Tensor2TextFile2D(Input[3], "./Validation/mnist/mlp/Input-Epoch%3d-Batch%3d"%(EpochIndex, BatchIndex))
                     # DLUtils.Tensor2ImageFile(Input[3], "./Validation/mnist/mlp/Input-Epoch%3d-Batch%3d-Index03.png"%(EpochIndex, BatchIndex))
-                Out = Model(In)
+                Out = Dict.Model(In)
                 Dict.In = In
                 Dict.Out = Out
                 Dict.OutTarget = OutTarget

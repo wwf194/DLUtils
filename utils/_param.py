@@ -645,15 +645,15 @@ def _AppendWithIndent(StrList, IndentNum, Str):
 
 def JsonDict2Str(Dict):
     StrList = []
-    _JsonDict2StrRecur(Dict, StrList, 0)
-    return "".join(StrList)
+    Obj = ToParam(Dict)
+    return Param2JsonStr(Obj)
 
 def _JsonDict2StrRecur(Obj, StrList, IndentNum, ParentKey=None):
     if isinstance(Obj, list):
         _AppendWithIndent(StrList, IndentNum, "[\n")
         IndexMax = len(Obj) - 1
-        for Index, item in enumerate(Obj):
-            _JsonDict2StrRecur(item, StrList, IndentNum + 1)
+        for Index, Item in enumerate(Obj):
+            _JsonDict2StrRecur(Item, StrList, IndentNum + 1, ParentKey=Index)
             if Index < IndexMax:
                 StrList.append(",\n")
             else:
