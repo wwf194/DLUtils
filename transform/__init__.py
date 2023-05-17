@@ -1,5 +1,5 @@
 from .reshape import Reshape, Index2OneHot, ChangeDimOrder, Permute
-from .norm import LayerNorm, BatchNorm
+from .norm import LayerNorm, BatchNorm2D
 from .norm import ShiftRange 
 from .norm import NormOnColorChannel
 

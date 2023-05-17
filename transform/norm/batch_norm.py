@@ -2,15 +2,13 @@ import torch
 import DLUtils
 
 class BatchNorm2D(DLUtils.module.TorchModuleWrapper):
-    def __init__(self, *List, **Dict):
-        self.ModuleParamMap = {
-            "Affine.Weight": "weight",
-            "Affine.Bias": "bias",
-            "History.Mean": "running_mean",
-            "History.Var": "running_var",
-            "History.NumBatchesTracked": "num_batches_tracked"
-        }
-        super().__init__(*List, **Dict)
+    ModuleParamMap = {
+        "Affine.Weight": "weight",
+        "Affine.Bias": "bias",
+        "History.Mean": "running_mean",
+        "History.Var": "running_var",
+        "History.NumBatchesTracked": "num_batches_tracked"
+    }
     def SetParam(self, **Dict):
         Param = self.Param
         for Key, Value in Dict.items():
