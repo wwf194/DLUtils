@@ -102,171 +102,6 @@ def GetTensorLocation(Method="auto"):
         raise Exception()
     return Location
 
-def BuildObjFromParam(Args, **kw):
-    if isinstance(Args, DLUtils.PyObj):
-        Args = GetAttrs(Args)
-
-    if isinstance(Args, list):
-        for Arg in Args:
-            _BuildObjFromParam(Arg, **kw)
-    elif isinstance(Args, DLUtils.PyObj):
-        _BuildObjFromParam(Args, **kw)
-    else:
-        raise Exception()
-
-def _BuildObjFromParam(Args, **kw):
-    ParamPathList = DLUtils.ToList(Args.ParamPath)
-    ModulePathList = DLUtils.ToList(Args.ModulePath)
-    MountPathList = DLUtils.ToList(Args.MountPath)
-
-    for ModulePath, ParamPath, MountPath, in zip(ModulePathList, ParamPathList, MountPathList):        
-        param = DLUtils.parse.ResolveStr(ParamPath, kw)
-        #Class = eval(ModulePath)
-        #Obj = Class(param)
-        Class = DLUtils.parse.ParseClass(ModulePath)
-        Obj = Class(param)
-        # Module = DLUtils.ImportModule(ModulePath)
-        # Obj = Module.__MainClass__(param)
-
-        ObjRoot = kw.get("ObjRoot")
-        ObjCurrent = kw.get("ObjCurrent")
-        
-        MountPath = MountPath.replace("/&", "&")
-        MountPath = MountPath.replace("&^", "ObjRoot.")
-        MountPath = MountPath.replace("&*", "ObjCurrent.cache.__object__.")
-        MountPath = MountPath.replace("&", "ObjCurrent.")
-
-        MountPathList = MountPath.split(".")
-        SetAttrs(eval(MountPathList[0]), MountPathList[1:], Obj)
-
-def BuildObjFromFile(Args, **kw):
-    if isinstance(Args, DLUtils.PyObj):
-        Args = GetAttrs(Args)
-    if isinstance(Args, list):
-        for Arg in Args:
-            _BuildObjFromFile(Arg, **kw)
-    elif isinstance(Args, DLUtils.PyObj):
-        _BuildObjFromFile(Args, **kw)
-    else:
-        raise Exception()
-
-def _BuildObjFromFile(Args, **kw):
-    ParamFilePathList = DLUtils.ToList(Args.ParamFilePath)
-    ModulePathList = DLUtils.ToList(Args.ModulePath)
-    MountPathList = DLUtils.ToList(Args.MountPath)
-
-    for ModulePath, ParamFilePath, MountPath, in zip(ModulePathList, ParamFilePathList, MountPathList):        
-        param = DLUtils.json.JsonFile2PyObj(ParamFilePath)
-        Class = DLUtils.parse.ParseClass(ModulePath)
-        Obj = Class(param)
-
-        ObjRoot = kw.get("ObjRoot")
-        ObjCurrent = kw.get("ObjCurrent")
-        
-        MountPath = MountPath.replace("/&", "&")
-        MountPath = MountPath.replace("&^", "ObjRoot.")
-        MountPath = MountPath.replace("&*", "ObjCurrent.cache.__object__.")
-        MountPath = MountPath.replace("&", "ObjCurrent.")
-
-        MountPathList = MountPath.split(".")
-        SetAttrs(eval(MountPathList[0]), MountPathList[1:], Obj)
-
-def BuildObj(Args, **kw):
-    if isinstance(Args, DLUtils.PyObj):
-        Args = GetAttrs(Args)
-
-    if isinstance(Args, list) or DLUtils.IsListLikePyObj(Args):
-        for Arg in Args:
-            _BuildObj(Arg, **kw)
-    elif isinstance(Args, DLUtils.PyObj):
-        _BuildObj(Args, **kw)
-    else:
-        raise Exception()
-
-def _BuildObj(Args, **kw):
-    ModulePathList = DLUtils.ToList(Args.ModulePath)
-    MountPathList = DLUtils.ToList(Args.MountPath)
-
-    for ModulePath, MountPath in zip(ModulePathList, MountPathList):
-        Class = DLUtils.parse.ParseClass(ModulePath)
-        Obj = Class()
-
-        ObjRoot = kw.get("ObjRoot")
-        ObjCurrent = kw.get("ObjCurrent")
-        
-        MountPath = MountPath.replace("&^", "ObjRoot.")
-        MountPath = MountPath.replace("&*", "ObjCurrent.cache.__object__.")
-        MountPath = MountPath.replace("&", "ObjCurrent.")
-
-        MountPathList = MountPath.split(".")
-        SetAttrs(eval(MountPathList[0]), MountPathList[1:], Obj)
-
-def RemoveObj(Args, **kw):
-    if isinstance(Args, DLUtils.PyObj):
-        Args = GetAttrs(Args)
-
-    if isinstance(Args, list):
-        for Arg in Args:
-            _RemoveObj(Arg, **kw)
-    elif isinstance(Args, DLUtils.PyObj):
-        _RemoveObj(Args, **kw)
-    else:
-        raise Exception()
-
-def _RemoveObj(Args, **kw):
-    MountPathList = DLUtils.ToList(Args.MountPath)
-
-    for MountPath in MountPathList:
-        ObjRoot = kw.get("ObjRoot")
-        ObjCurrent = kw.get("ObjCurrent")
-        
-        MountPath = MountPath.replace("/&", "&")
-        MountPath = MountPath.replace("&^", "ObjRoot.")
-        MountPath = MountPath.replace("&*", "ObjCurrent.cache.__object__.")
-        MountPath = MountPath.replace("&", "ObjCurrent.")
-        MountPathList = MountPath.split(".")
-        RemoveAttrs(eval(MountPathList[0]), MountPathList[1:])
-
-def SaveObj(Args, **kw):
-    SaveObjList = DLUtils.ToList(Args.SaveObj)
-    SaveDirList = DLUtils.ToList(Args.SaveDir)
-
-    for SaveObj, SaveDir in zip(SaveObjList, SaveDirList):
-        if SaveDir in ["auto", "Auto"]:
-            SaveDir = DLUtils.GetMainSaveDirForModule()
-        Obj = DLUtils.parse.ResolveStr(SaveObj, **kw)
-        Obj.Save(SaveDir)
-
-def LoadObj(Args, **kw):
-    SourcePathList = DLUtils.ToList(Args.SourcePath)
-    MountPathList = DLUtils.ToList(Args.MountPath)
-
-    for SourcePath, MountPath in zip(SourcePathList, MountPathList):
-        Obj = DLUtils.parse.ResolveStr(SourcePath, **kw)
-        MountObj(MountPath, Obj, **kw)
-
-def LoadObjFromFile(Args, **kw):
-    SaveNameList = DLUtils.ToList(Args.SaveName)
-    MountPathList = DLUtils.ToList(Args.MountPath)
-    SaveDirList = DLUtils.ToList(Args.SaveDir)
-
-    SaveDirParsedList = []
-    for SaveDir in SaveDirList:
-        SaveDirParsedList.append(DLUtils.parse.ResolveStr(SaveDir, **kw))
-
-    for SaveName, SaveDir, MountPath in zip(SaveNameList, SaveDirParsedList, MountPathList):
-        ParamPath = SaveDir + SaveName + ".param.jsonc"
-        assert DLUtils.FileExists(ParamPath)
-        param = DLUtils.json.JsonFile2PyObj(ParamPath)
-        DataPath = SaveDir + SaveName + ".data"
-        if DLUtils.FileExists(DataPath):
-            data = DLUtils.json.DataFile2PyObj(DataPath)
-        else:
-            data = DLUtils.EmptyPyObj()
-        Class = DLUtils.parse.ParseClass(param.ClassPath)
-        Obj = Class(param, data, LoadDir=SaveDir)
-        MountObj(MountPath, Obj, **kw)
-
 def LoadTaskFile(FilePath="./task.jsonc"):
     TaskObj = DLUtils.json.JsonFile2PyObj(FilePath)
     return TaskObj
@@ -402,26 +237,7 @@ def ToTrainableTorchTensor(data):
     else:
         raise Exception(type(data))
 
-def ToTorchTensor(Data, Device=None):
-    if isinstance(Data, np.ndarray):
-        _Data = NpArray2Tensor(Data)
-    elif isinstance(Data, list):
-        _Data = NpArray2Tensor(List2NpArray(Data))
-    elif isinstance(Data, torch.Tensor):
-        _Data = Data
-    else:
-        raise Exception(type(Data))
-    if Device is not None:
-        _Data = _Data.to(Device)
-    return _Data
 
-def ToTorchTensorOrNum(data):
-    if isinstance(data, float):
-        return data
-    elif isinstance(data, int):
-        return data
-    else:
-        return ToTorchTensor(data)
 
 def _1DTo2D(data):
     # turn 1-D data to 2-D data for visualization
@@ -453,17 +269,9 @@ def EnsureFlatNp(data):
 
 EnsureFlat = EnsureFlatNp
 
-def NpArray2Tensor(data, Location="cpu", DataType=torch.float32, RequiresGrad=False):
-    data = torch.from_numpy(data)
-    data = Tensor2GivenDataType(data, DataType)
-    data = data.to(Location)
-    data.requires_grad = RequiresGrad
-    return data
 
 def NpArray2List(data):
     return data.tolist()
-
-
 
 def ToStandardizeTorchDataType(DataType):
     if DataType in ["Float", "float"]:
@@ -471,12 +279,7 @@ def ToStandardizeTorchDataType(DataType):
     elif DataType in ["Double", "double"]:
         return torch.float64
 
-def ToGivenDataTypeTorch(data, DataType=torch.float32):
-    if data.dtype==DataType:
-        return data
-    else:
-        return data.to(DataType)
-Tensor2GivenDataType = ToGivenDataTypeTorch
+
 
 def DeleteKeysIfExist(Dict, Keys):
     for Key in Keys:
@@ -664,6 +467,8 @@ def import_file(file_from_sys_path):
     module_path = module_path.replace("/", ".")
     return importlib.ImportModule(module_path)
 
+
+
 def CopyDict(Dict):
     return dict(Dict)
 
@@ -685,7 +490,6 @@ def write_dict_info(dict_, save_path='./', save_name='dict info.txt'): # write r
                 f.write('%s: %s'%(_str(key), _str(value)))
             else:
                 values_remained.append([key, value])
-
 
 def AtLeastOneKeyInDict(_Dict, *List, **Dict):
     Num = 0
@@ -859,22 +663,7 @@ def check_suffix(name, suffix=None, is_path=True):
             warnings.warn('check_suffix: no suffix found in %s. adding suffix %s.'%(name, suffix))            
             return name + '.' + suf_
 
-def HasSuffix(Str, Suffix):
-    MatchPattern = re.compile(r'(.*)%s'%Suffix)
-    MatchResult = MatchPattern.match(Str)
-    return MatchResult is None
-
-def RemoveSuffix(Str, Suffix, MustMatch=True):
-    MatchPattern = re.compile(r'(.*)%s'%Suffix)
-    MatchResult = MatchPattern.match(Str)
-    if MatchResult is None:
-        if MustMatch:
-            #raise Exception('%s does not have suffix %s'%(Str, Suffix))
-            return None
-        else:
-            return Str
-    else:
-        return MatchResult.group(1)
+from ._str import HasSuffix, RemoveSuffix
 
 def scan_files(path, pattern, ignore_folder=True, raise_not_found_error=False):
     if not path.endswith('/'):
@@ -900,79 +689,8 @@ def scan_files(path, pattern, ignore_folder=True, raise_not_found_error=False):
 
     return matched_files
 
-def copy_files(file_list, SourceDir='./', TargetDir=None, sys_type='linux'):
-    if not SourceDir.endswith('/'):
-        SourceDir += '/'
-
-    if not TargetDir.endswith('/'):
-        TargetDir += '/'
-
-    EnsurePath(TargetDir)
-
-    '''
-    if subpath is not None:
-        if not subpath.endswith('/'):
-             subpath += '/'
-        path += subpath
-    EnsurePath(path)
-    '''
-    #print(TargetDir)
-    if sys_type in ['linux']:
-        for file in file_list:
-            file = file.lstrip('./')
-            file = file.lstrip('/')
-            #print(path)
-            #print(file)
-            #shutil.copy2(file, dest + file)
-            #print(SourceDir + file)
-            #print(TargetDir + file)
-            EnsurePath(os.path.dirname(TargetDir + file))
-            if os.path.exists(TargetDir + file):
-                os.system('rm -r %s'%(TargetDir + file))
-            #print('cp -r %s %s'%(file_path + file, path + file))
-            os.system('cp -r %s %s'%(SourceDir + file, TargetDir + file))
-    elif sys_type in ['windows']:
-        # to be implemented 
-        pass
-    else:
-        raise Exception('copy_files: Invalid sys_type: '%_str(sys_type))
-
-def TargetDir_module(path):
-    path = path.lstrip('./')
-    path = path.lstrip('/')
-    if not path.endswith('/'):
-        path += '/'
-    path =  path.replace('/','.')
-    return path
-
-def GetAllMethodsOfModule(ModulePath):
-    from inspect import getmembers, isfunction
-    Module = ImportModule(ModulePath)
-    return getmembers(Module, isfunction)
-
-ListAllMethodsOfModule = GetAllMethodsOfModule
-
-# GlobalParam = DLUtils.json.JsonObj2PyObj({
-#     "Logger": None
-# })
-
-def RandomSelect(List, SelectNum):
-    if isinstance(List, int):
-        Num = List
-        List = range(Num)
-    else:
-        Num = DLUtils.GetLength(List)
-
-    if Num > SelectNum:
-        return random.sample(List, SelectNum)
-    else:
-        return List
-
-def RandomIntInRange(Left, Right, IncludeRight=False):
-    if not IncludeRight:
-        Right -= 1
-    #assert Left <= Right 
-    return random.randint(Left, Right)
+from .math import RandomIntInRange, RandomSelect, RandomSelectFromList
+from .format import NpArray2D2Str, NpArray2D2TextFile, NpArray2Str, NpArray2TextFile
 
 def MultipleRandomIntInRange(Left, Right, Num, IncludeRight=False):
     if not IncludeRight:
@@ -999,29 +717,21 @@ def runcmd(command):
         print("error:",ret)
 
 def CalculateGitProjectTotalLines(Verbose=False):
-    # runcmd(
-    #     "git log  --pretty=tformat: --numstat | awk '{ add += $1; subs += $2; loc += $1 - $2 } END { printf \"added lines: %s, removed lines: %s, total lines: %s\n\", add, subs, loc }'"
-    # )
-    # GitCommand = 'git log  --pretty=tformat: --numstat | awk "{ add += $1; subs += $2; loc += $1 - $2 } END { printf "added lines: %s, removed lines: %s, total lines: %s\n", add, subs, loc }"'
-    # report = os.system(GitCommand)
-    # if Verbose:
-    #     DLUtils.Log(report)
-    # return report
     import os
     GitCommand = 'git log  --pretty=tformat: --numstat | awk \'{ add += $1; subs += $2; loc += $1 - $2 } END { printf "added lines: %s, removed lines: %s, total lines: %s\\n", add, subs, loc }\''
     report = os.system(GitCommand)
 
-def GetDimensionNum(data):
-    if isinstance(data, torch.Tensor):
-        return len(list(data.size()))
-    elif isinstance(data, np.ndarray):
-        return len(data.shape)
+def DimensionNum(Data):
+    if isinstance(Data, torch.Tensor):
+        return len(list(Data.size()))
+    elif isinstance(Data, np.ndarray):
+        return len(Data.shape)
     else:
-        raise Exception(type(data))
+        raise Exception(type(Data))
+GetDimensionNum = DimensionNum
 
 def ToLowerStr(Str):
     return Str.lower()
-
 
 def GetSavePathFromName(Name, Suffix=""):
     if not Suffix.startswith("."):
@@ -1029,7 +739,6 @@ def GetSavePathFromName(Name, Suffix=""):
     FilePath = DLUtils.GetMainSaveDir() + Name + Suffix
     FilePath = DLUtils.file.RenameIfFileExists(FilePath)
     return FilePath
-
 
 def Float2StrDisplay(Float):
     if np.isinf(Float):
@@ -1072,16 +781,6 @@ def Floats2StrWithEqualLength(Floats):
     Base, Exp = DLUtils.math.Floats2BaseAndExponent(Floats)
     # to be implemented
 
-def MountObj(MountPath, Obj, **kw):
-    ObjRoot = kw.get("ObjRoot")
-    ObjCurrent = kw.get("ObjCurrent")
-
-    MountPath = MountPath.replace("/&", "&")
-    MountPath = MountPath.replace("&^", "ObjRoot.")
-    MountPath = MountPath.replace("&", "ObjCurrent.")
-    MountPath = MountPath.split(".")
-    SetAttrs(eval(MountPath[0]), MountPath[1:], value=Obj)
-
 def MountDictOnObj(Obj, Dict):
     Obj.__dict__.update(Dict)
 
@@ -1098,11 +797,7 @@ def RegisterExternalMethods(Name, Method):
 def RegisterExternalClasses(Name, Class):
     setattr(ExternalClasses, Name, Class)
 
-def Bytes2Str(Bytes, Format="utf-8"):
-    return _str(Bytes, encoding = "utf-8")
-
-def Str2Bytes(Str, Format="utf-8"):
-    return Str.decode(Format)
+from ._str import Str2Bytes, Bytes2Str
 
 def Unzip(Lists):
     return zip(*Lists)
@@ -1162,3 +857,5 @@ NormWithinStd2Range = functools.partial(NormWithinNStd2Range, N=1.0)
 NormWithin1Std2Range = NormWithinStd2Range
 
 # import DLUtils.utils.network as network
+from ..backend.torch.format import ToTorchTensor, ToTorchTensorOrNum, NpArray2Tensor, NpArray2TorchTensor
+from ..backend.torch import GetTensorByteNum, GetTensorElementNum

@@ -105,10 +105,10 @@ def MoveFolder(FolderPath, FolderPathNew, RaiseIfNonExist=False, Overwrite=True)
     return True
 MoveDir = MoveFolder
 
-def CopyFilesInSameFolder(FileNameList, SourceDir, DestDir):
+def CopyFiles(FileNameList, SourceDir, DestDir):
     for FileName in FileNameList:
-        CopyFilesInSameFolder(FileName, SourceDir, DestDir)
-CopyFiles2DestDir = CopyFiles = CopyFilesInSameFolder
+        CopyFile(FileName, SourceDir, DestDir)
+CopyFiles2DestDir = CopyFilesInSameFolder = CopyFiles
 
 def CopyFile2AllSubDirsUnderDestDir(FileName, SourceDir, DestDir):
     for SubDir in ListAllDirs(DestDir):
@@ -117,9 +117,10 @@ def CopyFile2AllSubDirsUnderDestDir(FileName, SourceDir, DestDir):
         except Exception:
             continue
 
-def CopyFile2Folder(FileName, SourceDir, DestDir):
+def CopyFile(FileName, SourceDir, DestDir):
     EnsureFileDir(DestDir + FileName)
     shutil.copy(SourceDir + FileName, DestDir + FileName)
+CopyFile2Folder = CopyFile
 
 def IsSameFile(FilePath1, FilePath2):
     return os.path.samefile(FilePath1, FilePath2)
@@ -274,7 +275,7 @@ def ListFilePaths(DirPath):
     FileNameList = ListFilesName(DirPath)
     return [DirPath + FileName for FileName in FileNameList]
 
-ListAllFilesPath = ListAllFilePaths = GetAllFilePaths = GetAllFilesPath = ListFilePaths
+ListAllFilesPath = ListAllFilePaths = GetAllFilePaths = GetAllFilesPath = ListFilesPath = ListFilesPaths = ListFilePaths
 
 def ListDirs(DirPath):
     if not os.path.exists(DirPath):
@@ -555,39 +556,7 @@ def Tensor2TextFile2D(Data, SavePath="./test/"):
     Data = DLUtils.ToNpArray(Data)
     NpArray2D2TextFile(Data, SavePath=SavePath)
 
-def NpArray2Str(Data, **Dict):
-    DimNum = len(Data.shape)    
-    if DimNum == 2:
-        DataStr = NpArray2D2Str(Data, **Dict)
-        Name = Dict.setdefault("Name", "NpArray")
-        Shape = str(Data.shape)
-        Info = "{0}. Shape: {1}".format(Name, list(Shape))
-        Dim = "Dim 0 / Dim 1"
-        return "\n".join([Name, Shape, Dim, DataStr])
-    else:
-        raise Exception()
 
-def NpArray2D2Str(Data, ColName=None, RowName=None, **Dict):
-    assert len(Data.shape) == 2
-    DataDict= {}
-    if ColName is None:
-        ColName = ["Col %d"%ColIndex for ColIndex in range(Data.shape[1])]
-    for ColIndex, Name in enumerate(ColName):
-        DataDict[Name] = Data[:, ColIndex]
-    if RowName is not None:
-        # to be implemented
-        pass
-    return pd.DataFrame(Data).to_string()
-def NpArray2D2TextFile(Data, ColName=None, RowName=None, SavePath=None):
-    Str = NpArray2D2Str(Data, ColName=ColName, RowName=RowName, SavePath=SavePath)
-    DLUtils.Str2File(Str, SavePath)
-
-def NpArray2TextFile(Data, SavePath, **Dict):
-    DimNum = len(Data.shape)    
-    if DimNum == 2:
-        NpArray2D2TextFile(Data, SavePath=SavePath, **Dict)
-    else:
-        raise Exception()
 
 def LoadParamFromFile(Args, **kw):
     if isinstance(Args, dict):
@@ -1049,3 +1018,18 @@ JPG2NpArray = Jpeg2NpArray = Jpg2NpArray
 
 def RemoveAllPNGFile():
     DLUtils.file.RemoveMatchedFiles("./", r".*\.png")
+
+def ParseSavePath(SaveDir=None, SaveName=None, SaveNameDefault=None):
+    if SaveName is None:
+        if SaveDir.endswith("/"):
+            return SaveDir + SaveNameDefault
+        else:
+            return SaveDir
+    else:
+        if SaveDir is None:
+            raise Exception()
+        else:
+            if not SaveDir.endswith("/"):
+                SaveDir += "/"
+            assert not SaveName.endswith("/")
+            return SaveDir + SaveName

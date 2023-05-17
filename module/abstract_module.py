@@ -1,5 +1,6 @@
 import warnings
 import torch
+import torch.nn.functional as F
 import DLUtils
 from ..module import LogComponent
 
@@ -114,6 +115,32 @@ class AbstractModule(LogComponent):
             Param.SubModules.setattr(Name, "MODULE_WITHOUT_PARAM")
         self.SubModules[Name] = SubModule
         setattr(self, Name, SubModule)
+        return self
+    # 1D dropout
+    def _DropOut(self, X):
+        return F.dropout(X, self.DropOutProbability, training=self.IsTrain(), inplace=self.DropOutInPlace)
+    def _DropOutNull(self, X):
+        return X
+    def SetDropOut(self):
+        Param = self.Param
+        # dropout setting
+        if Param.DropOut.Enable:
+            self.DropOut = self._DropOut
+            self.DropOutInPlace = Param.DropOut.InPlace
+        else:
+            self.DropOut = self._DropOutNull
+        return self
+    def SetDropOutInit(self):
+        Param = self.Param
+        if Param.DropOut.hasattr("Probability"):
+            assert isinstance(Param.DropOut.Probability, float)
+            Param.DropOut.Enable = True
+            if Param.DropOut.Probability == 0.0:
+                Param.DropOut.Enable = False
+        Param.DropOut.setdefault("Enable", False)
+        if Param.DropOut.Enable:
+            Param.DropOut.setdefault("Probability", 0.1)
+        Param.DropOut.setdefault("InPlace", True) # could help save some memory
         return self
     def BindModule(self, Name=None, Module=None, **Dict):
         if Name is not None:
@@ -273,7 +300,7 @@ class AbstractModule(LogComponent):
             self.SetLogRecur(self._Log)
         self.SetConnectEvents()
 
-        self.SetTrain()
+        self.SetTrain() # default : train mode. might influence dropout etc.
 
         if hasattr(self, "Receive"):
             self.CallMethod = self.Receive
@@ -400,15 +427,17 @@ class AbstractModule(LogComponent):
         SubModule1.On(Connect.Event1, Event2)
         return self
     def SetTrain(self):
-        self.IsTrain = True
+        self._IsTrain = True
         if hasattr(self, "ReceiveTrain"):
             self.Receive = self.ReceiveTrain
         return self
     def SetTest(self):
-        self.IsTrain = False
+        self._IsTrain = False
         if hasattr(self, "ReceiveTest"):
             self.Receive = self.ReceiveTest
         return self
+    def IsTrain(self):
+        return self._IsTrain
     def IsInit(self):
         return not self.IsLoad()
     def IsLoad(self):
@@ -430,9 +459,13 @@ class AbstractModule(LogComponent):
                     SubModule.SetTest(Recur=True)
         return self
     def TorchModel(self):
-        return TorchModule().FromAbstractModule(self)
+        return DLUtils.module.TorchModule().FromAbstractModule(self)
 
-ParamMapDefault = DLUtils.IterableKeyToElement({
+    
+EmptyModule = AbstractModule
+
+from ..utils._dict import IterableKeyToElement
+ParamMapDefault = IterableKeyToElement({
     ("InNum", "InputNum"): "In.Num",
     ("InType", "InputType"): "In.Type",
     ("OutNum", "OutputNum"): "Out.Num",
@@ -442,6 +475,3 @@ ParamMapDefault = DLUtils.IterableKeyToElement({
     ("BatchSize"): "Batch.Size",
     ("AfterOperation"): "Operation.After"
 })
-
-EmptyModule = AbstractModule
-from ..backend.torch import TorchModule

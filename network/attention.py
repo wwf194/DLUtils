@@ -14,7 +14,9 @@ class TransformerEncoder(DLUtils.module.AbstractNetwork):
         ("VSize"): "MSA.Attention.V.Size", # total size. not size of each head.
         ("HeadNum"): "MSA.Attention.Head.Num",
         ("MLPSize"): "MLP.HiddenLayer.Size",
-        ("MLPNonLinear"): "MLP.NonLinear"
+        ("MLPNonLinear"): "MLP.NonLinear",
+        ("DropOut"): "DropOut.Probability",
+        ("DropOutInplace", "DropOutInPlace"): "DropOut.InPlace"
     })
     def __init__(self, **Dict):
         super().__init__(**Dict)
@@ -43,7 +45,8 @@ class TransformerEncoder(DLUtils.module.AbstractNetwork):
                             QKSize = Param.MSA.Attention.QK.Size,
                             VSize = Param.MSA.Attention.V.Size,
                             HeadNum = Param.MSA.Attention.Head.Num,
-                            MLPSize=Param.MLP.HiddenLayer.Size
+                            MLPSize=Param.MLP.HiddenLayer.Size,
+                            DropOut = Param.DropOut.setdefault("Probability", 0.0)
                         )
                     )
         self.LayerList = []
@@ -60,20 +63,25 @@ class MultiheadSelfAttentionLayer(DLUtils.module.AbstractNetwork):
         ("HeadNum"): "MSA.Attention.Head.Num",
         ("MLPSize"): "MLP.HiddenLayer.Size",
         ("NonLinear"): "MLP.NonLinear",
+        ("DropOut"): "DropOut.Probability",
+        ("DropOutInplace", "DropOutInPlace"): "DropOut.InPlace"
     })
-
     # multi-head self attention, with layer norm and 2-layer mlp
     def ReceiveNormTransformResidual(self, X):
+        # LayerNorm --> MSA / MLP --> DropOut --> Residual
         # X: (BatchSize, TokenNumQ, TokenFeatureNum)
-        Y = self.LayerNorm1(X)
-        Y = self.MSA(Y)
+        Y = self.LayerNorm1(X) # layer_norm
+        Y = self.MSA(Y) # multi-head attention
+        Y = self.DropOut(Y) # dropout
         Y = X + Y # residual
         
-        Z = self.LayerNorm2(Y)
-        Z = self.MLP(Y)
+        Z = self.LayerNorm2(Y) # layer_norm
+        Z = self.MLP(Z) # multi-layer perceptron
+        Z = self.DropOut(Z) # dropout
         Z = Y + Z # residual
         return Z
     def ReceiveTransformResidualNorm(self, X):
+        # MSA / MLP --> DropOut --> Residual --> LayerNorm
         # X: (BatchSize, TokenNumQ, TokenFeatureNum)
         Y = self.MSA(X)
         Y = X + Y # residual
@@ -81,7 +89,7 @@ class MultiheadSelfAttentionLayer(DLUtils.module.AbstractNetwork):
         
         Z = self.MLP(Y)
         Z = Y + Z # residual
-        Z = self.LayerNorm2(Y)
+        Z = self.LayerNorm2(Z)
         return Z
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
@@ -116,8 +124,8 @@ class MultiheadSelfAttentionLayer(DLUtils.module.AbstractNetwork):
                 self.AddSubModule(
                     "MLP", network.MLP(
                         UnitNum = MLPUnitNum,
-                        BiasOnLastLayer=Param.setdefault("NonLinearOnLastLayer", False),
-                        NonLinearOnLastLayer=Param.setdefault("BiasOnLastLayer", False),
+                        BiasOnLastLayer=Param.setdefault("BiasOnLastLayer", True),
+                        NonLinearOnLastLayer=Param.setdefault("NonLinearOnLastLayer", False),
                         NonLinear=Param.MLP.setdefault("NonLinear", "ReLU")
                     )
                 )
@@ -136,6 +144,11 @@ class MultiheadSelfAttentionLayer(DLUtils.module.AbstractNetwork):
 
             # operation order setting.
             self.OperationOrder = Param.setdefault("OperationOrder", "NormTransformResidual")
+        
+            # dropout setting
+            self.SetDropOutInit()
+
+        self.SetDropOut()
         
         # operation order setting.
         self.OperationOrder = Param.OperationOrder

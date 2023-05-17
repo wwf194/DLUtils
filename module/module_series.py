@@ -2,8 +2,10 @@
 import DLUtils
 from ..module import AbstractModuleGroup
 
+
+from ..utils._dict import IterableKeyToElement, IterableKeyToKeys
 class _ModuleSeries(AbstractModuleGroup):
-    SetParamMap = DLUtils.IterableKeyToElement({
+    SetParamMap = IterableKeyToElement({
         ("OutName", "OutputName"): "Out.Name"
     })
     def __init__(self, **Dict):

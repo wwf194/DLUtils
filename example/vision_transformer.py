@@ -38,7 +38,9 @@ class VisionTransformer(DLUtils.module.AbstractNetwork):
         ("NonLinear", "MLPNonLinear"): "MLP.NonLinear",
         ("PatchNumX", "PatchXNum"): "Patch.NumX",
         ("PatchNumY", "PatchYNum"): "Patch.NumY",
-        ("ClassNum", "NumClass"): "Task.Class.Num"
+        ("ClassNum", "NumClass"): "Task.Class.Num",
+        ("DropOut"): "DropOut.Probability",
+        ("DropOutInplace", "DropOutInPlace"): "DropOut.InPlace"
     })
     def __init__(self, **Dict):
         super().__init__(**Dict)
@@ -49,6 +51,7 @@ class VisionTransformer(DLUtils.module.AbstractNetwork):
         ImageToken = self.ImageToken.expand(BatchSize, -1, -1)
         X = torch.concat([ImageToken, X], dim=1) # (BatchSize, TokenNum + 1, TokenSize)
         X += self.PositionEmbedding
+        X = self.DropOut(X)
         X = self.TransformerEncoder(X) # multi-head self attention
             # (BatchSize, TokenNum + 1, TokenSize)
         X = X[:, 0, :] # (BatchSize, TokenSize)
@@ -73,7 +76,7 @@ class VisionTransformer(DLUtils.module.AbstractNetwork):
                     ) # (BatchSize, PatchListSize, Height * Width * ChannelNum)
                 ),
                 TransformerEncoder=network.TransformerEncoder(
-                    LayerNum = 6,
+                    LayerNum = Param.Layer.Num,
                     TokenSize = Param.Token.Size,
                     QKSize = Param.MSA.Attention.QK.Size,
                     VSize = Param.MSA.Attention.V.Size,
@@ -110,6 +113,12 @@ class VisionTransformer(DLUtils.module.AbstractNetwork):
                     )
                 )
             )
+            
+            # dropout setting
+            self.SetDropOutInit()
+        
+        # dropout setting
+        self.SetDropOut()
         return super().Init(IsSuper=True, IsRoot=IsRoot)
 
 def vision_transformer_imagenet_1k_patch_test(SaveDir, PatchNum, Device):
@@ -144,27 +153,6 @@ def vision_transformer_imagenet_1k_patch_test(SaveDir, PatchNum, Device):
             "./example/vit_imagenet/test/patch_%d.png"%Index
         )
     return
-
-import torch.distributed
-import os
-def setup(CurrentMachineIndex, MachineNumTotal):
-    os.environ['MASTER_ADDR'] = 'localhost'
-    os.environ['MASTER_PORT'] = '12355'
-
-    # initialize the process group
-    torch.distributed.init_process_group(
-        "ncll", # backend. gloo, ncll ...
-        rank=CurrentMachineIndex,
-        world_size=MachineNumTotal
-    )
-
-    # Explicitly setting seed to make sure that models created in two processes
-    # start from same random weights and biases.
-    torch.manual_seed(42)
-
-def cleanup():
-    torch.distributed.destroy_process_group()
-
 
 def vision_transformer_imagenet_1k(SaveDir="./example/vit_imagenet/"):
     SaveDir = DLUtils.file.ToStandardPathStr(SaveDir)
@@ -223,10 +211,9 @@ def vision_transformer_imagenet_1k(SaveDir="./example/vit_imagenet/"):
         MLPSize = MLPSize,
         PatchNumX = PatchNum,
         PatchNumY = PatchNum,
-        ClassNum=1000
-    ).Init().SetDevice(Device)
-
-    Model = torch.nn.parallel.DistributedDataParallel(Model, device_ids=[args.gpu])
+        ClassNum=1000,
+        DropOut=0.1
+    ).Init().SetDevice(Device).ReportModelSizeInFile(SaveDir + "./model-size.json")
 
     # test image2patch
     vision_transformer_imagenet_1k_patch_test(

@@ -41,13 +41,17 @@ class MLP(_ModuleList):
 
             for Index in range(Param.Layer.Num):
                 NonLinearStr = self.GetNonLinear(Index, LayerNum)
+                Bias = True
+                if Index == Param.Layer.Num - 1:
+                    if not Param.Bias.ApplyOnLastLayer:
+                        Bias = False
                 self.AppendSubModule(
                     Name="L%d"%Index,
                     SubModule=NonLinearLayer(
                         InSize=Param.Layer.Unit.Num[Index],
                         OutSize=Param.Layer.Unit.Num[Index + 1],
                         NonLinear=NonLinearStr,
-                        Bias=True
+                        Bias=Bias
                     )
                 )
         self.LayerNum = Param.Layer.Num

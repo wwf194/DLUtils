@@ -64,6 +64,25 @@ def SampleFromDistribution(param, Shape=None):
     else:
         raise Exception()
 
+def RandomSelectFromList(List, SelectNum):
+    if isinstance(List, int):
+        Num = List
+        List = range(Num)
+    else:
+        Num = DLUtils.GetLength(List)
+
+    if Num > SelectNum:
+        return random.sample(List, SelectNum)
+    else:
+        return List
+RandomSelect = RandomSelectFromList
+
+def RandomIntInRange(Left, Right, IncludeRight=False):
+    if not IncludeRight:
+        Right -= 1
+    #assert Left <= Right 
+    return random.randint(Left, Right)
+
 def SampleFromGaussianDistribution(Mean=0.0, Std=1.0, Shape=100):
     return np.random.normal(loc=Mean, scale=Std, size=DLUtils.parse.ParseShape(Shape))
 
