@@ -41,8 +41,6 @@ class Image2PatchList(DLUtils.module.AbstractNetwork):
 
         return super().Init(IsSuper=True, IsRoot=IsRoot)
 
-
-import torchvision
 class CenterCrop(DLUtils.module.AbstractNetwork):
     def __init__(self, Height=None, Width=None, **Dict):
         if Height is not None:
@@ -52,8 +50,6 @@ class CenterCrop(DLUtils.module.AbstractNetwork):
             else:
                 Dict["Width"] = Height
         super().__init__(**Dict)
-        
-        a = 1
     def Receive(self, X):
         # X: (..., Height, Width)
         # image smaller than (Param.Height, Param.Width) will be patched with zero.
@@ -64,5 +60,6 @@ class CenterCrop(DLUtils.module.AbstractNetwork):
         assert Param.hasattr("Width")
         assert isinstance(Param.Height, int)
         assert isinstance(Param.Width, int)
+        import torchvision
         self.module = torchvision.transforms.CenterCrop((Param.Height, Param.Width))
         return super().Init(IsSuper=True, IsRoot=IsRoot)

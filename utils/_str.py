@@ -35,3 +35,9 @@ def Bytes2Str(Bytes, Format="utf-8"):
 
 def Str2Bytes(Str, Format="utf-8"):
     return Str.decode(Format)
+
+import re
+def SelectStrWithPatternFromList(List, Pattern):
+    StrPattern = re.compile(StrPattern)
+    for Str in List:
+        assert isinstance(Str, str)
