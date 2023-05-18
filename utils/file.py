@@ -66,6 +66,7 @@ def ToStandardPathStr(Path):
     if ExistsDir(Path):
         if not Path.endswith("/"):
             Path += "/"
+    Path = Path.replace("\\", "/") # windows style path
     return Path
 StandardizePath = ToStandardPath = ToStandardPathStr
 def MoveFile(FilePath, FilePathDest, RaiseIfNonExist=False, Overwrite=True, RaiseIfOverwrite=True):
@@ -162,8 +163,9 @@ def CopyFolder(SourceDir, DestDir):
 CopyDir2DestDir = CopyFolder2DestDir = CopyFolder
 
 def FolderPathOfFile(FilePath):
-    return os.path.dirname(os.path.realpath(FilePath)) + "/"
-ParentFolderPath = FolderPathOfFile
+    DirPath = os.path.dirname(os.path.realpath(FilePath)) + "/"
+    return DLUtils.file.StandardizePath(DirPath)
+DirPathOfFile = ParentFolderPath = FolderPathOfFile
 
 from pathlib import Path
 
@@ -459,7 +461,10 @@ def _CopyFolder(SourceDir, DestDir, subpath='', exceptions=[], verbose=True):
 def ExistsPath(Path):
     return os.path.exists(Path)
 
-def ParseFileNameSuffix(FilePath):
+def GetFileSuffix(FilePath):
+    return SeparateFileNameSuffix(FilePath)[1]
+
+def SeparateFileNameSuffix(FilePath):
     if FilePath.endswith("/"):
         raise Exception()
     MatchResult = re.match(r"(.*)\.(.*)", FilePath)
@@ -467,6 +472,10 @@ def ParseFileNameSuffix(FilePath):
         return FilePath, ""
     else:
         return MatchResult.group(1), MatchResult.group(2)
+    # to be checked
+    # for filename with multiple '.', such as a.b.c, (a.b, c) should be returned
+
+ParseFileNameSuffix = SeparateFileNameSuffix
 
 def AddSuffixToFileWithFormat(FilePath, Suffix):
     _FilePath, Format = ParseFileNameSuffix(FilePath)

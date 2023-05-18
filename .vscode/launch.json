@@ -15,8 +15,9 @@
             // "args": ["-t", "example", "cifar10", "conv"],
             // python __main__.py -t example vit imagenet
             // "args": ["-t", "example", "vit", "imagenet"],
-            "args": ["-t", "example", "parallel", "--NodeNum", "2", "--NodeIndex", "0"],
-
+            // "args": ["-t", "example", "parallel", "--NodeNum", "2", "--NodeIndex", "0"],
+            // "args": ["-t", "ftp", "test"],
+            "args": ["-t", "image", "compress", "test"],
             "console": "integratedTerminal",
             // "python": "${config.python.pythonPath}",
             "justMyCode": true,

@@ -109,7 +109,20 @@ if __name__=="__main__":
     elif Task in ["ftp"]:
         SubTask = TaskList[1]
         if SubTask in ["test"]:
-            DLUtils.utils.ftp.test()
+            DLUtils.utils.network.ftp.Test()
+        else:
+            raise Exception()
+    elif Task in ["image"]:
+        SubTask = TaskList[1]
+        if SubTask in ["compress"]:
+            SubTask2 = TaskList[2]
+            if SubTask2 in ["test"]:
+                DLUtils.utils.image.compress.Test()
+            else:
+                raise Exception()
+        else:
+            raise Exception()
+    
     else:
         raise Exception()
 
