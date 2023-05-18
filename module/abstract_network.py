@@ -8,24 +8,24 @@ class AbstractNetwork(AbstractModule):
         Param = self.Param
         Param.setemptyattr("TrainParam")
         Param.setemptyattr("Tensor")
-    def SetTensor(self, Name=None, Path=None, Value=None, Trainable=False, **Dict):
+    def SetTensor(self, Name=None, Path=None, Data=None, Trainable=False, **Dict):
         if Trainable:
-            self.SetTrainParam(Name=Name, Path=Path, Value=Value, **Dict)
+            self.SetTrainParam(Name=Name, Path=Path, Data=Data, **Dict)
             return self
         if Name is not None:
-            assert Value is not None
-            self._SetTensor(Name, Path, Value)
-        for _Name, _Value in Dict.items():
-            self._SetTensor(_Name, None, _Value)
+            assert Data is not None
+            self._SetTensor(Name, Path, Data)
+        for _Name, _Data in Dict.items():
+            self._SetTensor(_Name, None, _Data)
         return self
     SetUntrainableParam = SetUnTrainableParam = SetUnTrainableParam = SetTensor
-    def _SetTensor(self, Name, Path=None, Value=None):
+    def _SetTensor(self, Name, Path=None, Data=None):
         if Path is None:
             Path = Name
-        assert Value is not None
+        assert Data is not None
         Param = self.Param
         Param.Tensor.setattr(Name, Path)
-        Param.setattr(Path, Value)
+        Param.setattr(Path, Data)
         return self
     def RegisterTensor(self, Name=None, Path=None, **Dict):
         if Name is not None:
@@ -41,7 +41,6 @@ class AbstractNetwork(AbstractModule):
         Param.Tensor.setattr(Name, Path)
         return self
     RegisterTensorName = RegisterTensor
-
     def SetTensorAsTrainParam(self, Name):
         Param = self.Param
         assert Param.Tensor.hasattr(Name)
@@ -49,33 +48,38 @@ class AbstractNetwork(AbstractModule):
         Param.TrainParam.setattr(Name, Path)
         return self
     SetTrainable = SetTensorAsTrainParam
-    def SetTrainParam(self, Name=None, Path=None, Value=None, **Dict):
+    def SetTrainParam(self, Name=None, Path=None, Data=None, **Dict):
         if Name is not None:
-            assert Value is not None
-            self._SetTrainParam(Name, Path, Value)
-        for _Name, _Value in Dict.items():
-            self._SetTrainParam(_Name, None, _Value)
+            assert Data is not None
+            self._SetTrainParam(Name, Path, Data)
+        for _Name, _Data in Dict.items():
+            self._SetTrainParam(_Name, None, _Data)
         return self
     SetTrainableParam = SetTrainParam
-    def _SetTrainParam(self, Name, Path=None, Value=None):
+    def _SetTrainParam(self, Name, Path=None, Data=None):
         Param = self.Param
         if Path is None:
             Path = "Data." + Name
-        assert Value is not None
-        if hasattr(Value, "requires_grad"):
-            Value.requires_grad = True
+        assert Data is not None
+        if hasattr(Data, "requires_grad"):
+            Data.requires_grad = True
         Param.TrainParam.setattr(Name, Path)
-        Param.setattr(Path, Value)
+        Param.setattr(Path, Data)
         self._RegisterTensor(Name, Path)
-        setattr(self, Name, Value)
+        setattr(self, Name, Data)
         return self
-
     def RegisterTrainParam(self, Name, Path=None):
-        if Path is None:
-            Path = Name
         Param = self.Param
-        Param.TrainParam.setattr(Name, Path)
-        self.RegisterTensor(Name, Path)
+        if Path is None:
+            if self.Tensor.hasattr(Name):
+                Path = self.Tensor.getattr(Name)
+                Param.TrainParam.setattr(Name, Path)
+        else:
+            Param.TrainParam.setattr(Name, Path)
+            if self.Tensor.hasattr(Name):
+                assert Path == self.Tensor.getattr(Name) 
+            else: # train param is also tensor
+                self.RegisterTensor(Name, Path)
         return self
     RegisterTrainParamName = RegisterTrainParam
     def GetTensor(self, Name):

@@ -7,6 +7,7 @@ import torch
 import numpy as np
 import DLUtils
 import DLUtils.transform.nonlinear as nonlinear
+from .nonlinear import NonLinearFunction, NonLinearModule, NonLinearTransform
 
 class Sum(DLUtils.module.AbstractOperator):
     def Receive(self, *List):

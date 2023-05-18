@@ -53,7 +53,8 @@ import DLUtils.plot as plot
 
 import DLUtils.loss as loss
 
-from DLUtils.data.utils import \
+import DLUtils.data as data
+from DLUtils.data.generate import \
     SampleFromKaimingNormal, \
     SampleFromKaimingUniform, \
     SampleFromXaiverNormal, \
@@ -65,7 +66,8 @@ from DLUtils.data.utils import \
     SampleFromUniformDistribution, \
     DefaultConv2DKernel, DefaultUpConv2DKernel, ShapeWithSameValue, \
     DefaultNonLinearLayerWeight, DefaultNonLinearLayerBias, DefaultLinearLayerWeight, \
-    DefaultUpConv2DBias, DefaultConv2DBias, DefaultLinearLayerBias
+    DefaultUpConv2DBias, DefaultConv2DBias, DefaultLinearLayerBias, \
+    DefaultVanillaRNNHiddenWeight
 
 import DLUtils.geometry2D as geometry2D
 

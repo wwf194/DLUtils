@@ -224,38 +224,36 @@ class MultiHeadAttention(DLUtils.module.AbstractNetwork):
         self.VSizeHead = self.VSize // self.HeadNum
         self.QKDotProductCoeff = 1.0 / self.QKSizeHead ** 0.5
     
-
-    
         if self.IsInit():
-            if not Param.Data.hasattr("In2Query"):
+            if not Param.Attention.Q.hasattr("Data"):
                 self.SetTrainParam(
                     Name="WeightQ",
                     Path="Attention.Q.Data",
-                    Value=DLUtils.DefaultLinearLayerWeight(            
+                    Data=DLUtils.DefaultLinearLayerWeight(            
                             Shape=(self.InSize, self.QKSize)
                         )
                 )
-            if not Param.Data.hasattr("In2Key"):
+            if not Param.Attention.K.hasattr("Data"):
                 self.SetTrainParam(
                     Name="WeightK",
                     Path="Attention.K.Data",
-                    Value=DLUtils.DefaultLinearLayerWeight(            
+                    Data=DLUtils.DefaultLinearLayerWeight(            
                             Shape=(self.InSize, self.QKSize)
                         )
                 )
-            if not Param.Data.hasattr("In2Value"):
+            if not Param.Attention.V.hasattr("Data"):
                 self.SetTrainParam(
                     Name="WeightV",
                     Path="Attention.V.Data",
-                    Value=DLUtils.DefaultLinearLayerWeight(            
+                    Data=DLUtils.DefaultLinearLayerWeight(            
                             Shape=(self.InSize, self.VSize)
                         )
                 )
-            if not Param.Data.hasattr("Value2Out"):
+            if not Param.Attention.O.hasattr("Data"):
                 self.SetTrainParam(
                     Name="Value2Out",
                     Path="Attention.O.Data",
-                    Value=DLUtils.DefaultLinearLayerWeight(            
+                    Data=DLUtils.DefaultLinearLayerWeight(            
                             Shape=(self.VSize, self.OutSize)
                         )
                 )

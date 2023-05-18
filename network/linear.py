@@ -43,7 +43,6 @@ class LinearLayer(DLUtils.module.AbstractNetwork):
     def SetWeight(self, Weight, Trainable=True):
         Weight = DLUtils.ToNpArrayOrNum(Weight)
         Param = self.Param
-        Param.Weight.Value = Weight
         Param.In.Size = Weight.shape[0]
         Param.Out.Size = Weight.shape[1]
         assert len(Weight.shape) == 2
@@ -52,10 +51,9 @@ class LinearLayer(DLUtils.module.AbstractNetwork):
         #         assert Param.Out.Size == Data.Weight.shape[1]
         #     else:
         #         assert Param.In.Size == Data.Weight.shape[0]
+        self.SetTensor(Name="Weight", Path="Weight.Data", Data=Weight)
         if Trainable:
-            self.RegisterTrainParam(Name="Weight", Path="Weight.Value")
-        else:
-            self.RegisterTensor(Name="Weight", Path="Weight.Value")
+            self.RegisterTrainParam(Name="Weight")
         return self
     def SetBias(self, Bias, Trainable=True):
         Param = self.Param
@@ -80,11 +78,11 @@ class LinearLayer(DLUtils.module.AbstractNetwork):
         if isinstance(Bias, np.ndarray):
             Param.Tensor.add("Bias")
             self.SetTensor(
-                Name="Bias", Path="Bias.Value",
-                Value=Bias
+                Name="Bias", Path="Bias.Data",
+                Data=Bias
             )
             if Trainable:
-                self.RegisterTrainParam(Name="Bias", Path="Bias.Value")
+                self.RegisterTrainParam(Name="Bias")
         else:
             assert isinstance(Bias, float)
         Param.Bias.Data = Bias
@@ -97,7 +95,7 @@ class LinearLayer(DLUtils.module.AbstractNetwork):
             Mode = Param.setdefault("Mode", "Wx+b")
 
             # weight setting
-            if not Param.Weight.hasattr("Value"):
+            if not Param.Weight.hasattr("Data"):
                 self.SetWeightDefault()
 
             # bias setting

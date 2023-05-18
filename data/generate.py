@@ -27,10 +27,27 @@ DefaultLinearLayerBias = DefaultNonLinearLayerBias
 def DefaultLinearLayerWeight(Shape):
     return SampleFromKaimingUniform(Shape, NonLinear=None)
 
-def DefaultConv2DKernel(Shape, GroupNum=1, **Dict):
+def DefaultVanillaRNNHiddenWeightTorch(Shape):
     """
+    torch implementation
+        https://pytorch.org/docs/stable/generated/torch.nn.RNN.html
+    Shape: (HiddenNum, HiddenNum)
+    w ~ U(-sqrt(k), sqrt(k))
+        where k = 1 / (HiddenNum)
+    """
+    HiddenNum = Shape[0]
+    assert Shape[0] == Shape[1]
+    Max = 1.0 / math.sqrt(HiddenNum)
+    Min = - Max
+    return SampleFromUniformDistribution(Shape, Min, Max)
+
+DefaultVanillaRNNHiddenWeight = DefaultVanillaRNNHiddenWeightTorch
+
+def DefaultConv2DKernelTorch(Shape, GroupNum=1, **Dict):
+    """
+    torch implementation
     Shape: (InNum, OutNum, KernelHeight, KernelWidth)
-    torch: w ~ U(-sqrt(k), sqrt(k))
+    w ~ U(-sqrt(k), sqrt(k))
         where k = GroupNum / (InNum * KernelWidth * KernelHeight)
     """
     Max = GroupNum / (Shape[0] * Shape[2] * Shape[3])
@@ -39,6 +56,7 @@ def DefaultConv2DKernel(Shape, GroupNum=1, **Dict):
     assert Shape[1] % GroupNum == 0
     # Kernel: (OutNum, InNum // GroupNum, Height, Width). torch.conv2d.
     return SampleFromUniformDistribution((Shape[1], Shape[0] // GroupNum, Shape[2], Shape[3]), Min, Max)
+DefaultConv2DKernel = DefaultConv2DKernelTorch
 
 def DefaultConv2DBias(Shape, GroupNum=1, **Dict):
     """
