@@ -563,9 +563,7 @@ def Str2File(Str, FilePath):
 
 def Tensor2TextFile2D(Data, SavePath="./test/"):
     Data = DLUtils.ToNpArray(Data)
-    NpArray2D2TextFile(Data, SavePath=SavePath)
-
-
+    DLUtils.NpArray2D2TextFile(Data, SavePath=SavePath)
 
 def LoadParamFromFile(Args, **kw):
     if isinstance(Args, dict):
@@ -577,18 +575,6 @@ def LoadParamFromFile(Args, **kw):
         _LoadParamFromFile(Args, **kw)
     else:
         raise Exception()
-
-def _LoadParamFromFile(Args, **kw):
-    FilePathList = DLUtils.ToList(Args.FilePath)
-    MountPathList = DLUtils.ToList(Args.MountPath)
-    for MountPath, FilePath in zip(MountPathList, FilePathList):
-        Obj = DLUtils.json.JsonFile2PyObj(FilePath)
-        if not isinstance(Obj, list):
-            EnsureAttrs(Args, "SetResolveBase", default=True)
-            if Args.SetResolveBase:
-                setattr(Obj, "__IsResolveBase__", True)
-        DLUtils.MountObj(MountPath, Obj, **kw)
-    return
 
 def cal_path_from_main(path_rel=None, path_start=None, path_main=None):
     # path_rel: file path relevant to path_start
@@ -693,7 +679,6 @@ def File2MD5(FilePath):
     Md5Calculator.update(bytes)
     Md5Str = Md5Calculator.hexdigest()
     return Md5Str
-
 
 def FileList2Md5(FilePathList):
     Md5List = []
@@ -1024,6 +1009,19 @@ def Jpg2NpArray(Path):
     assert Image is not None
     return Image
 JPG2NpArray = Jpeg2NpArray = Jpg2NpArray
+
+def RemoveAllFileWithSuffix(DirPath, Suffix):
+    DirPath = StandardizePath(DirPath)
+    FileNameList = ListAllFileNames(DirPath)
+    FileNamePattern = fr"(.*)\.(Suffix)"%Suffix
+    FileNamePatternCompiled = re.compile(FileNamePattern)
+    for FileName in FileNameList:
+        MatchResult = FileNamePatternCompiled.match(FileName)
+        if MatchResult is not None:
+            DeleteFile(DirPath + FileName)
+    return True
+
+RemoveFileWithSuffix = RemoveAllFileWithSuffix
 
 def RemoveAllPNGFile():
     DLUtils.file.RemoveMatchedFiles("./", r".*\.png")

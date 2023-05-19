@@ -18,8 +18,18 @@ def HasSuffix(Str, Suffix):
     MatchResult = MatchPattern.match(Str)
     return MatchResult is None
 
+def RemoveSuffixIfExist(Str, Suffix):
+    MatchPattern = re.compile(rf'(.*)%s'%Suffix)
+    MatchResult = MatchPattern.match(Str)
+    if MatchResult is None:
+        return str(Str)
+    else:
+        return MatchResult.group(1)
+    
+RemoveStrSuffixIfExist = RemoveSuffixIfExist    
+
 def RemoveSuffix(Str, Suffix, MustMatch=True):
-    MatchPattern = re.compile(r'(.*)%s'%Suffix)
+    MatchPattern = re.compile(rf'(.*)%s'%Suffix)
     MatchResult = MatchPattern.match(Str)
     if MatchResult is None:
         if MustMatch:

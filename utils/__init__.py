@@ -14,6 +14,7 @@ import matplotlib as mpl
 from matplotlib import pyplot as plt
 # from inspect import getframeinfo, stack
 # from .attrs import *
+import DLUtils.utils._str as str
 from .file import *
 from ._str import *
 
@@ -285,16 +286,23 @@ def DeleteKeysIfExist(Dict, Keys):
             Dict.pop(Key)
     return Dict
 
+
+NpDataTypeMap = IterableKeyToKeys({    
+    ("np.float32", "Float32", "Float", "float"): np.float32,
+    ("np.int8", "Int8", "int8"): np.int8
+})
+
 def ParseDataTypeNp(DataType):
-    if isinstance(DataType, _str):
-        # if DataType in ["np.float32"]:
-        #     return np.float32
-        # elif DataType in ["np.int8"]:
-        #     return np.int8
-        # else:
-        #     raise Exception(DataType)
-        #     # To Be Implemented
-        return eval(DataType)
+    if isinstance(DataType, str):
+        DataTypeParsed = NpDataTypeMap.get("DataType")
+        if DataTypeParsed is not None:
+            return DataTypeParsed
+        else:
+            try:
+                DataTypeParsed = eval(DataType)
+            except Exception:
+                raise Exception()
+            return DataTypeParsed
     else:
         return DataType
 
@@ -839,7 +847,6 @@ def RandomImage(Height=512, Width=512, ChannelNum=None,
 
 NoiseImage = RandomImage
 
-
 def NormWithinNStd2Range(Data, Min, Max, N=1.0, Clip=True):
     Mean0 = Data.mean()
     Std0 = Data.std()
@@ -860,3 +867,4 @@ from ..backend.torch import GetTensorByteNum, GetTensorElementNum
 
 import DLUtils.utils.network as network
 import DLUtils.utils.image as image
+import DLUtils.utils.timer as timer
