@@ -15,6 +15,7 @@ class AbstractModule(LogComponent):
         if Log is not None:
             self._Log = Log
         self.SetParam(**Dict)
+    
     def __call__(self, *List, **Dict):
         return self.CallMethod(*List, **Dict)
     def ExtractParam(self, RetainSelf=True):
@@ -64,8 +65,8 @@ class AbstractModule(LogComponent):
 
         ParamMap = self.GetParamMap()
 
-        if hasattr(self, "ParamMap"):
-            ParamMap.update(self.ParamMap)
+        # if hasattr(self, "ParamMap"):
+        #     ParamMap.update(self.ParamMap)
 
         # for Key, Value in Dict.items():
         #     if Key in Map:
@@ -87,6 +88,25 @@ class AbstractModule(LogComponent):
         else:
             Param.setattr(Key, Value)
         return self
+    def UpdateParam(self, Param):
+        if isinstance(Param, dict):
+            self.Param.absorb_dict(Dict)
+            return self
+        elif isinstance(Param, DLUtils.param):
+            self.Param.Absorb(Param)
+        return self
+    def AbsorbParam(self, Param, Remove=True):
+        ParamMap = self.GetParamMap()
+        for Key, Value in Param.items():
+            if ParamMap.hasattr(Key):
+                self.Param.setattr(ParamMap.getattr(Key), Value)
+                if Remove:
+                    Param.deleteattr(Key)
+            else:
+                self.Param.setattr(Key, Value)
+                if Remove:
+                    Param.deleteattr(Key)
+        return self
     def SetAttr(self, **Dict):
         for Key, Value in Dict.items():
             setattr(self, Key, Value)
@@ -98,7 +118,6 @@ class AbstractModule(LogComponent):
     def AddSubModule(self, Name=None, SubModule=None, **Dict):
         if Name is not None:
             assert SubModule is not None
-            
             assert len(Dict) == 0
             self._AddSubModule(Name, SubModule)
         for _Name, _SubModule in Dict.items():

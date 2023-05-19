@@ -80,7 +80,7 @@ import numpy as np
 import os
 import platform
 
-#读取文件
+# read file
 def LoadPickle(f):
     version = platform.python_version_tuple() # 取python版本号
     if version[0] == '2':

@@ -39,4 +39,4 @@ def IterableKeyToKeys(Dict):
         Dict = DLUtilsDict(Dict)
     return Dict
 
-IterableKeyToElement = IterableKeyToKeys
+ExpandIterableKey = IterableKeyToElement = IterableKeyToKeys

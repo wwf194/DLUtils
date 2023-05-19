@@ -1,5 +1,3 @@
-import numpy as np
-
 import DLUtils
 class ResidualLayer(DLUtils.module.AbstractNetwork):
     def __init__(self, SubModule=None):
@@ -13,5 +11,4 @@ class ResidualLayer(DLUtils.module.AbstractNetwork):
         return Output
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
-        assert Param.hasattr("SubModule")
         return super().Init(IsSuper=True, IsRoot=IsRoot)

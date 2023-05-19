@@ -101,9 +101,9 @@ class TorchModuleWrapper(AbstractNetwork):
             Param = DLUtils.Param(self.Param)
             module_dict = self.module.state_dict()
             module_dict = StateDict2CPU(module_dict)
-            Param.Module.Data = self.module.state_dict()
+            Param.Module.Data = module_dict
             self.ExtractParamRecur(Param, RetainSelf)
-            Attr = Param.delattrifexists("BindModules")
+            Param.delattrifexists("BindModules")
             return Param
         else:
             return "MODULE_WITHOUT_PARAM"
@@ -128,7 +128,7 @@ class TorchModuleWrapper(AbstractNetwork):
         self.module.train()
         return super().SetTrain(Recur=Recur)
     def SetDevice(self, Device=None, IsRoot=True):
-        self.module = self.module.to(Device)
+        self.module.to(Device)
         return super().SetDevice(Device, IsRoot)
     def UpdateModuleFromParam(self):
         Param = self.Param
@@ -143,6 +143,7 @@ class TorchModuleWrapper(AbstractNetwork):
         else:
             raise Exception()
         self.module.load_state_dict(module_dict)
+        return self
     def UpdateParamFromModule(self):
         Param = self.Param
         module_dict = self.module.state_dict()
@@ -168,11 +169,17 @@ class TorchModuleWrapper(AbstractNetwork):
             # wrap: save and load model state_dict
         Mode = self.Mode = Param.Mode
         if Mode in ["Wrap"]:
-            assert hasattr()
-            if self.IsLoad():
-                self.module.load_state_dict(Param.Module.Data)
+            if self.IsInit():
+                # Param.Module.Data = self.module.state_dict()
+                pass
             else:
-                Param.Module.Data = self.module.state_dict()
+                self.module.load_state_dict(Param.Module.Data)
+    
+        if self.IsInit():
+            assert hasattr(self, "module")
+        else:
+            assert hasattr(self, "module")
+    
         return super().Init(IsSuper=True, IsRoot=IsRoot)
 
 class TorchModule(torch.nn.Module):
@@ -189,7 +196,7 @@ class TorchModule(torch.nn.Module):
     def forward(self, *List, **Dict):
         return self.Parent.Receive(*List, **Dict)
     def ExtractTrainParam(self):
-        return self
+        return dict(self.named_parameters())
     def ToFile(self, FilePath, RetainSelf=True):
         self.Parent.ToFile(FilePath, RetainSelf=RetainSelf)
         return self

@@ -19,25 +19,27 @@ class VanillaRNN(DLUtils.module.AbstractNetwork):
         # InList: (StepNum, BatchSize, InNum)
         OutList = []
         Hidden = self.GetInitState()
+        
         if StepNum is None:
             StepNum = self.StepNum
+        
         for StepIndex in range(StepNum):
             In = InList[StepNum, :, :]
-            In = self.In(In)
-            Hidden = self.Hidden(Hidden)
-            Hidden = In + Hidden
-            Hidden = self.NonLinear(self.RecurrentWeight, Hidden)
+            In2 = self.In(In)
+            Hidden2 = self.Hidden(Hidden)
+            Hidden3 = In2 + Hidden2
+            Hidden = self.NonLinear(Hidden3)
             Out = self.Out(Hidden)
             OutList.append(Out)
-        
+
         OutFinal = self.GetOut(OutList)
         return {
             "Out": OutFinal
         }
-
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         if self.IsInit():
+            # input module setting
             if not self.HasSubModule("In"):
                 self.AddSubModule(
                     Name="In",
@@ -47,7 +49,6 @@ class VanillaRNN(DLUtils.module.AbstractNetwork):
                         NonLinear=Param.In.setdefault("NonLinear", "None")
                     )
                 )
-            
             # recurrent module setting
             if not self.HasSubModule("Hidden"):
                 self.AddSubModule(
@@ -55,15 +56,21 @@ class VanillaRNN(DLUtils.module.AbstractNetwork):
                     SubModule=DLUtils.network.NonLinearLayer(
                         InNum=Param.Hidden.Num,
                         OutNum=Param.Hidden.Num,
-                        NonLinear=Param.Hidden.setdefault("NonLinear", "ReLU")
+                        NonLinear=Param.Hidden.setdefault("NonLinear", "None")
                     ).SetWeight(
                         DLUtils.DefaultVanillaRNNHiddenWeight(
                             (Param.Hidden.Num, Param.Hidden.Num)
                         )
                     )
                 )
-            
-
+            # nonlinear setting
+            if not self.HasSubModule("NonLinear"):
+                self.AddSubModule(
+                    Name="NonLinear",
+                    SubModule=DLUtils.transform.NonLinearModule(
+                        Param.NonLinear.setdefault("Type", "ReLU")
+                    )
+                )
             # output setting
             if not self.HasSubModule("Out"):
                 self.AddSubModule(
@@ -84,7 +91,7 @@ class VanillaRNN(DLUtils.module.AbstractNetwork):
                     self.SetTensor(
                         Name="InitState",
                         Path="InitState.Data",
-                        Value=DLUtils.SampleFrom01NormalDistribution(
+                        Data=DLUtils.SampleFrom01NormalDistribution(
                             (Param.Hidden.Num)
                         )
                     )
@@ -119,7 +126,6 @@ class VanillaRNN(DLUtils.module.AbstractNetwork):
         
         if Param.Iter.hasattr("Num"):
             self.StepNum = Param.Iter.Num
-        
         
         return super().Init(IsSuper=True, IsRoot=IsRoot)
     def GetInitStateZero(self, BatchSize):

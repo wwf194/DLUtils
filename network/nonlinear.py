@@ -92,7 +92,7 @@ class NonLinearLayer(LinearLayer):
         self.SetTrainParam(
             Name="Weight",
             Path="Weight.Data",
-            Value=DLUtils.DefaultNonLinearLayerWeight(
+            Data=DLUtils.DefaultNonLinearLayerWeight(
                 Shape=(Param.In.Size, Param.Out.Size),
                 NonLinear=Param.NonLinear.Type,
             )
@@ -109,7 +109,7 @@ class NonLinearLayer(LinearLayer):
         self.SetTrainParam(
             Name="Bias",
             Path="Bias.Data",
-            Value=DLUtils.DefaultNonLinearLayerBias(UnitNum)
+            Data=DLUtils.DefaultNonLinearLayerBias(UnitNum)
         )
         if Param.Bias.Trainable:
             self.SetTrainable("Bias")

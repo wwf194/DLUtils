@@ -64,9 +64,12 @@ def ImageNp2File(Image, FilePath, Format=None):
             Format = "png"
         else:
             Format = Suffix
+    else:
+        assert isinstance(Format, str)
+        Format = Format.lstrip(".")
 
     # convert to jpeg and save in variable
-    ImageBytes = cv2.imencode("." + Suffix, Image)[1].tobytes()
+    ImageBytes = cv2.imencode("." + Format, Image)[1].tobytes()
     
     with open(FilePath, 'wb') as f:
         f.write(ImageBytes)
@@ -77,6 +80,7 @@ Image2File = ImageNp2File
 def Test():
     ImageFilePath = DLUtils.file.DirPathOfFile(__file__) + "test-image-lenna.png"
     CompressImageFile(ImageFilePath, Ratio=0.5)
+    DLUtils.utils.image.File2JpgFile(ImageFilePath)
 
 if __name__ == '__main__':
     Test()
@@ -86,4 +90,5 @@ if __name__ == '__main__':
 def CompressImageAtFolder(DirPath):
     ListFiles = DLUtils.file.ListAllFileNames(DirPath)
     return
-    
+
+

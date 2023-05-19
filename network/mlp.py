@@ -30,8 +30,8 @@ class MLP(_ModuleList):
             # nonlinear setting
             Param.NonLinear.setdefault("Enable", True)
             if Param.NonLinear.Enable:
-                if not Param.NonLinear.hasattr("DefaultType"):
-                    Param.NonLinear.setdefault("DefaultType", "ReLU")
+                if not Param.NonLinear.hasattr("Type"):
+                    Param.NonLinear.setdefault("Type", "ReLU")
                 Param.NonLinear.setdefault("ApplyOnLastLayer", True)
             
             # bias setting
@@ -58,15 +58,15 @@ class MLP(_ModuleList):
         return super().Init(IsSuper=True, IsRoot=IsRoot)
     def GetNonLinear(self, LayerIndex, LayerNum):
         Param = self.Param
-        NonLinearTypeDefault = Param.NonLinear.DefaultType
+        NonLinearType = Param.NonLinear.Type
         if Param.NonLinear.Enable:
             Param.NonLinear
             if LayerIndex == LayerNum - 1: # Last Layer:
                 if Param.NonLinear.get("ApplyOnLastLayer"):
-                    return NonLinearTypeDefault
+                    return NonLinearType
                 else:
                     return "None"
             else:
-                return NonLinearTypeDefault
+                return NonLinearType
         else:
             return "None"

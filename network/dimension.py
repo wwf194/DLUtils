@@ -27,3 +27,4 @@ class InsertDim(DLUtils.module.AbstractNetwork):
         assert isinstance(Param.InsertIndex, int)
         self.DimenInsertIndexsionIndex = Param.InsertIndex
         return super().Init(IsSuper=True, IsRoot=IsRoot)
+    
