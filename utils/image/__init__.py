@@ -17,14 +17,62 @@ def GenerateBlackImageInt16(Height=512, Width=512, ChannelNum=3):
 def GenerateSingleColorImage(Height, Width, Color, ChannelNum, DataType):
     DataType = DLUtils.ParseDataTypeNp(DataType)
 
-def TextOnImage(Image):
-    cv2.PutText()
+
+def TextOnImageCenter(Image, Text="Text", Color=(0, 0, 0)):
+    Height, Width = Image.shape[0], Image.shape[1]
+    TextWidthMax = round(Width * 0.5)
+    TextHeightMax = round(Height * 0.5)
     
-def File2JpgFile(FilePath):
+    Scale = 1.0
+    Size = cv2.getTextSize(
+        text=Text,
+        fontFace=cv2.FONT_HERSHEY_TRIPLEX,
+        fontScale=Scale,
+        thickness=3
+    ) # ((Width, Height), ?)
+    
+    WidthCurrent = Size[0][0]
+    HeightCurrent = Size[0][1]
+    
+    Scale = Scale * min(TextWidthMax / WidthCurrent, TextHeightMax / HeightCurrent)
+
+    Size = cv2.getTextSize(
+        text=Text,
+        fontFace=cv2.FONT_HERSHEY_TRIPLEX,
+        fontScale=Scale,
+        thickness=3
+    ) # ((Width, Height), ?)
+
+    WidthCurrent = Size[0][0]
+    HeightCurrent = Size[0][1]
+    
+    XLeft = round(Width / 2.0 - WidthCurrent / 2.0)
+    YBottom = round(Height / 2.0 + HeightCurrent / 2.0)
+
+    XYLeftBottom = (XLeft, YBottom)
+
+    TextOnImageCv(Image, Text, XYLeftBottom, Color, Scale)
+
+def TextOnImageCv(Image, Text="Text", XYLeftBottom=None, Color=(0, 0, 0), Scale=1.0):
+    if XYLeftBottom is None:
+        XYLeftBottom = (0, Image.shape[0])
+
+    cv2.putText(
+        img=Image,
+        text=Text,
+        org=XYLeftBottom, # coordinate of left bottom corner
+        fontFace=cv2.FONT_HERSHEY_TRIPLEX,
+        fontScale=Scale,
+        color=Color,
+        thickness=3
+    )
+    return Image
+TextOnImage = TextOnImageCv
+
+def ImageFile2JpgImageFile(FilePath):
     Image = File2Image(FilePath)
     Name, Suffix = DLUtils.file.SeparateFileNameSuffix(FilePath)
     Result = Image2File(Image, Name + ".jpg", Format=".jpg")
     return Result
 
-
-    
+File2JpgFile = ImageFile2JpgFile = ImageFile2JpgImageFile

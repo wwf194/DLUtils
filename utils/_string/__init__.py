@@ -51,3 +51,8 @@ def SelectStrWithPatternFromList(List, Pattern):
     StrPattern = re.compile(StrPattern)
     for Str in List:
         assert isinstance(Str, str)
+        
+def Test():
+    # python 3 string all uses unicode.
+    Str = "你好，世界！"
+    

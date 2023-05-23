@@ -6,3 +6,8 @@ def GetTensorByteNum(Tensor): # Byte
 
 def GetTensorElementNum(Tensor): # Byte
     return Tensor.nelement()
+
+import torch
+
+def SampleFrom01NormalDistributionTorch(Shape):
+    return torch.randn(Shape)

@@ -28,7 +28,7 @@ import DLUtils.utils.func as function
 import DLUtils.utils.math as math
 import DLUtils.utils.__struct__ as struct
 import DLUtils.utils.system as system
-import DLUtils.python as python
+# import DLUtils.python as python
 from .utils.__struct__ import FixedSizeQueuePassiveOutInt, FixedSizeQueuePassiveOutFloat
 
 
@@ -81,7 +81,7 @@ from DLUtils.log import \
 from DLUtils.utils.func import \
     EmptyFunction
 from DLUtils.utils.file import ParseSavePath
-
+import DLUtils.utils.system as system
 from DLUtils.plot import \
     NpArray2ImageFile, \
     Tensor2ImageFile

@@ -1,8 +1,14 @@
 from inspect import Traceback
 import re
 import sys
+import os
 import time
 import DLUtils
+
+def GetCurrentProcessPID():
+    return os.getpid()
+
+CurrentProcessPID = GetCurrentProcessPID
 
 def ReportPyTorchInfo():
     import torch
@@ -64,11 +70,12 @@ def RunPythonScript(FilePath, Args):
     subprocess.call(ArgsListStr)
 RunPythonFile = RunPythonScript
 
-def GetTime(format="%Y-%m-%d %H:%M:%S", verbose=False):
+def CurrentTimeStr(format="%Y-%m-%d %H:%M:%S", verbose=False):
     TimeStr = time.strftime(format, time.localtime()) # Time display style: 2016-03-20 11:45:39
     if verbose:
         print(TimeStr)
     return TimeStr
+GetCurrentTime = GetTime = CurrentTimeStr
 
 import dateutil
 def GetTimeDifferenceFromStr(TimeStr1, TimeStr2):
@@ -89,3 +96,6 @@ import traceback
 def Stack2File(FilePath):
     DLUtils.EnsureFileDir(FilePath)
     traceback.print_exc(file=open(FilePath, "w"))
+
+
+
