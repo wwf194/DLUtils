@@ -4,7 +4,7 @@ import json5
 from typing import List
 
 import DLUtils
-from DLUtils.python import CheckIsLegalPyName
+from ..python import CheckIsLegalPyName
 # from DLUtils.attr import *
 # from DLUtils.utils import ListAttrs # leads to recurrent reference.
 

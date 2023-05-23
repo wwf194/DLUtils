@@ -90,7 +90,7 @@ def MoveFile(FilePath, FilePathDest, RaiseIfNonExist=False, Overwrite=True, Rais
             else:
                 warnings.warn(Msg)
     shutil.move(FilePath, FilePathDest)
-    DeleteFile(FilePath)
+    # DeleteFile(FilePath) # shutil.move will delete file upon successful move.
     return True
 
 def MoveFolder(FolderPath, FolderPathNew, RaiseIfNonExist=False, Overwrite=True):
@@ -166,6 +166,12 @@ def FolderPathOfFile(FilePath):
     DirPath = os.path.dirname(os.path.realpath(FilePath)) + "/"
     return DLUtils.file.StandardizePath(DirPath)
 DirPathOfFile = ParentFolderPath = FolderPathOfFile
+CurrentDirPath = DirPathOfCurrentFile = FolderPathOfFile
+
+
+def CurrentFileName(FilePath):
+    # FilePath: __file__ variable of caller .py file.
+    return FileNameFromPath(FilePath)
 
 from pathlib import Path
 
@@ -463,6 +469,13 @@ def ExistsPath(Path):
 
 def GetFileSuffix(FilePath):
     return SeparateFileNameSuffix(FilePath)[1]
+
+def AppendSuffix2FileName(FileName, Suffix):
+    Name, _Suffix = SeparateFileNameSuffix(FileName)
+    if _Suffix in [""] or Suffix is None:
+        return Name + Suffix
+    else:
+        return Name + Suffix + "." + _Suffix
 
 def SeparateFileNameSuffix(FilePath):
     if FilePath.endswith("/"):

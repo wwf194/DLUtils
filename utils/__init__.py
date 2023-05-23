@@ -15,6 +15,8 @@ from matplotlib import pyplot as plt
 # from inspect import getframeinfo, stack
 # from .attrs import *
 import DLUtils.utils._str as str
+import DLUtils.utils._string as string
+
 from .file import *
 from ._str import *
 

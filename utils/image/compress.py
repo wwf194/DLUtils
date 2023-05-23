@@ -1,3 +1,8 @@
+
+import sys
+sys.path.append("../")
+import DLUtils
+
 import cv2
 def CompressImageFile(FilePathSource, FilePathDest=None, *List, **Dict):
     if FilePathDest is None:
@@ -7,14 +12,12 @@ def CompressImageFile(FilePathSource, FilePathDest=None, *List, **Dict):
     Image = File2Image(FilePathSource)
     ImageNew = CompressImage(Image, Ratio=0.5)
     Image2File(ImageNew, FilePathDest)
-
-
+                
 def CompressImage(Image, Ratio=0.5):
     ImageNew = ResizeImage(Image, Ratio=Ratio)
     # ImageData: ImageNp
     return ImageNew
 
-import DLUtils
 def ResizeImage(Image, Height=None, Width=None, Ratio=None, KeepShape=False, MaxHeight=None, MaxWidth=None):
     Height0 = Image.shape[0]
     Width0 = Image.shape[1]
@@ -70,22 +73,30 @@ def ImageNp2File(Image, FilePath, Format=None):
 
     # convert to jpeg and save in variable
     ImageBytes = cv2.imencode("." + Format, Image)[1].tobytes()
-    
+
     with open(FilePath, 'wb') as f:
         f.write(ImageBytes)
-    return
+    return True
 
 Image2File = ImageNp2File
 
 def Test():
     ImageFilePath = DLUtils.file.DirPathOfFile(__file__) + "test-image-lenna.png"
-    CompressImageFile(ImageFilePath, Ratio=0.5)
-    DLUtils.utils.image.File2JpgFile(ImageFilePath)
+    # ImageFilePath = "Z:/temp/1.png"
+    # CompressImageFile(ImageFilePath, Ratio=0.5)
+    # DLUtils.utils.image.File2JpgFile(ImageFilePath)
+
+    Image0 = File2Image(ImageFilePath) # (height, width, channel)
+    for Index in range(10):
+        Image = Image0.copy()
+        Str = "%02d"%Index
+        DLUtils.image.TextOnImageCenter(Image, Str, Color=(0, 255, 0))
+        import matplotlib.pyplot as plt
+        plt.imshow(Image)
+        Image2File(Image, DLUtils.file.AppendSuffix2FileName(ImageFilePath, "-text-%s"%Str))
 
 if __name__ == '__main__':
     Test()
-
-
 
 def CompressImageAtFolder(DirPath):
     ListFiles = DLUtils.file.ListAllFileNames(DirPath)
