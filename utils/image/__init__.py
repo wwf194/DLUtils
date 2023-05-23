@@ -25,6 +25,3 @@ def File2JpgFile(FilePath):
     Name, Suffix = DLUtils.file.SeparateFileNameSuffix(FilePath)
     Result = Image2File(Image, Name + ".jpg", Format=".jpg")
     return Result
-
-
-    
