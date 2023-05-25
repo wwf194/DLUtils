@@ -14,11 +14,10 @@ import matplotlib as mpl
 from matplotlib import pyplot as plt
 # from inspect import getframeinfo, stack
 # from .attrs import *
-import DLUtils.utils._str as str
 import DLUtils.utils._string as string
 
 from .file import *
-from ._str import *
+from DLUtils.utils._string import *
 
 import argparse
 import traceback
@@ -671,7 +670,7 @@ def check_suffix(name, suffix=None, is_path=True):
             warnings.warn('check_suffix: no suffix found in %s. adding suffix %s.'%(name, suffix))            
             return name + '.' + suf_
 
-from ._str import HasSuffix, RemoveSuffix
+from ._string import HasSuffix, RemoveSuffix
 
 def scan_files(path, pattern, ignore_folder=True, raise_not_found_error=False):
     if not path.endswith('/'):
@@ -805,7 +804,7 @@ def RegisterExternalMethods(Name, Method):
 def RegisterExternalClasses(Name, Class):
     setattr(ExternalClasses, Name, Class)
 
-from ._str import Str2Bytes, Bytes2Str
+from ._string import Str2Bytes, Bytes2Str
 
 def Unzip(Lists):
     return zip(*Lists)

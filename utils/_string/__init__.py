@@ -55,4 +55,14 @@ def SelectStrWithPatternFromList(List, Pattern):
 def Test():
     # python 3 string all uses unicode.
     Str = "你好，世界！"
-    
+
+
+def CodePoint2Char(CodePointInt):
+    # CodePointNum: Int
+    return chr(CodePointInt)
+Int2Char = UnicodePoint2Char = CodePoint2Char
+
+def Char2CodePoint(Char):
+    return ord(Char)
+Char2Num = Char2UnicodePoint = Char2CodePoint
+

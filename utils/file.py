@@ -169,8 +169,11 @@ DirPathOfFile = ParentFolderPath = FolderPathOfFile
 CurrentDirPath = DirPathOfCurrentFile = FolderPathOfFile
 
 
-def CurrentFileName(FilePath):
+def CurrentFilePath(FilePath):
     # FilePath: __file__ variable of caller .py file.
+    return DLUtils.StandardizePath(FilePath)
+
+def CurrentFileName(FilePath):
     return FileNameFromPath(FilePath)
 
 from pathlib import Path
@@ -345,6 +348,7 @@ def EnsureFileDirectory(FilePath):
     FilePath = Path2AbsolutePath(FilePath)
     FileDir = os.path.dirname(FilePath)
     EnsureDir(FileDir)
+    return
 EnsureFileDir = EnsureFileDirectory
 
 def GetFileDir(FilePath):
@@ -477,6 +481,14 @@ def AppendSuffix2FileName(FileName, Suffix):
     else:
         return Name + Suffix + "." + _Suffix
 
+AppendSuffixOnFileName = AppendSuffix2FileName
+
+def AppendSuffixOnCurrentFileName(__File__, Suffix):
+    FilePath = CurrentFilePath(__File__)
+    return AppendSuffixOnFileName(FilePath, Suffix)
+
+AppendOnCurrentFileName = AppendSuffixOnCurrentFileName
+
 def SeparateFileNameSuffix(FilePath):
     if FilePath.endswith("/"):
         raise Exception()
@@ -488,6 +500,12 @@ def SeparateFileNameSuffix(FilePath):
     # to be checked
     # for filename with multiple '.', such as a.b.c, (a.b, c) should be returned
 
+def AppendOnCurrentFileNameAndChangeSuffix(__File__, Append, Suffix):
+    FilePath = CurrentFilePath(__File__)
+    Name, _Suffix = SeparateFileNameSuffix(FilePath)
+    Suffix = Suffix.lstrip(".")
+    return Name + Append + "." + Suffix
+    
 ParseFileNameSuffix = SeparateFileNameSuffix
 
 def AddSuffixToFileWithFormat(FilePath, Suffix):
@@ -571,23 +589,17 @@ def RenameDirIfExists(DirPath):
 
 def Str2File(Str, FilePath):
     DLUtils.EnsureFileDir(FilePath)
-    with open(FilePath, "w") as file:
-        file.write(Str)
+    with open(FilePath, "w") as File:
+        File.write(Str)
+
+def Bytes2File(Bytes, FilePath):
+    DLUtils.EnsureFileDir(FilePath)
+    with open(FilePath, "wb") as File:
+        File.write(Bytes)
 
 def Tensor2TextFile2D(Data, SavePath="./test/"):
     Data = DLUtils.ToNpArray(Data)
     DLUtils.NpArray2D2TextFile(Data, SavePath=SavePath)
-
-def LoadParamFromFile(Args, **kw):
-    if isinstance(Args, dict):
-        _LoadParamFromFile(DLUtils.json.JsonObj2PyObj(Args), **kw)
-    elif isinstance(Args, list) or DLUtils.IsListLikePyObj(Args):
-        for Arg in Args:
-            _LoadParamFromFile(Arg, **kw)
-    elif DLUtils.IsDictLikePyObj(Args):
-        _LoadParamFromFile(Args, **kw)
-    else:
-        raise Exception()
 
 def cal_path_from_main(path_rel=None, path_start=None, path_main=None):
     # path_rel: file path relevant to path_start
