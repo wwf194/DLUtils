@@ -40,11 +40,11 @@ def RemoveSuffix(Str, Suffix, MustMatch=True):
     else:
         return MatchResult.group(1)
 
-def Bytes2Str(Bytes, Format="utf-8"):
-    return _str(Bytes, encoding = "utf-8")
+def Bytes2Str(Bytes, Encoding="utf-8"):
+    return Bytes.decode(Encoding)
 
-def Str2Bytes(Str, Format="utf-8"):
-    return Str.decode(Format)
+def Str2Bytes(Str, Encoding="utf-8"):
+    return Str.encode(Encoding)
 
 import re
 def SelectStrWithPatternFromList(List, Pattern):

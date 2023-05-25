@@ -597,6 +597,12 @@ def Bytes2File(Bytes, FilePath):
     with open(FilePath, "wb") as File:
         File.write(Bytes)
 
+def File2Bytes(FilePath):
+    DLUtils.EnsureFileDir(FilePath)
+    with open(FilePath, "rb") as File:
+        Bytes = File.read()
+    return Bytes
+
 def Tensor2TextFile2D(Data, SavePath="./test/"):
     Data = DLUtils.ToNpArray(Data)
     DLUtils.NpArray2D2TextFile(Data, SavePath=SavePath)

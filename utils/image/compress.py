@@ -101,5 +101,3 @@ if __name__ == '__main__':
 def CompressImageAtFolder(DirPath):
     ListFiles = DLUtils.file.ListAllFileNames(DirPath)
     return
-
-
