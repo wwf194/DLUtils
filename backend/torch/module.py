@@ -2,6 +2,9 @@ import torch
 import numpy as np
 import DLUtils
 
+def TensorElementNum(Tensor):
+    return torch.numel(Tensor)
+
 def ChangeTorchModuleParameter(module:torch.nn.Module):
     ParamDict = dict(module.named_parameters())
     ParamDict
@@ -80,16 +83,34 @@ def StateDict2CPURecur(Obj):
     if isinstance(Obj, dict):
         ObjCPU = {}
         for Key, Value in Obj.items():
-            ObjCPU[Key] = StateDict2CPURecur()
+            ObjCPU[Key] = StateDict2CPURecur(Value)
     elif isinstance(Obj, list):
         ObjCPU = []
         for Index, Item in enumerate(Obj):
             ObjCPU.append(StateDict2CPURecur(Item))
-    elif isinstance(Value, torch.Tensor) or hasattr(Value, "cpu"):
+    elif isinstance(Obj, torch.Tensor) or hasattr(Value, "cpu"):
         ObjCPU = Obj.cpu()
     else:
         ObjCPU = Obj
     return ObjCPU
+
+def StateDict2Device(state_dict, Device):
+    return StateDict2DeviceRecur(state_dict, Device)
+
+def StateDict2DeviceRecur(Obj, Device):
+    if isinstance(Obj, dict):
+        ObjDevice = {}
+        for Key, Value in Obj.items():
+            ObjDevice[Key] = StateDict2DeviceRecur(Value)
+    elif isinstance(Obj, list):
+        ObjDevice = []
+        for Index, Item in enumerate(Obj):
+            ObjDevice.append(StateDict2DeviceRecur(Item))
+    elif isinstance(Obj, torch.Tensor) or hasattr(Value, "to"):
+        ObjDevice = Obj.to(Device)
+    else:
+        ObjDevice = Obj
+    return ObjDevice
 
 from ...module.abstract_network import AbstractNetwork
 class TorchModuleWrapper(AbstractNetwork):
@@ -132,27 +153,35 @@ class TorchModuleWrapper(AbstractNetwork):
         return super().SetDevice(Device, IsRoot)
     def UpdateModuleFromParam(self):
         Param = self.Param
-        module_dict = self.module.state_dict()
-        if hasattr(self, "ModuleParamMap"):
-            for Key, Value in self.ModuleParamMap.items():
-                assert Value in module_dict
-                if Param.hasattr(Key):
-                    module_dict[Value] = DLUtils.ToRunFormat(Param.getattr(Key))
-                else:
-                    raise Exception()
+        # if hasattr(self, "ModuleParamMap"):
+        #     for Key, Value in self.ModuleParamMap.items():
+        #         assert Value in module_dict
+        #         if Param.hasattr(Key):
+        #             module_dict[Value] = DLUtils.ToRunFormat(Param.getattr(Key))
+        #         else:
+        #             raise Exception()
+        # else:
+        #     raise Exception()
+        assert Param.Module.hasattr("Data")
+
+        if hasattr(self, "Device"):
+            Device = self.Device
         else:
-            raise Exception()
+            Device = "cpu"
+
+        module_dict = StateDict2Device(Param.Module.Data, Device)
         self.module.load_state_dict(module_dict)
         return self
     def UpdateParamFromModule(self):
         Param = self.Param
         module_dict = self.module.state_dict()
-        if hasattr(self, "ModuleParamMap"):
-            for Key, Value in self.ModuleParamMap.items():
-                if Value in module_dict:
-                    Param.setattr(Key, DLUtils.ToSaveFormat(module_dict[Value]))
-                else:
-                    raise Exception()
+        # if hasattr(self, "ModuleParamMap"):
+        #     for Key, Value in self.ModuleParamMap.items():
+        #         if Value in module_dict:
+        #             Param.setattr(Key, DLUtils.ToSaveFormat(module_dict[Value]))
+        #         else:
+        #             raise Exception()
+        Param.Module.Data = StateDict2CPU(module_dict)
         self.module.load_state_dict(module_dict)
         return self
     def UpdateTensorFromDict(self, Recur=False):

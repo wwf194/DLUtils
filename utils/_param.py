@@ -180,7 +180,8 @@ class param:
             else:
                 raise Exception()
         else:
-            return self._DICT.pop(Key) 
+            return self._DICT.pop(Key)
+    deleteattr = delattr
     def delattrifexists(self, Key):
         if not Key in self._DICT:
             return None
@@ -196,6 +197,8 @@ class param:
         return self._DICT.get(Key, DefaultValue)
     def items(self):
         return self.GetAttr("_DICT").items()
+    def items_changeable(self):
+        return dict(self.GetAttr("_DICT")).items()
     def append(self, Item):
         self._LIST.append(Item)
     def keys(self):

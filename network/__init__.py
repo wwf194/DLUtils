@@ -22,8 +22,8 @@ from .dimension import AddDimBeforeFirstDim, AddDimAfterLastDim, InsertDim
 from .residual import ResidualLayer
 from .convolution import Conv2D, UpConv2D
 from .attention import MultiHeadSelfAttention, MultiHeadAttention, MultiheadSelfAttentionLayer, TransformerEncoder
+from .recurrent import VanillaRNN
 
 from .image import Image2PatchList, CenterCrop
 
 from .unet import UNet, UNetDownPath, UNetDownSampleBlock, UNetUpPath, UNetUpSampleBlock
-

@@ -3,7 +3,9 @@ import torch
 
 def NonLinearFunction(Type, *List, **Dict):
     if Type in NonLinearModuleMap:
-        return NonLinearModuleMap[Type](*List, **Dict)
+        Module = NonLinearModuleMap[Type](*List, **Dict)
+        assert isinstance(Module, DLUtils.AbstractModule)
+        return Module
     else:
         raise Exception(Type)
 NonLinearModule = NonLinearTransform = NonLinearFunction

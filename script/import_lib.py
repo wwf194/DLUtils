@@ -8,22 +8,27 @@ DLUtilsPath = [
     "..",
     "../.."
 ]
-
+Verbose = True
 Sig = False
+print("trying import DLUtils.")
+ErrorInfo = ""
 for Path in DLUtilsPath:
     if os.path.exists(Path):
         try:
-            print("Trying Path: %s"%Path)
+            # print("Trying Path: %s"%Path)
             sys.path.append(Path)
             import DLUtils
-            print("Successfully imported DLUtils.")
+            print("imported DLUtils from: %s."%DLUtils.StandardizeDirPath(Path))
             Sig = True
             break
         except Exception:
-            traceback.print_exc()
+            ErrorInfo = traceback.format_exc()
+            if Verbose:
+                print(ErrorInfo)
             continue
 if not Sig:
     print("ERROR: Cannot import DLUtils.")
+    print(ErrorInfo)
     sys.exit(-1)
 
 import DLUtils

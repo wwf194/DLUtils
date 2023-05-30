@@ -4,6 +4,8 @@ sys.path.append("../")
 import DLUtils
 
 import cv2
+import PIL
+
 def CompressImageFile(FilePathSource, FilePathDest=None, *List, **Dict):
     if FilePathDest is None:
         Name, Suffix = DLUtils.file.SeparateFileNameSuffix(FilePathSource)
@@ -14,6 +16,9 @@ def CompressImageFile(FilePathSource, FilePathDest=None, *List, **Dict):
     Image2File(ImageNew, FilePathDest)
                 
 def CompressImage(Image, Ratio=0.5):
+    
+    
+    
     ImageNew = ResizeImage(Image, Ratio=Ratio)
     # ImageData: ImageNp
     return ImageNew

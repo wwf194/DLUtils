@@ -237,8 +237,6 @@ def ToTrainableTorchTensor(data):
     else:
         raise Exception(type(data))
 
-
-
 def _1DTo2D(data):
     # turn 1-D data to 2-D data for visualization
     DimensionNum = DLUtils.GetDimensionNum(data)

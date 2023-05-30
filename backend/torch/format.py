@@ -1,10 +1,11 @@
 import numpy as np
 import torch
+import DLUtils
 def ToTorchTensor(Data, Device=None):
     if isinstance(Data, np.ndarray):
         _Data = NpArray2Tensor(Data)
     elif isinstance(Data, list):
-        _Data = NpArray2Tensor(List2NpArray(Data))
+        _Data = NpArray2Tensor(DLUtils.List2NpArray(Data))
     elif isinstance(Data, torch.Tensor):
         _Data = Data
     else:

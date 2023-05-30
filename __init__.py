@@ -1,5 +1,5 @@
 
-from .utils._dict import IterableKeyToElement, IterableKeyToKeys
+from .utils._dict import IterableKeyToElement, IterableKeyToKeys, ExpandIterableKey
 import DLUtils.utils as utils
 from .utils.json import \
     IsJsonObj, PyObj, EmptyPyObj, IsPyObj, IsDictLikePyObj, \
@@ -30,7 +30,6 @@ import DLUtils.utils.__struct__ as struct
 import DLUtils.utils.system as system
 # import DLUtils.python as python
 from .utils.__struct__ import FixedSizeQueuePassiveOutInt, FixedSizeQueuePassiveOutFloat
-
 
 import DLUtils.optimize as optimize # module -> optimize
 import DLUtils.evaluate as evaluate
@@ -70,14 +69,13 @@ from DLUtils.data.generate import \
     DefaultVanillaRNNHiddenWeight
 
 import DLUtils.geometry2D as geometry2D
-
-
 from DLUtils.train import TrainSession, EpochBatchTrainSession
 
 from DLUtils.log import \
     ResetGlobalLogIndex, \
     GlobalLogIndex
 
+from DLUtils.utils import _1DTo2D
 from DLUtils.utils.func import \
     EmptyFunction
 from DLUtils.utils.file import ParseSavePath
@@ -90,5 +88,19 @@ import DLUtils.example as example
 
 import DLUtils.backend as backend
 import DLUtils.backend.torch as torch
+
+from .module.abstract_module import ParamMapDefault, ParamMapDefaultConv
+
+def GetParamMapDefaultConv():
+    return DLUtils.ExpandIterableKey({
+        ("InNum", "InChannelNum"): "In.Num",
+        ("OutNum", "OutChannelNum"): "Out.Num",
+        ("Stride"): "Stride",
+        ("KernelSize", "Kernel.Size"): "Kernel.Size",
+        ("Padding"): "Padding.Value",
+        ("GroupNum", "NumGroup", "Group.Num"): "Group.Num",
+        ("OutputPadding"): "Padding.Additional",
+        ("NonLinear"): "NonLinear.Type"
+    })
 
 PackageFolderPath = DLUtils.file.FolderPathOfFile(__file__)

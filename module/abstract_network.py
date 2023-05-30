@@ -71,12 +71,12 @@ class AbstractNetwork(AbstractModule):
     def RegisterTrainParam(self, Name, Path=None):
         Param = self.Param
         if Path is None:
-            if self.Tensor.hasattr(Name):
-                Path = self.Tensor.getattr(Name)
+            if Param.Tensor.hasattr(Name):
+                Path = Param.Tensor.getattr(Name)
                 Param.TrainParam.setattr(Name, Path)
         else:
             Param.TrainParam.setattr(Name, Path)
-            if self.Tensor.hasattr(Name):
+            if Param.Tensor.hasattr(Name):
                 assert Path == self.Tensor.getattr(Name) 
             else: # train param is also tensor
                 self.RegisterTensor(Name, Path)
@@ -166,9 +166,9 @@ class AbstractNetwork(AbstractModule):
         Param = self.ExtractParam()
         SavePath = DLUtils.ParseSavePath(SaveDir, SaveName, SaveNameDefault=Param._PATH)
         if Param.hasattr("TrainParam"):
-            for WeightName in Param.TrainParam:
+            for WeightName, WeightPath in Param.TrainParam.items():
                 # Data = Param.Data.getattr(WeightName)
-                Data = Param.getattr(WeightName)
+                Data = Param.getattr(WeightPath)
                 if hasattr(Data, "shape"):
                     DimNum = len(Data.shape)
                 else:
@@ -188,12 +188,6 @@ class AbstractNetwork(AbstractModule):
                         Title=f"Shape {Data.shape[0]}"
                     )
                 elif DimNum == 2:
-                    # DLUtils.plot.PlotData2D(
-                    #     Name=WeightName,
-                    #     Data=Data,
-                    #     SavePath=SavePath + "." + WeightName + ".svg",
-                    #     XLabel="Output Dimension", YLabel="Input Dimension"
-                    # )
                     DLUtils.plot.PlotDataAndDistribution2D(
                         Name=WeightName,
                         Data=Data,

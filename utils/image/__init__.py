@@ -17,7 +17,6 @@ def GenerateBlackImageInt16(Height=512, Width=512, ChannelNum=3):
 def GenerateSingleColorImage(Height, Width, Color, ChannelNum, DataType):
     DataType = DLUtils.ParseDataTypeNp(DataType)
 
-
 def TextOnImageCenter(Image, Text="Text", Color=(0, 0, 0)):
     Height, Width = Image.shape[0], Image.shape[1]
     TextWidthMax = round(Width * 0.5)
@@ -74,5 +73,20 @@ def ImageFile2JpgImageFile(FilePath):
     Name, Suffix = DLUtils.file.SeparateFileNameSuffix(FilePath)
     Result = Image2File(Image, Name + ".jpg", Format=".jpg")
     return Result
+
+def ExampleImage(Shape):
+    FilePath = DLUtils.file.CurrentDirPath(__file__) + "test-image-lenna.png"
+
+def ResizeImageAndCropToKeepAspectRatio(Image, Shape):
+    # Shape: (height, width)
+    Height, Width = Image.shape[0], Image.shape[1]
+    Height1, Width1 = Shape[0]
+
+    RatioHeight = Height1 / Height
+    RatioWidth = Width1 / Width
+    
+    if RatioHeight > RatioWidth:
+        Width2 = round(RatioHeight * Width) 
+    
 
 File2JpgFile = ImageFile2JpgFile = ImageFile2JpgImageFile
