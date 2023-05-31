@@ -3,7 +3,17 @@ import re
 import sys
 import os
 import time
+import signal
+import psutil
 import DLUtils
+
+def KillProcessbyPID(PID):
+    os.kill(PID, signal.SIGTERM) #or signal.SIGKILL 
+    # p = psutil.Process(pid)
+    # p.terminate()  #or p.kill()
+
+def ProcessExists(PID):
+    return 
 
 def GetCurrentProcessPID():
     return os.getpid()

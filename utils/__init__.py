@@ -237,6 +237,8 @@ def ToTrainableTorchTensor(data):
     else:
         raise Exception(type(data))
 
+
+
 def _1DTo2D(data):
     # turn 1-D data to 2-D data for visualization
     DimensionNum = DLUtils.GetDimensionNum(data)
@@ -856,6 +858,13 @@ def NormWithinNStd2Range(Data, Min, Max, N=1.0, Clip=True):
         Data1 = np.clip(Data1, Min, Max)
     return Data1
 
+from datetime import datetime
+def DataTimeObj2Str(Obj, Format='%Y-%m-%d %H:%M:%S.%f'):
+    return datetime.strftime(Obj, Format)
+
+def Str2DataTimeObj(Str, Format='%Y-%m-%d %H:%M:%S.%f'):
+    return datetime.strptime(Str, Format)
+    
 import functools
 NormWithinStd2Range = functools.partial(NormWithinNStd2Range, N=1.0)
 NormWithin1Std2Range = NormWithinStd2Range
@@ -867,3 +876,4 @@ from ..backend.torch import GetTensorByteNum, GetTensorElementNum
 import DLUtils.utils.network as network
 import DLUtils.utils.image as image
 import DLUtils.utils.timer as timer
+import DLUtils.utils.sql as sql

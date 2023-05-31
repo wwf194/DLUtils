@@ -3,13 +3,6 @@ class DLUtilsDict(dict):
     def update(self, *List):
         dict.update(self, *List)
         return self
-    def hasattr(self, Key):
-        return Key in self
-    def deleteattr(self, Key):
-        self.pop(Key, None)
-        return self
-    def getattr(self, Key):
-        return self[Key]
 
 def UpdateDict(DictSource, DictTarget, KeyPrefix=None):
     if KeyPrefix is None:
@@ -35,7 +28,7 @@ def PrintDict(Dict, Out="Std"):
     else:
         raise Exception()
 
-def ExpandIterableKey(Dict):
+def IterableKeyToKeys(Dict):
     for Key, Value in dict(Dict).items():
         if isinstance(Key, tuple) or isinstance(Key, set):
             for _Key in Key:
@@ -46,4 +39,4 @@ def ExpandIterableKey(Dict):
         Dict = DLUtilsDict(Dict)
     return Dict
 
-IterableKeyToKeys = IterableKeyToElement = ExpandIterableKey
+ExpandIterableKey = IterableKeyToElement = IterableKeyToKeys

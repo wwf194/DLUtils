@@ -2,14 +2,13 @@ import torch
 import DLUtils
 
 class BatchNorm2D(DLUtils.module.TorchModuleWrapper):
-    ModuleParamMap = DLUtils.ExpandIterableKey({
-        ("InNum", "FeatureNum"): "In.Num",
+    ModuleParamMap = {
         "Affine.Weight": "weight",
         "Affine.Bias": "bias",
         "History.Mean": "running_mean",
         "History.Var": "running_var",
         "History.NumBatchesTracked": "num_batches_tracked"
-    })
+    }
     ParamMap = DLUtils.ExpandIterableKey({
         ("FeatureNum"): "Feature.Num"
     })
@@ -37,7 +36,6 @@ class BatchNorm2D(DLUtils.module.TorchModuleWrapper):
     #     return self.module(In)
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
-        assert Param.In.hasattr("Num")
         if self.IsInit():
             Param.Affine.setdefault("Enable", True)
             Param.Momentum.setdefault("Enable", True)
@@ -45,9 +43,9 @@ class BatchNorm2D(DLUtils.module.TorchModuleWrapper):
                 Momentum = Param.Momentum.setdefault("Value", 0.1)
             else:
                 Momentum = 0.0
-
+        
             self.module = torch.nn.BatchNorm2d(
-                num_features=Param.In.Num,
+                num_features=Param.Feature.Num,
                 affine=Param.Affine.Enable,
                 track_running_stats=Param.Momentum.Enable,
                 momentum=Momentum
@@ -57,7 +55,7 @@ class BatchNorm2D(DLUtils.module.TorchModuleWrapper):
         else:
             # self.UpdateModuleFromParam()
             self.module = torch.nn.BatchNorm2d(
-                num_features=Param.In.Num
+                num_features=Param.Feature.Num
             )
             self.module.load_state_dict(Param.Module.Data)
             

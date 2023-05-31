@@ -1,7 +1,6 @@
 import warnings
 import torch
 import torch.nn.functional as F
-import numpy as np
 import DLUtils
 from ..module import LogComponent
 
@@ -16,6 +15,7 @@ class AbstractModule(LogComponent):
         if Log is not None:
             self._Log = Log
         self.SetParam(**Dict)
+    
     def __call__(self, *List, **Dict):
         return self.CallMethod(*List, **Dict)
     def ExtractParam(self, RetainSelf=True):
@@ -90,32 +90,22 @@ class AbstractModule(LogComponent):
         return self
     def UpdateParam(self, Param):
         if isinstance(Param, dict):
-            self.Param.absorb_dict(Param)
+            self.Param.absorb_dict(Dict)
             return self
         elif isinstance(Param, DLUtils.param):
             self.Param.Absorb(Param)
         return self
-    def AbsorbParam(self, Param, Remove=True, Prefix="", PrefixOnly=False):
+    def AbsorbParam(self, Param, Remove=True):
         ParamMap = self.GetParamMap()
-        PrefixLength = len(Prefix)
-        for Key, Value in Param.items_changeable():
-            MatchPrefix = False
-            if Key.startswith(Prefix):
-                Key = Key[PrefixLength:]
-                MatchPrefix = True
-            else:
-                if PrefixOnly:
-                    continue
-
-            if Key in ParamMap:
+        for Key, Value in Param.items():
+            if ParamMap.hasattr(Key):
                 self.Param.setattr(ParamMap.getattr(Key), Value)
                 if Remove:
-                    Param.delattr(Key)
+                    Param.deleteattr(Key)
             else:
-                if MatchPrefix:
-                    self.Param.setattr(Key, Value)
-                    if Remove:
-                        Param.delattr(Key)
+                self.Param.setattr(Key, Value)
+                if Remove:
+                    Param.deleteattr(Key)
         return self
     def SetAttr(self, **Dict):
         for Key, Value in Dict.items():
@@ -257,7 +247,6 @@ class AbstractModule(LogComponent):
         DLUtils.file.Obj2File(Param, FilePath)
         return self
     def FromFile(self, FilePath):
-        self.Clear()
         Param = DLUtils.file.File2Obj(FilePath)
         self.LoadParam(Param)
         return self
@@ -356,15 +345,6 @@ class AbstractModule(LogComponent):
     def LogWithSelfInfo(self, Content, Type="Unknown"):
         self.Log(f"{self.PathStr()}({self.ClassStr()}): {Content}", Type=Type)
         return self
-    def ReceiveNpArray(self, *List, **Dict):
-        List = list(List)
-        for Index, Item in enumerate(List):
-            if isinstance(Item, np.ndarray):
-                List[Index] = DLUtils.ToTorchTensor(Item)
-        for Key, Value in Dict.items():
-            if isinstance(Value, np.ndarray):
-                Dict[Key] = DLUtils.ToTorchTensor(Value)
-        return self.Receive(*List, **Dict)
     def SetDevice(self, Device=None, IsRoot=True):
         if Device is None:
             Device = self.Device
@@ -504,30 +484,13 @@ class AbstractModule(LogComponent):
 EmptyModule = AbstractModule
 
 from ..utils._dict import IterableKeyToElement
-
-def GetParamMapDefault():
-    return DLUtils.ExpandIterableKey({
-        ("InNum", "InputNum"): "In.Num",
-        ("InType", "InputType"): "In.Type",
-        ("OutNum", "OutputNum"): "Out.Num",
-        ("OutType", "OutputType"): "Out.Type",
-        ("EpochNum"): "Epoch.Num",
-        ("BatchNum"): "Batch.Num",
-        ("BatchSize"): "Batch.Size",
-        ("AfterOperation"): "Operation.After"
-    })
-ParamMapDefault = GetParamMapDefault()
-
-def GetParamMapDefaultConv():
-    return DLUtils.ExpandIterableKey({
-        ("InNum", "InChannelNum"): "In.Num",
-        ("OutNum", "OutChannelNum"): "Out.Num",
-        ("Stride"): "Stride",
-        ("KernelSize", "Kernel.Size"): "Kernel.Size",
-        ("Padding"): "Padding.Value",
-        ("GroupNum", "NumGroup", "Group.Num"): "Group.Num",
-        ("OutputPadding"): "Padding.Additional",
-        ("NonLinear"): "NonLinear.Type"
-    })
-
-ParamMapDefaultConv = GetParamMapDefaultConv()
+ParamMapDefault = IterableKeyToElement({
+    ("InNum", "InputNum"): "In.Num",
+    ("InType", "InputType"): "In.Type",
+    ("OutNum", "OutputNum"): "Out.Num",
+    ("OutType", "OutputType"): "Out.Type",
+    ("EpochNum"): "Epoch.Num",
+    ("BatchNum"): "Batch.Num",
+    ("BatchSize"): "Batch.Size",
+    ("AfterOperation"): "Operation.After"
+})

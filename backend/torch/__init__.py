@@ -4,9 +4,8 @@ from .format import ToTorchTensor, ToTorchTensorOrNum, NpArray2Tensor, NpArray2T
 def GetTensorByteNum(Tensor): # Byte
     return Tensor.nelement() * Tensor.element_size()
 
-def GetTensorElementNum(Tensor):
+def GetTensorElementNum(Tensor): # Byte
     return Tensor.nelement()
-    # return torch.numel(Tensor) 
 
 import torch
 

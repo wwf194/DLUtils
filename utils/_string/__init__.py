@@ -1,4 +1,7 @@
 import re
+import string
+import random
+import DLUtils
 
 # String Related Functions
 def LStrip(Str, Prefix):
@@ -56,7 +59,6 @@ def Test():
     # python 3 string all uses unicode.
     Str = "你好，世界！"
 
-
 def CodePoint2Char(CodePointInt):
     # CodePointNum: Int
     return chr(CodePointInt)
@@ -66,3 +68,16 @@ def Char2CodePoint(Char):
     return ord(Char)
 Char2Num = Char2UnicodePoint = Char2CodePoint
 
+def RandomStrazAZ09(Length):    
+    CharList = DLUtils.math.RandomSelect()
+    return "".join(random.choices(string.ascii_uppercase +
+                             string.digits, k=Length))
+
+def RandomStr(Length, CharList="a-z"):
+    if isinstance(CharList, str):
+        if CharList in ["a-z"]:
+            CharList = list(string.ascii_lowercase)
+        else:
+            CharList = [Char for Char in CharList]
+    
+    return "".join(DLUtils.math.RandomSelectRepeat(CharList, Length))
