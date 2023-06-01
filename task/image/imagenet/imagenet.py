@@ -7,7 +7,7 @@ import json
 # adapted from
 # https://towardsdatascience.com/downloading-and-using-the-imagenet-dataset-with-pytorch-f0908437c4be
 class ImageNet1k(DLUtils.AbstractModule):
-    ParamMap = DLUtils.IterableKeyToElement({
+    ParamMap = DLUtils.ExpandIterableKey({
         ("DataPath", "DataSetPath"): "Data.Path",
     })
     def __init__(self, Transform=None, **Dict):
@@ -54,9 +54,9 @@ class ImageNet1k(DLUtils.AbstractModule):
         # with open(os.path.join(self.DataPath, "imagenet-2012-1k-class-index.json"), "rb") as f:
         #     ClassCode2ClassIndexJson = json.load(f)
 
-        
         ClassCode2ClassIndexJson = DLUtils.JsonFile2Dict(
-            self.DataPath + "imagenet-2012-1k-class-index.json"
+            # "ClassIndex": ["FolderNameInTrainFolder", "ClassName"]
+            self.DataPath + "class-index-train-folder-name-class-name.jsonc"
         )
         for ClassIndexStr, ClassCode in ClassCode2ClassIndexJson.items():
             self.ClassCode2ClassIndex[ClassCode[0]] = int(ClassIndexStr)

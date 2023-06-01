@@ -1,4 +1,3 @@
-
 import sys
 sys.path.append("../")
 import DLUtils
@@ -16,9 +15,6 @@ def CompressImageFile(FilePathSource, FilePathDest=None, *List, **Dict):
     Image2File(ImageNew, FilePathDest)
                 
 def CompressImage(Image, Ratio=0.5):
-    
-    
-    
     ImageNew = ResizeImage(Image, Ratio=Ratio)
     # ImageData: ImageNp
     return ImageNew

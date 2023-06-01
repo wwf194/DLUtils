@@ -108,7 +108,7 @@ MoveDir = MoveFolder
 
 def CopyFiles(FileNameList, SourceDir, DestDir):
     for FileName in FileNameList:
-        CopyFile(FileName, SourceDir, DestDir)
+        CopyFile2Folder(FileName, SourceDir, DestDir)
 CopyFiles2DestDir = CopyFilesInSameFolder = CopyFiles
 
 def CopyFile2AllSubDirsUnderDestDir(FileName, SourceDir, DestDir):
@@ -118,10 +118,14 @@ def CopyFile2AllSubDirsUnderDestDir(FileName, SourceDir, DestDir):
         except Exception:
             continue
 
-def CopyFile(FileName, SourceDir, DestDir):
+def CopyFile2Folder(FileName, SourceDir, DestDir):
     EnsureFileDir(DestDir + FileName)
     shutil.copy(SourceDir + FileName, DestDir + FileName)
-CopyFile2Folder = CopyFile
+
+def CopyFile(FilePath, FilePathDest):
+    FilePath = StandardizePath(FilePath)
+    FilePathDest = StandardizePath(FilePathDest)
+    shutil.copy(FilePath, FilePathDest)
 
 def IsSameFile(FilePath1, FilePath2):
     return os.path.samefile(FilePath1, FilePath2)

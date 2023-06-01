@@ -482,14 +482,17 @@ class AbstractModule(LogComponent):
 
 EmptyModule = AbstractModule
 
-from ..utils._dict import IterableKeyToElement
-ParamMapDefault = IterableKeyToElement({
-    ("InNum", "InputNum"): "In.Num",
-    ("InType", "InputType"): "In.Type",
-    ("OutNum", "OutputNum"): "Out.Num",
-    ("OutType", "OutputType"): "Out.Type",
-    ("EpochNum"): "Epoch.Num",
-    ("BatchNum"): "Batch.Num",
-    ("BatchSize"): "Batch.Size",
-    ("AfterOperation"): "Operation.After"
-})
+from ..utils._dict import IterableKeyToElement, ExpandIterableKey
+
+def GetParamMapDefault():
+    return ExpandIterableKey({
+        ("InNum", "InputNum"): "In.Num",
+        ("InType", "InputType"): "In.Type",
+        ("OutNum", "OutputNum"): "Out.Num",
+        ("OutType", "OutputType"): "Out.Type",
+        ("EpochNum"): "Epoch.Num",
+        ("BatchNum"): "Batch.Num",
+        ("BatchSize"): "Batch.Size",
+        ("AfterOperation"): "Operation.After"
+    })
+ParamMapDefault = GetParamMapDefault()
