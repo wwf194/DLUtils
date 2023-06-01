@@ -53,6 +53,8 @@ class ImageNet1k(DLUtils.AbstractModule):
         self.ClassCode2ClassIndex = {}
         # with open(os.path.join(self.DataPath, "imagenet-2012-1k-class-index.json"), "rb") as f:
         #     ClassCode2ClassIndexJson = json.load(f)
+
+        
         ClassCode2ClassIndexJson = DLUtils.JsonFile2Dict(
             self.DataPath + "imagenet-2012-1k-class-index.json"
         )
