@@ -523,9 +523,10 @@ def _SetNodeKey(Node, Key, Value):
     return Value
 
 def Param2JsonFile(Obj:Param, FilePath):
+    FilePath = DLUtils.file.StandardizePath(FilePath)
     JsonStr = Param2JsonStr(Obj)
-    DLUtils.file.Str2TextFile(JsonStr, FilePath)
-    return
+    Result = DLUtils.file.Str2TextFile(JsonStr, FilePath)
+    return Result
 
 def ToJsonElement(Obj):
     if isinstance(Obj, float) or \
@@ -1451,6 +1452,7 @@ def JsonFile2Tree(FilePath):
     return Tree
 
 def JsonFile2Param(FilePath, SplitKeyByDot=True, SplitKeyException=[]):
+    FilePath = DLUtils.file.StandardizePath(FilePath)
     Tree = JsonFile2Tree(FilePath)
     assert Tree["_TYPE"] == NODE_TYPE.SPINE
     PathTable = Tree2Paths(Tree, SplitKeyByDot=SplitKeyByDot, SplitKeyException=[])

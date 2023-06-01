@@ -8,18 +8,22 @@ ConvParamMap = DLUtils.IterableKeyToElement({
     ("Out.Num"): "OutNum", # output feature map num
 })
 
-class Conv2D(DLUtils.module.AbstractNetwork):
-    ParamMap = DLUtils.IterableKeyToElement({
+def GetParamMapDefaultConv():
+    return DLUtils.ExpandIterableKey({
         ("InNum"): "In.Num",
         ("OutNum"): "Out.Num",
         ("Stride"): "Stride",
         ("KernelSize", "Kernel.Size"): "Kernel.Size",
         ("Padding"): "Padding.Value",
         ("GroupNum", "NumGroup", "Group.Num"): "Group.Num",
-        ("OutputPadding"): "Padding.Additional",
+        ("OutputPadding", "OutPadding"): "Padding.Additional",
         ("Padding"): "Padding.Value",
         ("NonLinear"): "NonLinear.Type"
     })
+ParamMapDefaultConv = GetParamMapDefaultConv()
+
+class Conv2D(DLUtils.module.AbstractNetwork):
+    ParamMap = GetParamMapDefaultConv()
     def __init__(self, InNum=None, OutNum=None, Stride=None, **Dict):
         super().__init__()
         Param = self.Param

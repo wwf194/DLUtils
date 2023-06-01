@@ -7,9 +7,10 @@ from .utils.json import \
 import DLUtils.utils.json as json
 
 #from .utils import _1DTo2D
+import DLUtils.utils._param as param
 from .utils._param import \
     Param, param, \
-    new_param, NewParam, ToParam
+    new_param, NewParam, ToParam, Param2JsonFile, Param2JsonStr
 
 from .utils import *
 SystemType = GetSystemType()
@@ -92,11 +93,7 @@ import DLUtils.example as example
 import DLUtils.backend as backend
 import DLUtils.backend.torch as torch
 
-<<<<<<< HEAD
-from .module.abstract_module import ParamMapDefault, ParamMapDefaultConv
+from .module.abstract_module import GetParamMapDefault
+from .network.convolution import GetParamMapDefaultConv
 
-
-
-=======
->>>>>>> 47024388d69496d48841e67e683adbb88e96b6b8
 PackageFolderPath = DLUtils.file.FolderPathOfFile(__file__)
