@@ -1,10 +1,12 @@
-from inspect import Traceback
 import re
 import sys
 import os
 import time
 import signal
 import psutil
+import datetime
+import traceback
+from inspect import Traceback
 import DLUtils
 
 def KillProcessbyPID(PID):
@@ -102,10 +104,38 @@ def GetTimeDifferenceFromStr(TimeStr1, TimeStr2):
     TimeDiffStr = "%d:%02d:%02d"%(Hour, _Minute, _Second)
     return TimeDiffStr
 
-import traceback
 def Stack2File(FilePath):
     DLUtils.EnsureFileDir(FilePath)
     traceback.print_exc(file=open(FilePath, "w"))
 
+def DateTimeObj2TimeStampFloat(DataTimeObj):
+    # return time.mktime(DataTimeObj.timetuple())
+    # TimeStamp = DataTimeObj.timestamp() # >= Python 3.3
+    TimeDiff = DataTimeObj - TimeStampBase
+    TimeStamp = TimeDiff.total_seconds()
+    return TimeStamp
+    
+def DateTimeObj2TimeStampInt(DataTimeObj):
+    return round(time.mktime(DataTimeObj.timetuple()))
 
+def TimeStamp2DateTimeObj(TimeStamp):
+    # TimeStamp: float or int. unit: second.
+    # millisecond is supported, and will not be floored.
+    DateTimeObj = TimeStampBase + datetime.timedelta(seconds=TimeStamp)
+    return DateTimeObj
+    # might throw error for out of range time stamp.
+    # DateTimeObj = date.fromtimestamp(TimeStamp)
 
+def GetCurrentTimeStampFloat():
+    return DateTimeObj2TimeStampFloat(datetime.datetime.now())
+GetCurrentTimeStamp = GetCurrentTimeStampFloat
+
+def GetCurrentTimeStampInt():
+    return round(DateTimeObj2TimeStampFloat(datetime.datetime.now()))
+
+TimeStampBase = datetime.datetime(1970, 1, 1, 0, 0, 0, 0)
+
+def Test():
+    TimeFloat = DateTimeObj2TimeStampFloat(datetime(1800, 1, 19, 3, 15, 14, 200))
+    print(TimeFloat) # 2147451300.0
+    DateTimeObj = TimeStamp2DateTimeObj(TimeFloat)

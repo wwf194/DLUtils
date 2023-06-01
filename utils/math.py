@@ -81,7 +81,8 @@ def RandomSelect(List, Num, Repeat=False):
 RandomSelectFromList = RandomSelect
 
 def RandomSelectFromListRepeat(List, Num):
-    return random.choices(List, Num)
+    # return random.choices(List, Num)
+    return np.random.choice(List, size=Num, replace=True)
 RandomSelectWithReplacement = RandomSelectFromListWithReplacement = RandomSelectFromListRepeat
 
 RandomSelectRepeat = RandomSelectFromListRepeat

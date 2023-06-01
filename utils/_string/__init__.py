@@ -68,11 +68,37 @@ def Char2CodePoint(Char):
     return ord(Char)
 Char2Num = Char2UnicodePoint = Char2CodePoint
 
-def RandomStrazAZ09(Length):    
-    CharList = DLUtils.math.RandomSelect()
-    return "".join(random.choices(string.ascii_uppercase +
-                             string.digits, k=Length))
+def CharListAZ():
+    return list(string.ascii_uppercase)
 
+def CharListaz():
+    return list(string.ascii_lowercase)
+
+def CharListazAZ():
+    return list(Straz() + CharListAZ())
+
+def CharList09():
+    return list(string.digits)
+
+def Str09():
+    return string.digits
+
+def CharListAZ09():
+    return CharListAZ() + CharList09()
+
+def Straz():
+    return string.ascii_lowercase
+
+def StrAZ():
+    return string.ascii_uppercase
+
+def CharListazAZ09():
+    return list(Straz() + StrAZ() + Str09())
+
+def RandomStrazAZ09(Length):    
+    return "".join(DLUtils.math.RandomSelectRepeat(
+        CharListazAZ09(), Length
+    ))
 def RandomStr(Length, CharList="a-z"):
     if isinstance(CharList, str):
         if CharList in ["a-z"]:
