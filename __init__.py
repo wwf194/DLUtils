@@ -91,16 +91,6 @@ import DLUtils.backend.torch as torch
 
 from .module.abstract_module import ParamMapDefault, ParamMapDefaultConv
 
-def GetParamMapDefaultConv():
-    return DLUtils.ExpandIterableKey({
-        ("InNum", "InChannelNum"): "In.Num",
-        ("OutNum", "OutChannelNum"): "Out.Num",
-        ("Stride"): "Stride",
-        ("KernelSize", "Kernel.Size"): "Kernel.Size",
-        ("Padding"): "Padding.Value",
-        ("GroupNum", "NumGroup", "Group.Num"): "Group.Num",
-        ("OutputPadding"): "Padding.Additional",
-        ("NonLinear"): "NonLinear.Type"
-    })
+
 
 PackageFolderPath = DLUtils.file.FolderPathOfFile(__file__)
