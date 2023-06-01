@@ -9,41 +9,44 @@ ConvParamMap = DLUtils.IterableKeyToElement({
 })
 
 class Conv2D(DLUtils.module.AbstractNetwork):
-    ParamMap = DLUtils.ExpandIterableKey({
-        ("InNum", "InChannelNum"): "In.Num",
-        ("OutNum", "OutChannelNum"): "Out.Num",
+    ParamMap = DLUtils.IterableKeyToElement({
+        ("InNum"): "In.Num",
+        ("OutNum"): "Out.Num",
         ("Stride"): "Stride",
         ("KernelSize", "Kernel.Size"): "Kernel.Size",
         ("Padding"): "Padding.Value",
         ("GroupNum", "NumGroup", "Group.Num"): "Group.Num",
         ("OutputPadding"): "Padding.Additional",
+        ("Padding"): "Padding.Value",
         ("NonLinear"): "NonLinear.Type"
     })
-    def __init__(self, InNum=None, OutNum=None, **Dict):
+    def __init__(self, InNum=None, OutNum=None, Stride=None, **Dict):
         super().__init__()
         Param = self.Param
         if InNum is not None:
             Dict["InNum"] = InNum
         if OutNum is not None:
             Dict["OutNum"] = OutNum
+        if Stride is not None:
+            Dict["Stride"] = Stride
         self.SetParam(**Dict)
-    # def SetParam(self, **Dict):
-    #     Param = self.Param
-    #     _Dict = {}
-    #     for Key, Value in Dict.items():    
-    #         if Key in ["KernelSize", "Kernel.Size"]:
-    #             Param.Kernel.Size = Value
-    #             assert isinstance(Value, int)
-    #         elif Key in ["Padding"]:
-    #             Param.Padding.Value = Value
-    #             # assert isinstance(Value, int) or Value in ["KeepFeatureMapHeightWidth"]
-    #         elif Key in ["Stride"]:
-    #             Param.Stride = Value
-    #             assert isinstance(Value, int)
-    #         else:
-    #             _Dict[Key] = Value
-    #     super().SetParam(**_Dict)
-    #     return self
+    def SetParam(self, **Dict):
+        Param = self.Param
+        _Dict = {}
+        for Key, Value in Dict.items():    
+            if Key in ["KernelSize", "Kernel.Size"]:
+                Param.Kernel.Size = Value
+                assert isinstance(Value, int)
+            elif Key in ["Padding"]:
+                Param.Padding.Value = Value
+                # assert isinstance(Value, int) or Value in ["KeepFeatureMapHeightWidth"]
+            elif Key in ["Stride"]:
+                Param.Stride = Value
+                assert isinstance(Value, int)
+            else:
+                _Dict[Key] = Value
+        super().SetParam(**_Dict)
+        return self
     def Receive(self, In):
         Out = F.conv2d(
             input=In, weight=self.Kernel, bias=self.Bias,

@@ -69,17 +69,6 @@ def ToStandardPathStr(Path):
     Path = Path.replace("\\", "/") # windows style path
     return Path
 StandardizePath = ToStandardPath = ToStandardPathStr
-
-def StandardizeDirPath(Path):
-    if Path is None:
-        return None
-    if Path.startswith("~"):
-        Path = AbsPath("~") + Path[1:]
-    Path = Path.replace("\\", "/") # windows style path
-    if not Path.endswith("/"):
-        Path += "/"
-    return Path
-
 def MoveFile(FilePath, FilePathDest, RaiseIfNonExist=False, Overwrite=True, RaiseIfOverwrite=True):
     if not FileExists(FilePath):
         Msg = f"DLUtils.MoveFile: FilePath {FilePath} does not exist."
@@ -203,6 +192,10 @@ def RemoveFile(FilePath):
     if not ExistsFile(FilePath):
         DLUtils.AddWarning("No such file: %s"%FilePath)
     else:
+        os.remove(FilePath)
+
+def RemoveFileIfExists(FilePath):
+    if ExistsFile(FilePath):
         os.remove(FilePath)
 
 def RemoveDir(DirPath):
@@ -516,21 +509,7 @@ def AppendOnCurrentFileNameAndChangeSuffix(__File__, Append, Suffix):
     Name, _Suffix = SeparateFileNameSuffix(FilePath)
     Suffix = Suffix.lstrip(".")
     return Name + Append + "." + Suffix
-
-def ChangeFileNameSuffix(FileName, Suffix):
-    Name, _Suffix = SeparateFileNameSuffix(FileName)
-    Suffix = Suffix.lstrip(".")
-    return Name + "." + Suffix
-ChangeSuffix = ChangeFileNameSuffix
-
-def DirPathFromFileName(FilePath):
-    Name, _Suffix = SeparateFileNameSuffix(FilePath)
-    assert not (_Suffix in [""] or _Suffix is None)
-    return DLUtils.StandardizeDirPath(Name)
-
-def CurrentFilePathWithoutSuffix(FilePath):
-    return SeparateFileNameSuffix(FilePath)[0]
-
+    
 ParseFileNameSuffix = SeparateFileNameSuffix
 
 def AddSuffixToFileWithFormat(FilePath, Suffix):
@@ -863,7 +842,6 @@ def CopyFilesAndDirs2DestDir(Names, SourceDir, DestDir):
             CopyFile2Folder(Name, SourceDir, DestDir)
         else:
             raise Exception()
-
 
 def SplitPaths(Paths):
     PathsSplit = []

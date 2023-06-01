@@ -58,7 +58,7 @@ class NonLinearLayer(LinearLayer):
     # SetBias(...) # inherit
     def Init(self, IsSuper=False, **Dict):
         Param = self.Param
-        assert Param.hasattrs("In.Num", "Out.Num")
+        assert Param.hasattrs("In.Size", "Out.Size")
         
         if not IsSuper:
             self.SetReceiveMethod()
@@ -93,7 +93,7 @@ class NonLinearLayer(LinearLayer):
             Name="Weight",
             Path="Weight.Data",
             Data=DLUtils.DefaultNonLinearLayerWeight(
-                Shape=(Param.In.Num, Param.Out.Num),
+                Shape=(Param.In.Size, Param.Out.Size),
                 NonLinear=Param.NonLinear.Type,
             )
         )
@@ -101,9 +101,9 @@ class NonLinearLayer(LinearLayer):
     def SetDefaultBias(self):
         Param = self.Param
         if Param.Mode in ["f(Wx+b)", "f(Wx)+b"]:
-            UnitNum = Param.Out.Num
+            UnitNum = Param.Out.Size
         elif Param.Mode in ["f(W(x+b))"]:
-            UnitNum = Param.In.Num
+            UnitNum = Param.In.Size
         else:
             raise Exception()
         self.SetTrainParam(

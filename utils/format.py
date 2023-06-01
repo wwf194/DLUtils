@@ -1,4 +1,4 @@
-import pandas as pd
+
 import torch
 import DLUtils
 import numpy as np
@@ -57,11 +57,8 @@ def NpArray2D2Str(Data, ColName=None, RowName=None, **Dict):
     if RowName is not None:
         # to be implemented
         pass
-    
-    StrList = ["Dim 0 / Dim 1\n"]
-    StrList.append(pd.DataFrame(Data).to_string())
-    return "".join(StrList)
-def NpArray2D2TextFile(Data, SavePath=None, ColName=None, RowName=None):
+    return pd.DataFrame(Data).to_string()
+def NpArray2D2TextFile(Data, ColName=None, RowName=None, SavePath=None):
     Str = NpArray2D2Str(Data, ColName=ColName, RowName=RowName, SavePath=SavePath)
     DLUtils.Str2File(Str, SavePath)
 

@@ -5,20 +5,26 @@ class VanillaRNN(DLUtils.module.AbstractNetwork):
     ParamMap = DLUtils.IterableKeyToElement({
         ("LayerNum"): "Layer.Num",
         ("HiddenNum", "FeatureNum"): ("Hidden.Num"),
+        ("QKSize"): "MSA.Attention.QK.Size", # total size. not size of each head.
+        ("VSize"): "MSA.Attention.V.Size", # total size. not size of each head.
         ("NonLinear", "HiddenNonLinear", "RecurrentNonLinear"): "Hidden.NonLinear",
         ("DropOut"): "DropOut.Probability",
         ("DropOutInplace", "DropOutInPlace"): "DropOut.InPlace"
     })
+    def __init__(self, SubModule=None):
+        super().__init__()
+        if SubModule is not None:
+            self.AddSubModule("SubModule", SubModule)
     def Receive(self, InList, StepNum=None):
         # InList: (StepNum, BatchSize, InNum)
         OutList = []
-        Hidden = self.GetInitState(BatchSize=InList[1])
+        Hidden = self.GetInitState()
         
         if StepNum is None:
-            StepNum = InList.shape[0]
+            StepNum = self.StepNum
         
         for StepIndex in range(StepNum):
-            In = InList[StepIndex, :, :]
+            In = InList[StepNum, :, :]
             In2 = self.In(In)
             Hidden2 = self.Hidden(Hidden)
             Hidden3 = In2 + Hidden2
@@ -28,7 +34,7 @@ class VanillaRNN(DLUtils.module.AbstractNetwork):
 
         OutFinal = self.GetOut(OutList)
         return {
-            "Out": OutFinal # (StepNum, )
+            "Out": OutFinal
         }
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
@@ -89,10 +95,11 @@ class VanillaRNN(DLUtils.module.AbstractNetwork):
                             (Param.Hidden.Num)
                         )
                     )
+                    return
                 Param.InitState.setdefault("Trainable", True)
 
                 if Param.InitState.Trainable:
-                    self.RegisterTrainParam("InitState")
+                    self.Register
             
         # init state setting
         # init state is the first hidden state
@@ -129,5 +136,4 @@ class VanillaRNN(DLUtils.module.AbstractNetwork):
         # OutList: (StepNum, BatchSize, OutNum)
         return OutList[-1]
     def GetOutAll(self, OutList):
-        # OutList: (StepNum, BatchSize, OutNum)
-        return torch.stack(OutList, dim=0)
+        return OutList

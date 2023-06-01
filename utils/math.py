@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import scipy
 import DLUtils
-
+import random
 
 def NpArrayStatistics(data, verbose=False):
     DataStat = DLUtils.param({
@@ -64,18 +64,27 @@ def SampleFromDistribution(param, Shape=None):
     else:
         raise Exception()
 
-def RandomSelectFromList(List, SelectNum):
+def RandomSelect(List, Num, Repeat=False):
+    if Repeat:
+        return RandomSelectFromListWithReplacement(List, Num)
+    
     if isinstance(List, int):
         Num = List
         List = range(Num)
     else:
         Num = DLUtils.GetLength(List)
 
-    if Num > SelectNum:
-        return random.sample(List, SelectNum)
+    if Num > Num:
+        return random.sample(List, Num)
     else:
         return List
-RandomSelect = RandomSelectFromList
+RandomSelectFromList = RandomSelect
+
+def RandomSelectFromListRepeat(List, Num):
+    return random.choices(List, Num)
+RandomSelectWithReplacement = RandomSelectFromListWithReplacement = RandomSelectFromListRepeat
+
+RandomSelectRepeat = RandomSelectFromListRepeat
 
 def RandomIntInRange(Left, Right, IncludeRight=False):
     if not IncludeRight:
