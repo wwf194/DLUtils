@@ -22,7 +22,7 @@ def DeleteTable(Operator, TableName):
         Operator.execute(
             f"DROP TABLE {TableName};"
         )
-    except Exception():
+    except Exception:
         return False
     return True
 DropTable = DeleteTable

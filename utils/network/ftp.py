@@ -29,7 +29,7 @@ class FTPSession(AbstractModule):
         self.Session = FTP()
         try:
             self.Session.connect(Host, Port)
-        except Exception():
+        except Exception:
             print("Error during FTP connect.")
         return self
     def Login(self, UserName=None, PassWord=None):

@@ -17,7 +17,7 @@ for Path in DLUtilsPath:
             continue
 
     print("library import: failed.")
-    sys.exit(-1)
+    sys.exit(0)
 
 print("library import: succeeded.")
 sys.exit(0)

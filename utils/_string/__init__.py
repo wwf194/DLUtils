@@ -43,10 +43,16 @@ def RemoveSuffix(Str, Suffix, MustMatch=True):
     else:
         return MatchResult.group(1)
 
-def Bytes2Str(Bytes, Encoding="utf-8"):
-    return Bytes.decode(Encoding)
+def Bytes2Str(Bytes:bytes, Encoding="utf-8", ErrorHandleMethod="RaiseException"):
+    if ErrorHandleMethod in ["RaiseExcetion"]:
+        errors = "strict"
+    else:
+        errors = "replace"  
 
-def Str2Bytes(Str, Encoding="utf-8"):
+    return Bytes.decode(Encoding, errors=errors)
+
+def Str2Bytes(Str:str, Encoding="utf-8"):
+
     return Str.encode(Encoding)
 
 import re
@@ -107,3 +113,25 @@ def RandomStr(Length, CharList="a-z"):
             CharList = [Char for Char in CharList]
     
     return "".join(DLUtils.math.RandomSelectRepeat(CharList, Length))
+
+def Bytes2Hex(Bytes):
+    return Bytes.hex()
+
+def HexStr2Bytes(HexStr):
+    return bytes.fromhex(HexStr)
+
+# import io
+# string_out = io.StringIO()
+# string_out.write('Foo')
+# if some_condition:
+#     string_out.write('Bar')
+# string_out.getvalue()  # Could be 'Foo' or 'FooBar'
+import sys
+from io import StringIO
+PrintBuf = StringIO()
+def _print(*List, Encoding="utf-8", Indent=None, **Dict):
+    print(*List, **Dict, file=PrintBuf)
+    Str = PrintBuf.getvalue()
+    Result = sys.stdout.buffer.write(Str.encode(Encoding))
+    sys.stdout.flush()
+    return Result
