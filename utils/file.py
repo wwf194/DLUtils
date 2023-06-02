@@ -56,19 +56,32 @@ def FileNameFromPath(FilePath):
     FileName = os.path.basename(FilePath)
     return FileName
 
-def ToStandardPathStr(Path):
-    if Path is None:
+def ToStandardPathStr(PathStr, Type=None):
+    if PathStr is None:
         return None
     # if Path.endswith("/"): # means this is a folder.
     #     assert not ExistsFile(Path.rstrip("/"))
-    if Path.startswith("~"):
-        Path = AbsPath("~") + Path[1:]
-    if ExistsDir(Path):
-        if not Path.endswith("/"):
-            Path += "/"
-    Path = Path.replace("\\", "/") # windows style path
-    return Path
+    if PathStr.startswith("~"):
+        PathStr = AbsPath("~") + PathStr[1:]
+    
+    if Type in ["Dir", "Folder"]:
+        # if ExistsDir(PathStr):
+        if not PathStr.endswith("/"):
+            PathStr += "/"
+    # windows style path
+    PathStr = PathStr.replace("\\\\", "/") 
+    PathStr = PathStr.replace("\\", "/")
+    return PathStr
 StandardizePath = ToStandardPath = ToStandardPathStr
+
+def ToStandardFilePath(PathStr):
+    return ToStandardPathStr(PathStr, Type="File")
+StandardizeFilePath = ToStandardFilePath
+
+def ToStandardDirPath(PathStr):
+    return ToStandardPathStr(PathStr, Type="Dir")
+StandardizeFolderPath = StandardizeDirPath = ToStandardDirPath
+
 def MoveFile(FilePath, FilePathDest, RaiseIfNonExist=False, Overwrite=True, RaiseIfOverwrite=True):
     if not FileExists(FilePath):
         Msg = f"DLUtils.MoveFile: FilePath {FilePath} does not exist."
@@ -92,6 +105,49 @@ def MoveFile(FilePath, FilePathDest, RaiseIfNonExist=False, Overwrite=True, Rais
     shutil.move(FilePath, FilePathDest)
     # DeleteFile(FilePath) # shutil.move will delete file upon successful move.
     return True
+
+def ListFileNameWithPattern(DirPath, FileNamePattern):
+    FileNameList = []
+    FileNamePatternCompiled = re.compile(FileNamePattern)
+    for FileName in DLUtils.ListFileNames(DirPath):
+        if FileNamePatternCompiled.match(FileName) is not None:
+            FileNameList.append(FileName)
+    return FileNameList
+
+def ListFilePathWithPattern(DirPath, FileNamePattern):
+    if not DirPath.endswith("/"):
+        DirPath += "/"
+    FilePathList = []
+    FileNamePatternCompiled = re.compile(FileNamePattern)
+    for FileName in DLUtils.ListFileNames(DirPath):
+        if FileNamePatternCompiled.match(FileName) is not None:
+            FilePathList.append(DirPath + FileName)
+    return FilePathList
+AllFilePathsWithFileNamePattern = ListFileNameWithPattern
+
+def MoveFileWithFileNamePattern(DirSource, DirDest, FileNamePattern=None):
+    DirSource = DLUtils.file.StandardizeDirPath(DirSource)
+    assert DLUtils.file.ExistsDir(DirSource)
+    DirDest = DLUtils.file.StandardizeDirPath(DirDest)
+    DLUtils.EnsureDir(DirDest)
+    if FileNamePattern is None:
+        for FileName in DLUtils.ListFileNames(DirSource):
+            FilePathSource = DirSource + FileName
+            FilePathDest = DirDest + FileName
+            Result = DLUtils.file.MoveFile(
+                FilePathSource, FilePathDest
+            )
+            print(f"Moved File. ({FilePathSource})-->({FilePathDest})")
+    else:
+        FileNamePatternCompiled = re.compile(FileNamePattern)
+        for FileName in DLUtils.ListFileNames(DirSource):
+            if FileNamePatternCompiled.match(FileName) is not None: 
+                FilePathSource = DirSource + FileName
+                FilePathDest = DirDest + FileName
+                Result = DLUtils.file.MoveFile(
+                    FilePathSource, FilePathDest
+                )
+                print(f"Moved File. ({FilePathSource})-->({FilePathDest})")
 
 def MoveFolder(FolderPath, FolderPathNew, RaiseIfNonExist=False, Overwrite=True):
     if not FolderExists(FolderPath):
@@ -708,6 +764,13 @@ JsonObj2DataFile = Obj2File
 def Str2TextFile(Str, FilePath):
     with open(FilePath, 'w') as f:
         f.write(Str)
+import hashlib
+def Str2MD5(Str):
+    Bytes = Str.encode('utf-8')
+    return hashlib.md5(Bytes).hexdigest()
+
+def ToMD5(Obj):
+    return Str2MD5(str(Obj))
 
 def File2MD5(FilePath):
     import hashlib

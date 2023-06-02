@@ -107,3 +107,9 @@ def RandomStr(Length, CharList="a-z"):
             CharList = [Char for Char in CharList]
     
     return "".join(DLUtils.math.RandomSelectRepeat(CharList, Length))
+
+def Bytes2Hex(Bytes):
+    return Bytes.hex()
+
+def HexStr2Bytes(HexStr):
+    return bytes.fromhex(HexStr)

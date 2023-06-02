@@ -8,8 +8,8 @@ DLUtilsPath = [
     "..",
     "../.."
 ]
-
-print("Trying import DLUtils.")
+EnvDict = {}
+print("trying import DLUtils.")
 Verbose = True
 Sig = False
 for Path in DLUtilsPath:
@@ -17,7 +17,8 @@ for Path in DLUtilsPath:
         try:
             sys.path.append(Path)
             import DLUtils
-            print("imported DLUtils from:", Path)
+            EnvDict["Log"] = "imported DLUtils from: %s"%Path
+            print(EnvDict["Log"])
             Sig = True
             break
         except Exception:
@@ -26,9 +27,9 @@ for Path in DLUtilsPath:
             t, v, tb = sys.exc_info()
             if isinstance(v, ModuleNotFoundError) \
                 and v.__str__() == "No module named 'DLUtils'":
-                continue
+                EnvDict["Log"] = "Cannot find module."
             else:
-                Log = traceback.format_exc()
+                EnvDict["Log"] = traceback.format_exc()
             # Log = traceback.format_exception(t, v, tb)
             # Log = sys.exc_info()
             sys.path.pop()
@@ -37,7 +38,7 @@ for Path in DLUtilsPath:
 if not Sig:
     print("ERROR: Cannot import DLUtils.")
     if Verbose:
-        print(Log)
+        print(EnvDict["Log"])
     sys.exit(-1)
 
 import DLUtils

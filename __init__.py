@@ -93,11 +93,7 @@ import DLUtils.example as example
 import DLUtils.backend as backend
 import DLUtils.backend.torch as torch
 
-<<<<<<< HEAD
-from .module.abstract_module import ParamMapDefault, ParamMapDefaultConv
-=======
 from .module.abstract_module import GetParamMapDefault
 from .network.convolution import GetParamMapDefaultConv
->>>>>>> e62c07083184f09ec632fa74320032ac3e97076f
 
 PackageFolderPath = DLUtils.file.FolderPathOfFile(__file__)
