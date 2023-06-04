@@ -18,7 +18,7 @@ for Path in DLUtilsPath:
             sys.path.append(Path)
             import DLUtils
             EnvDict["Log"] = "imported DLUtils from: %s"%Path
-            print(EnvDict["Log"])
+            DLUtils.print(EnvDict["Log"])
             Sig = True
             break
         except Exception:
@@ -35,10 +35,12 @@ for Path in DLUtilsPath:
             sys.path.pop()
             continue
 
-if not Sig:
-    print("ERROR: Cannot import DLUtils.")
-    if Verbose:
-        print(EnvDict["Log"])
-    sys.exit(-1)
+def WriteUTF8(Str):
+    sys.stdout.buffer.write(Str.encode("utf-8"))
 
+if not Sig:
+    WriteUTF8("ERROR: Cannot import DLUtils.")
+    if Verbose:
+        WriteUTF8(EnvDict["Log"])
+    sys.exit(-1)
 import DLUtils

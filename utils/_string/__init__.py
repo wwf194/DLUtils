@@ -113,3 +113,17 @@ def Bytes2Hex(Bytes):
 
 def HexStr2Bytes(HexStr):
     return bytes.fromhex(HexStr)
+
+# import io
+# string_out = io.StringIO()
+# string_out.write('Foo')
+# if some_condition:
+#     string_out.write('Bar')
+# string_out.getvalue()  # Could be 'Foo' or 'FooBar'
+import sys
+from io import StringIO
+PrintBuf = StringIO()
+def _print(*List, Encoding="utf-8", Indent=None, **Dict):
+    print(*List, **Dict, file=PrintBuf)
+    Str = PrintBuf.getvalue()
+    return sys.stdout.buffer.write(Str.encode(Encoding))

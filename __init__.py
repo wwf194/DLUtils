@@ -97,3 +97,5 @@ from .module.abstract_module import GetParamMapDefault
 from .network.convolution import GetParamMapDefaultConv
 
 PackageFolderPath = DLUtils.file.FolderPathOfFile(__file__)
+
+from DLUtils.utils._string import _print as print

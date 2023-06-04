@@ -52,7 +52,10 @@ def File2Image(FilePath):
     Stream = open(FilePath, "rb")
     ImageBytes = bytearray(Stream.read())
     ImageNp = np.asarray(ImageBytes, dtype=np.uint8)
-    ImageCv = cv2.imdecode(ImageNp, cv2.IMREAD_UNCHANGED)
+    try:
+        ImageCv = cv2.imdecode(ImageNp, cv2.IMREAD_UNCHANGED)
+    except Exception():
+        return None
     return ImageCv
 
 def ImageNp2File(Image, FilePath, Format=None):
@@ -86,7 +89,6 @@ def Test():
     # ImageFilePath = "Z:/temp/1.png"
     # CompressImageFile(ImageFilePath, Ratio=0.5)
     # DLUtils.utils.image.File2JpgFile(ImageFilePath)
-
     Image0 = File2Image(ImageFilePath) # (height, width, channel)
     for Index in range(10):
         Image = Image0.copy()

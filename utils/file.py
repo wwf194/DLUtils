@@ -137,7 +137,7 @@ def MoveFileWithFileNamePattern(DirSource, DirDest, FileNamePattern=None):
             Result = DLUtils.file.MoveFile(
                 FilePathSource, FilePathDest
             )
-            print(f"Moved File. ({FilePathSource})-->({FilePathDest})")
+            DLUtils.print(f"Moved File. ({FilePathSource})-->({FilePathDest})")
     else:
         FileNamePatternCompiled = re.compile(FileNamePattern)
         for FileName in DLUtils.ListFileNames(DirSource):
@@ -147,7 +147,7 @@ def MoveFileWithFileNamePattern(DirSource, DirDest, FileNamePattern=None):
                 Result = DLUtils.file.MoveFile(
                     FilePathSource, FilePathDest
                 )
-                print(f"Moved File. ({FilePathSource})-->({FilePathDest})")
+                DLUtils.print(f"Moved File. ({FilePathSource})-->({FilePathDest})")
 
 def MoveFolder(FolderPath, FolderPathNew, RaiseIfNonExist=False, Overwrite=True):
     if not FolderExists(FolderPath):
@@ -186,7 +186,19 @@ def CopyFile(FilePath, FilePathDest):
 def IsSameFile(FilePath1, FilePath2):
     return os.path.samefile(FilePath1, FilePath2)
 
-def DeleteFile(FilePath, RaiseIfNonExist=False):
+
+from send2trash import send2trash
+def DeleteFile(FilePath, RaiseIfNonExist=False, Move2TrashBin=False):
+    FilePath = StandardizeFilePath(FilePath)
+    if Move2TrashBin:
+        if DLUtils.system.IsWindows():
+            try:
+                assert ExistsFile(FilePath)
+                send2trash(FilePath)
+            except Exception:
+                DLUtils.print("failed to delete file and move to trashbin (%s)"%FilePath)
+                DLUtils.print("trying delete only.")
+                pass
     if not FileExists(FilePath):
         Msg = f"DLUtils.DeleteFile: FilePath {FilePath} does not exist."
         if RaiseIfNonExist:
@@ -195,6 +207,12 @@ def DeleteFile(FilePath, RaiseIfNonExist=False):
             warnings.warn(Msg)
     else:
         os.remove(FilePath)
+
+def DeleteFile2TrashBin(FilePath):    
+    # assert ExistsFile(FilePath)
+    # from send2trash import send2trash
+    # send2trash(FilePath)
+    return DeleteFile(FilePath, RaiseIfNonExist=False, Move2TrashBin=True)
 
 def DeleteAllFilesAndSubFolders(DirPath):
     for FilePath in ListFilesPath(DirPath):
@@ -569,7 +587,13 @@ def AppendOnCurrentFileNameAndChangeSuffix(__File__, Append, Suffix):
     Name, _Suffix = SeparateFileNameSuffix(FilePath)
     Suffix = Suffix.lstrip(".")
     return Name + Append + "." + Suffix
-    
+
+def ChangeFileNameSuffix(FileName, Suffix):
+    Name, _Suffix = SeparateFileNameSuffix(FileName)
+    Suffix = Suffix.lstrip(".")
+    return Name + "." + Suffix
+ChangeCurrentFileNameSuffix = ChangeFileNameSuffix
+
 ParseFileNameSuffix = SeparateFileNameSuffix
 
 def AddSuffixToFileWithFormat(FilePath, Suffix):

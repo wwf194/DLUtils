@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import re
 import sys
 import os
@@ -75,6 +76,25 @@ import subprocess
 
 def Time():
     return 
+
+def TimeStr2Second(TimeStr):
+    if isinstance(TimeStr, int):
+        return TimeStr
+    elif isinstance(TimeStr, float):
+        return round(TimeStr)
+    
+    Pattern = r"(\d*\.\d*)([days|d|])"
+
+    Result = re.match(Pattern, TimeStr)
+    
+    if Result is not None:
+        NumStr = Result.group(1)
+        UnitStr = Result.group(2)
+        
+        
+    else:
+        raise Exception()
+
 
 def GetSystemType2():
     SystemType = platform.system().lower()
@@ -156,40 +176,45 @@ def Test():
     DateTimeObj = TimeStamp2DateTimeObj(TimeFloat)
 
 import chardet
-
+import locale
 def RunPythonScript(FilePath, ArgList=[]):
     FilePath = DLUtils.file.StandardizeFilePath(FilePath)
-    StrList = ["chcp 65001 | Python"]
+    # os.system('chcp 65001')
+    StrList = ["python -u"]
     StrList.append("\"" + FilePath + "\"")
     StrList += ArgList
     Command = " ".join(StrList)
     ExitCode = 0
     try:
-        # unrecognized encoding problem
+        # # unrecognized encoding problem
         # OutBytes = subprocess.check_output(
         #     Command, shell=True, stderr=subprocess.STDOUT
         # )
-
         Result = subprocess.Popen(Command, stdout=subprocess.PIPE, shell=True)
-        (OutBytes, ErrBytes) = Result.communicate()
+        # (OutBytes, ErrBytes) = Result.communicate()
+        OutBytes = Result.stdout.read()
+        # OutBytes = OutStr.encode("utf-8")
+        
         # ExitCode = os.system(Command)
         # OutBytes = "None".encode("utf-8")     
     except subprocess.CalledProcessError as grepexc:                                                                                                   
         ExitCode = grepexc.returncode
         # grepexc.output
-    print(OutBytes.hex())
+    # print(OutBytes.hex())
     try:
+        # print("try decoding with utf-8")
         OutStr = OutBytes.decode("utf-8", errors="replace")
+        # Encoding = chardet.detect(OutBytes)['encoding']
+        # print("Encoding:", Encoding)
+        # OutStr = OutBytes.decode(Encoding)
     except Exception:
-        print("error in decoding OutBytes with utf-8.")
+        print("error in decoding OutBytes with %s."%Encode)
         try:
-            Encoding = chardet.detect(OutBytes)['encoding']
-            print("Encoding:", Encoding)
-            OutStr = OutBytes.decode(Encoding)
+            Encode = locale.getdefaultlocale()[1]
+            print("decoding with %s"%Encode)
+            OutStr = OutBytes.decode(Encode)
         except Exception:
             OutStr = OutBytes.hex()
     return OutStr
-
-
 
 RunPythonFile = RunPythonScript

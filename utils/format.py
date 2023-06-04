@@ -2,11 +2,36 @@
 import torch
 import DLUtils
 import numpy as np
+import re
 
+B = 1
 KB = 1024
 MB = 1048576
 GB = 1073741824
 TB = 1099511627776
+
+def ToByteNum(SizeStr):
+    if isinstance(SizeStr, int):
+        return SizeStr
+    assert isinstance(SizeStr, str)
+    Pattern = r"(.*)([Byte|B|k|K|kb|kB|KB|MB|MiB|mb|m|g|gb|GB|])"
+    Result = re.match(Pattern, SizeStr)
+    if Result is None:
+        raise Exception()
+    NumStr = Result.group(1)
+    UnitStr = Result.group(2)
+    Num = int(NumStr)
+    if UnitStr in ["B", "b", "byte", "Byte"]:
+        Unit = B
+    elif UnitStr in ["K", "k", "B", "kb", "KB"]:
+        Unit = KB
+    elif Unit in ["m", "B", "MB", "MiB"]:
+        Unit = MB
+    elif Unit in ["g", "G", "GB", "Gygabyte"]:
+        Unit = GB
+    else:
+        raise Exception()
+    return Num * Unit
 
 def ByteNum2Str(ByteNum):
     if ByteNum < KB:
