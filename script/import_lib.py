@@ -42,5 +42,5 @@ if not Sig:
     WriteUTF8("ERROR: Cannot import DLUtils.")
     if Verbose:
         WriteUTF8(EnvDict["Log"])
-    sys.exit(-1)
+    sys.exit(0)
 import DLUtils

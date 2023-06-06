@@ -60,12 +60,18 @@ def CompressVideo(FilePath, SavePath, Ratio=None, FileSizeTarget=None):
     # ffmpeg.output(i, SavePath,
     #               **{'c:v': 'libx264', 'b:v': video_bitrate, 'c:a': 'aac', 'b:a': audio_bitrate}
     #               ).overwrite_output().run()
-
+    
+    
     ffmpeg.output(i, os.devnull,
-                  **{'c:v': 'libx264', 'b:v': video_bitrate, 'pass': 1, 'f': 'mp4'}
+                  **{'c:v': 'libx264', 'b:v': video_bitrate, 'pass': 1, 'f': 'mp4',
+                        "threads": 2, # control cpu usage
+                        "max_muxing_queue_size": 1024 # try increase when encounter error: Too many packets buffered for output stream 0:1
+                    }
                   ).overwrite_output().run()
     ffmpeg.output(i, SavePath,
-                  **{'c:v': 'libx264', 'b:v': video_bitrate, 'pass': 2, 'c:a': 'aac', 'b:a': audio_bitrate}
+                  **{'c:v': 'libx264', 'b:v': video_bitrate, 'pass': 2, 'c:a': 'aac', 'b:a': audio_bitrate, "threads": 2,
+                        "max_muxing_queue_size": 1024
+                    }
                   ).overwrite_output().run()
 
 if __name__ == "__main__":

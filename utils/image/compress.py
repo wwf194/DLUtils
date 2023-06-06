@@ -54,7 +54,7 @@ def File2Image(FilePath):
     ImageNp = np.asarray(ImageBytes, dtype=np.uint8)
     try:
         ImageCv = cv2.imdecode(ImageNp, cv2.IMREAD_UNCHANGED)
-    except Exception():
+    except Exception:
         return None
     return ImageCv
 

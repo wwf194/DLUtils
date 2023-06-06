@@ -47,22 +47,24 @@ def TorchTrainParamtat(tensor, verbose=False, ReturnType="PyObj"):
 def CreateNpArray(Shape, Value, DataType):
     return np.full(tuple(Shape), Value, dtype=DataType)
 
-def SampleFromDistribution(param, Shape=None):
-    if Shape is None:
-        Shape = GetAttrs(param.Shape)
-    if param.Type in ["Reyleigh"]:
+def SampleFromDistribution(Shape, Type, **Dict):
+    if Type in ["Reyleigh"]:
         return SamplesFromReyleighDistribution(
-            Mean = GetAttrs(param.Mean),
-            Shape = Shape,
+            Shape = Shape, **Dict
         )
-    elif param.Type in ["Gaussian", "Gaussian1D"]:
-        return SampleFromGaussianDistribution(
-            Mean = GetAttrs(param.Mean),
-            Std = GetAttrs(param.Std),
-            Shape = Shape,
-        )    
+    elif Type in ["Gaussian", "Gaussian1D"]:
+        return SampleFromGaussianDistribution(Shape, **Dict)    
     else:
         raise Exception()
+
+def ShuffleList(List, InPlace=False):
+    if InPlace:
+        _List = List
+    else:
+        _List = list(List)
+
+    random.shuffle(_List)
+    return _List
 
 def RandomSelect(List, Num, Repeat=False):
     if Repeat:

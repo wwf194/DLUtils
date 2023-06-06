@@ -126,4 +126,6 @@ PrintBuf = StringIO()
 def _print(*List, Encoding="utf-8", Indent=None, **Dict):
     print(*List, **Dict, file=PrintBuf)
     Str = PrintBuf.getvalue()
-    return sys.stdout.buffer.write(Str.encode(Encoding))
+    Result = sys.stdout.buffer.write(Str.encode(Encoding))
+    sys.stdout.flush()
+    return Result

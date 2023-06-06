@@ -52,9 +52,13 @@ def AfterTrainModelFile(SaveDir):
             List.append(Name)
     return MostRecentlyModified([SaveDir + FileName for FileName in List])
 
-def FileNameFromPath(FilePath):
+def FileNameFromPath(FilePath, StripSuffix=False):
     FileName = os.path.basename(FilePath)
-    return FileName
+    if StripSuffix:
+        Name, Suffix = SeparateFileNameSuffix(FilePath)
+        return Name
+    else:
+        return FileName
 
 def ToStandardPathStr(PathStr, Type=None):
     if PathStr is None:
@@ -188,6 +192,7 @@ def IsSameFile(FilePath1, FilePath2):
 
 
 from send2trash import send2trash
+import traceback
 def DeleteFile(FilePath, RaiseIfNonExist=False, Move2TrashBin=False):
     FilePath = StandardizeFilePath(FilePath)
     if Move2TrashBin:
@@ -196,7 +201,8 @@ def DeleteFile(FilePath, RaiseIfNonExist=False, Move2TrashBin=False):
                 assert ExistsFile(FilePath)
                 send2trash(FilePath)
             except Exception:
-                DLUtils.print("failed to delete file and move to trashbin (%s)"%FilePath)
+                DLUtils.print("failed to delete file to trashbin (%s)"%FilePath)
+                DLUtils.print(traceback.format_exc())
                 DLUtils.print("trying delete only.")
                 pass
     if not FileExists(FilePath):
@@ -592,6 +598,11 @@ def ChangeFileNameSuffix(FileName, Suffix):
     Name, _Suffix = SeparateFileNameSuffix(FileName)
     Suffix = Suffix.lstrip(".")
     return Name + "." + Suffix
+
+def ChangeFileDirPath(FilePath, DirPath):
+    DirPath = StandardizeDirPath(DirPath)
+    return DirPath + FileNameFromPath(FilePath)
+
 ChangeCurrentFileNameSuffix = ChangeFileNameSuffix
 
 ParseFileNameSuffix = SeparateFileNameSuffix
@@ -784,6 +795,10 @@ def Obj2FilePickle(Obj, FilePath):
 Obj2File = Obj2FilePickle
 Obj2BinaryFile = Obj2FilePickle
 JsonObj2DataFile = Obj2File
+
+def Append2TextFile(Str, FilePath):
+    with open(FilePath, 'a') as f:
+        f.write(Str)
 
 def Str2TextFile(Str, FilePath):
     with open(FilePath, 'w') as f:

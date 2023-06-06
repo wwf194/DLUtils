@@ -113,7 +113,7 @@ def ReportMemoryOccupancy(Obj):
     return DLUtils.ByteNum2Str(Obj)
 
 
-def CurrentTimeStr(format="%Y-%m-%d %H:%M:%S", verbose=False):
+def CurrentTimeStr(format="%Y-%m-%d %H-%M-%S", verbose=False):
     TimeStr = time.strftime(format, time.localtime()) # Time display style: 2016-03-20 11:45:39
     if verbose:
         print(TimeStr)
@@ -218,3 +218,8 @@ def RunPythonScript(FilePath, ArgList=[]):
     return OutStr
 
 RunPythonFile = RunPythonScript
+
+
+import traceback
+def PrintErrorStack():
+    DLUtils.print(traceback.format_exc())
