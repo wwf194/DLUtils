@@ -69,8 +69,12 @@ def TextOnImageCv(Image, Text="Text", XYLeftBottom=None, Color=(0, 0, 0), Scale=
     return Image
 TextOnImage = TextOnImageCv
 
-def ImageFile2JpgImageFile(FilePath):
+def ImageFile2JpgImageFile(FilePath, Verbose=True):
     Image = File2Image(FilePath)
+    if Image is None:
+        if Verbose:
+            DLUtils.print("error reading image:", FilePath)
+        return False
     Name, Suffix = DLUtils.file.SeparateFileNameSuffix(FilePath)
     Result = Image2File(Image, Name + ".jpg", Format=".jpg")
     return Result
