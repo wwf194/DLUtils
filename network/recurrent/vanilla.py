@@ -5,26 +5,20 @@ class VanillaRNN(DLUtils.module.AbstractNetwork):
     ParamMap = DLUtils.IterableKeyToElement({
         ("LayerNum"): "Layer.Num",
         ("HiddenNum", "FeatureNum"): ("Hidden.Num"),
-        ("QKSize"): "MSA.Attention.QK.Size", # total size. not size of each head.
-        ("VSize"): "MSA.Attention.V.Size", # total size. not size of each head.
         ("NonLinear", "HiddenNonLinear", "RecurrentNonLinear"): "Hidden.NonLinear",
         ("DropOut"): "DropOut.Probability",
         ("DropOutInplace", "DropOutInPlace"): "DropOut.InPlace"
     })
-    def __init__(self, SubModule=None):
-        super().__init__()
-        if SubModule is not None:
-            self.AddSubModule("SubModule", SubModule)
     def Receive(self, InList, StepNum=None):
         # InList: (StepNum, BatchSize, InNum)
         OutList = []
-        Hidden = self.GetInitState()
-        
+        Hidden = self.GetInitState(BatchSize=InList.shape[1])
+
         if StepNum is None:
-            StepNum = self.StepNum
+            StepNum = InList.shape[0]
         
         for StepIndex in range(StepNum):
-            In = InList[StepNum, :, :]
+            In = InList[StepIndex, :, :]
             In2 = self.In(In)
             Hidden2 = self.Hidden(Hidden)
             Hidden3 = In2 + Hidden2
@@ -95,11 +89,10 @@ class VanillaRNN(DLUtils.module.AbstractNetwork):
                             (Param.Hidden.Num)
                         )
                     )
-                    return
                 Param.InitState.setdefault("Trainable", True)
 
                 if Param.InitState.Trainable:
-                    self.Register
+                    self.RegisterTrainParam("InitState")
             
         # init state setting
         # init state is the first hidden state
@@ -136,4 +129,4 @@ class VanillaRNN(DLUtils.module.AbstractNetwork):
         # OutList: (StepNum, BatchSize, OutNum)
         return OutList[-1]
     def GetOutAll(self, OutList):
-        return OutList
+        return torch.stack(OutList, axis=0)

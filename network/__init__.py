@@ -19,8 +19,10 @@ from .pooling import MaxPool2D, AvgPool2D
 from .sample import SampleFromNormalDistribution
 from .dimension import AddDimBeforeFirstDim, AddDimAfterLastDim, InsertDim
 
-from .residual import ResidualLayer
 from .convolution import Conv2D, UpConv2D
+from .recurrent import VanillaRNN
+
+from .residual import ResidualLayer
 from .attention import MultiHeadSelfAttention, MultiHeadAttention, MultiheadSelfAttentionLayer, TransformerEncoder
 
 from .image import Image2PatchList, CenterCrop
