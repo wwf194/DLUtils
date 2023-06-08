@@ -593,14 +593,6 @@ def AppendOnCurrentFileNameAndChangeSuffix(__File__, Append, Suffix):
     Name, _Suffix = SeparateFileNameSuffix(FilePath)
     Suffix = Suffix.lstrip(".")
     return Name + Append + "." + Suffix
-<<<<<<< HEAD
-    
-def ChangeFileNameSuffix(FilePath, Suffix):
-    FilePath = DLUtils.StandardizePath(FilePath)
-    Name, _Suffix = SeparateFileNameSuffix(FilePath)
-    Suffix = Suffix.lstrip(".")
-    return Name + "." + Suffix 
-=======
 
 def ChangeFileNameSuffix(FileName, Suffix):
     Name, _Suffix = SeparateFileNameSuffix(FileName)
@@ -612,7 +604,6 @@ def ChangeFileDirPath(FilePath, DirPath):
     return DirPath + FileNameFromPath(FilePath)
 
 ChangeCurrentFileNameSuffix = ChangeFileNameSuffix
->>>>>>> 6136d033a568a9eb81df9c930b77dfead3e3a147
 
 ParseFileNameSuffix = SeparateFileNameSuffix
 

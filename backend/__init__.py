@@ -1,2 +1,5 @@
 import DLUtils.backend.torch as torch
-import DLUtils.backend.win as win
+
+from ..utils.system import IsWindows
+if IsWindows():
+    import DLUtils.backend.win as win
