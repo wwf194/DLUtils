@@ -107,3 +107,11 @@ def RandomStr(Length, CharList="a-z"):
             CharList = [Char for Char in CharList]
     
     return "".join(DLUtils.math.RandomSelectRepeat(CharList, Length))
+
+
+def NaturalCmp(StrA, StrB):
+    # judge whether StrA > StrB
+    if len(StrB) > len(StrA):
+        return -1 # StrB is larger
+    else:
+        return StrA > StrB

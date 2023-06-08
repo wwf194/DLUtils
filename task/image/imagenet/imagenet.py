@@ -42,33 +42,68 @@ class ImageNet1k(DLUtils.AbstractModule):
         Param = self.Param
         # dataset folder path setting
         assert Param.hasattr("Data.Path")
-        Param.Data.Path = DLUtils.StandardizePath(Param.Data.Path)
+        Param.Data.Path = DLUtils.file.StandardizePath(Param.Data.Path)
         self.DataPath = Param.Data.Path
+        assert self.DataPath.endswith("/")
         
         self.InList = [] # input data sample list
         self.OutList = []
         
         self.Mode = Param.setdefault("Mode", "Validation")
+    
+        ClassIndex2ClassCodeNameFilePath = self.DataPath + "class-code-2-class-index.dat"
         
-        self.ClassCode2ClassIndex = {}
-        # with open(os.path.join(self.DataPath, "imagenet-2012-1k-class-index.json"), "rb") as f:
-        #     ClassCode2ClassIndexJson = json.load(f)
-
-        ClassCode2ClassIndexJson = DLUtils.JsonFile2Dict(
-            # "ClassIndex": ["FolderNameInTrainFolder", "ClassName"]
-            self.DataPath + "class-index-train-folder-name-class-name.jsonc"
-        )
-        for ClassIndexStr, ClassCode in ClassCode2ClassIndexJson.items():
-            self.ClassCode2ClassIndex[ClassCode[0]] = int(ClassIndexStr)
-        
-        # with open("ILSVRC2012_val_labels.json", "rb") as f:
-        #     self.ValImageName2ClassCode = json.load(f)
-        self.ValImageName2ClassCode = DLUtils.JsonFile2Dict(
-            os.path.join(self.DataPath, "ILSVRC2012_val_labels.json")
-        )
-        
+        if not DLUtils.ExistsFile(ClassIndex2ClassCodeNameFilePath):
+            self.ClassCode2ClassIndex = {}
+            self.ClassIndex2ClassName = {}
+            # with open(os.path.join(self.DataPath, "imagenet-2012-1k-class-index.json"), "rb") as f:
+            #     ClassCode2ClassIndexJson = json.load(f)
+            ClassIndex2ClassCodeJson = DLUtils.JsonFile2Dict(
+                # "ClassIndex": ["FolderNameInTrainFolder", "ClassName"]
+                self.DataPath + "class-index-2-class-code-name.jsonc", AllowComment=True
+            )
+            for ClassIndexStr, ClassCodeName in ClassIndex2ClassCodeJson.items():
+                ClassIndex = int(ClassIndexStr)
+                ClassCode = ClassCodeName[0]
+                ClassName = ClassCodeName[1]
+                self.ClassCode2ClassIndex[ClassCode] = ClassIndex
+                self.ClassIndex2ClassName[ClassIndex] = ClassName
+            DLUtils.file.Obj2File(self.ClassCode2ClassIndex, ClassIndex2ClassCodeNameFilePath)
+        else:
+            self.ClassCode2ClassIndex = DLUtils.File2Obj(ClassIndex2ClassCodeNameFilePath)
         TrainDataDir = os.path.join(self.DataPath, "ILSVRC/Data/CLS-LOC", "train")
         ValDataDir = os.path.join(self.DataPath, "ILSVRC/Data/CLS-LOC", "val")
+
+        ValFileName2ClassCodeFilePath = self.DataPath + "val-file-name-2-class-code.dat"
+        if not DLUtils.ExistsFile(ValFileName2ClassCodeFilePath):
+            self.ValFileName2ClassCode = DLUtils.JsonFile2Dict(
+                DLUtils.file.ChangeFileNameSuffix(ValFileName2ClassCodeFilePath, ".jsonc")
+            )
+            DLUtils.file.Obj2File(self.ValFileName2ClassCode, ValFileName2ClassCodeFilePath)
+        else:
+            self.ValFileName2ClassCode = DLUtils.File2Obj(ValFileName2ClassCodeFilePath)
+        
+        ValFileName2ClassIndexFilePath = self.DataPath + "val-file-name-2-class-index.dat"
+        ValFileName2ClassIndexNameFilePath = self.DataPath + "val-file-name-2-class-index-name.dat"
+        if not DLUtils.ExistsFile(ValFileName2ClassIndexFilePath):
+            self.ValFileName2ClassIndex = {}
+            self.ValFileName2ClassName = {}
+            self.ValFileName2ClassIndexName = {}
+            for ValFileName, ClassCode in self.ValFileName2ClassCode.items():
+                ClassIndex = self.ClassCode2ClassIndex[ClassCode]
+                ClassName = self.ClassIndex2ClassName[ClassIndex]
+                self.ValFileName2ClassIndex[ValFileName] = ClassIndex
+                self.ValFileName2ClassName[ValFileName] = ClassName
+                self.ValFileName2ClassIndexName[ValFileName] = [ClassIndex, ClassName]
+            DLUtils.file.Obj2File(self.ValFileName2ClassIndex, ValFileName2ClassIndexFilePath)
+            DLUtils.file.Obj2File(self.ValFileName2ClassIndexName, ValFileName2ClassIndexNameFilePath)
+            DLUtils.file.JsonDict2JsonFile(
+                self.ValFileName2ClassIndexName,
+                DLUtils.file.ChangeFileNameSuffix(ValFileName2ClassIndexNameFilePath, ".jsonc"),
+                Mode="Simple"
+            )
+        else:
+            self.ValFileName2ClassIndex = DLUtils.file.File2Obj(ValFileName2ClassIndexFilePath)
 
         Train = self.Train = DLUtils.Param()
         Validation = self.Validation = DLUtils.Param()
@@ -77,28 +112,49 @@ class ImageNet1k(DLUtils.AbstractModule):
         Validation.InList = []
         Validation.OutList = []
         
-        # prepare train data
-        for ImageFolderName in os.listdir(TrainDataDir):
-            ImageClassCode = ImageFolderName
-            ImageClassIndex = self.ClassCode2ClassIndex[ImageClassCode]
-            ImageClassFolderPath = os.path.join(TrainDataDir, ImageFolderName)
-            for ImageFileName in DLUtils.ListAllFileNames(ImageClassFolderPath):
-                ImageFilePath = os.path.join(ImageClassFolderPath, ImageFileName)
-                Train.InList.append(ImageFilePath)
-                Train.OutList.append(ImageClassIndex)
+        from functools import cmp_to_key
+        TrainFileName2ClassIndexFilePath = self.DataPath + "train-file-name-2-class-index.dat"
+        if not DLUtils.file.ExistsFile(TrainFileName2ClassIndexFilePath):
+            self.TrainFileName2ClassIndex = {}
+            # prepare train data
+            for SubFolderName in os.listdir(TrainDataDir):
+                ClassCode = SubFolderName
+                ClassIndex = self.ClassCode2ClassIndex[ClassCode]
+                ImageClassFolderPath = os.path.join(TrainDataDir, SubFolderName)
+                TrainFileNameList = DLUtils.ListAllFileNames(ImageClassFolderPath)
+                TrainFileNameList.sort(
+                    # cmp=DLUtils.utils.NaturalCmp
+                    key=cmp_to_key(DLUtils.utils.NaturalCmp)
+                )
+                for TrainFileName in TrainFileNameList:
+                    # TrainFilePath = os.path.join(ImageClassFolderPath, TrainFileName)
+                    self.TrainFileName2ClassIndex[SubFolderName + "/" + TrainFileName] = ClassIndex
+
+            DLUtils.Obj2File(self.TrainFileName2ClassIndex, TrainFileName2ClassIndexFilePath)
+        else:
+            self.TrainFileName2ClassIndex = DLUtils.Obj2File(TrainFileName2ClassIndexFilePath)
+
+        TrainFileNameList = list(self.TrainFileName2ClassIndex.keys())
+        Train.InList = [
+            os.path.join(TrainDataDir, TrainFileName) for TrainFileName in TrainFileNameList
+        ]       
+        Train.OutList = list(self.TrainFileName2ClassIndex.values())
+        
         # prepare validation data
-        for ImageFileName in DLUtils.ListAllFiles(ValDataDir):
-            ImageClassCode = self.ValImageName2ClassCode[ImageFileName]
-            ImageClassIndex = self.ClassCode2ClassIndex[ImageClassCode]
-            ImageFilePath = os.path.join(ValDataDir, ImageFileName)
-            Validation.InList.append(ImageFilePath)
-            Validation.OutList.append(ImageClassIndex)
-
+        # for ImageFileName in DLUtils.ListAllFiles(ValDataDir):
+            # ImageClassCode = self.ValFileName2ClassCode[ImageFileName]
+            # ImageClassIndex = self.ClassCode2ClassIndex[ImageClassCode]
+            # ImageFilePath = os.path.join(ValDataDir, ImageFileName)
+            # Validation.InList.append(ImageFilePath)
+            # Validation.OutList.append(ImageClassIndex)
+        ValFileNameList = list(self.ValFileName2ClassIndex.keys())
+        Validation.InList = [
+            os.path.join(ValDataDir, ValFileName) for ValFileName in ValFileNameList
+        ]            
+        Validation.OutList = list(self.ValFileName2ClassIndex.values())
         # Validation.OutList = DLUtils.ToNpArray(Validation.OutList, DataType="int8")
-
         self.DataLoaderList = set() # dataloader generated by this instance
         return super().Init(IsSuper=False, IsRoot=IsRoot)
-
 
 class DataFetcher(DLUtils.train.DataFetcherForEpochBatchTrain):
     def __init__(self, InList, OutList, Transform=None):
@@ -118,4 +174,7 @@ class DataFetcher(DLUtils.train.DataFetcherForEpochBatchTrain):
 
 # provide batch
 class DataLoader(DLUtils.train.DataLoaderForEpochBatchTrain):
+    pass
+
+if __name__ == "__main__":
     pass

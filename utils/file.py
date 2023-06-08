@@ -514,6 +514,12 @@ def AppendOnCurrentFileNameAndChangeSuffix(__File__, Append, Suffix):
     Suffix = Suffix.lstrip(".")
     return Name + Append + "." + Suffix
     
+def ChangeFileNameSuffix(FilePath, Suffix):
+    FilePath = DLUtils.StandardizePath(FilePath)
+    Name, _Suffix = SeparateFileNameSuffix(FilePath)
+    Suffix = Suffix.lstrip(".")
+    return Name + "." + Suffix 
+
 ParseFileNameSuffix = SeparateFileNameSuffix
 
 def AddSuffixToFileWithFormat(FilePath, Suffix):
@@ -1034,8 +1040,12 @@ def FileList2ZipFile(FilePathList, ZipFilePath):
             zipObj.write(FilePathAbs, os.path.basename(FilePathAbs))
     return ZipFilePath
 
-def JsonDict2JsonFile(JsonDict, FilePath):
-    JsonStr = JsonDict2Str(JsonDict)
+import json
+def JsonDict2JsonFile(JsonDict, FilePath, Mode=None):
+    if Mode in ["Simple"]:
+        JsonStr = json.dumps(JsonDict, indent=4)
+    else:
+        JsonStr = JsonDict2Str(JsonDict)
     Str2TextFile(JsonStr, FilePath)
 JsonDict2File = JsonDict2JsonFile
 
