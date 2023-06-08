@@ -1,5 +1,6 @@
 import DLUtils
 import torch
+import numpy as np
 from .abstract_module import AbstractModule
 class AbstractNetwork(AbstractModule):
     # network with trainable weights.
@@ -71,8 +72,8 @@ class AbstractNetwork(AbstractModule):
     def RegisterTrainParam(self, Name, Path=None):
         Param = self.Param
         if Path is None:
-            if self.Tensor.hasattr(Name):
-                Path = self.Tensor.getattr(Name)
+            if Param.Tensor.hasattr(Name):
+                Path = Param.Tensor.getattr(Name)
                 Param.TrainParam.setattr(Name, Path)
         else:
             Param.TrainParam.setattr(Name, Path)
@@ -224,6 +225,16 @@ class AbstractNetwork(AbstractModule):
             if hasattr(SubModule, "PlotWeight"):
                 SubModule.PlotWeight(SaveDir, SaveName)
         return self
+    
+    def ReceiveNpArray(self, *List, **Dict):
+        List = list(List)
+        for Index, Item in enumerate(List):
+            if isinstance(Item, np.ndarray):
+                List[Index] = DLUtils.ToTorchTensor(Item)
+        for Key, Value in Dict.items():
+            if isinstance(Item, np.ndarray):
+                Dict[Key] = DLUtils.ToTorchTensor(Value)
+        return self.Receive(*List, **Dict)
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         super().Init(IsSuper=True, IsRoot=IsRoot)

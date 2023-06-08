@@ -252,6 +252,11 @@ def FolderPathOfFile(FilePath):
 DirPathOfFile = ParentFolderPath = FolderPathOfFile
 CurrentDirPath = DirPathOfCurrentFile = FolderPathOfFile
 
+def DirPathFromFilePath(FilePath):
+    FilePath = StandardizeFilePath(FilePath)
+    Name, Suffix = SeparateFileNameSuffix(FilePath)
+    assert Suffix is not None and Suffix not in [""]
+    return StandardizeDirPath(Name)
 
 def CurrentFilePath(FilePath):
     # FilePath: __file__ variable of caller .py file.

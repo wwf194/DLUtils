@@ -26,8 +26,6 @@ class ImageClassificationTask(DLUtils.module.AbstractModule):
         else:
             raise Exception()
         return self
-    def NewFlow(Name):
-        return
     def PreprocessData(self, Items:DLUtils.param):
         for Item in Items:
             Type = Item.Type
@@ -37,7 +35,8 @@ class ImageClassificationTask(DLUtils.module.AbstractModule):
             else:
                 raise Exception()
         return self
-
+    def RandomValidationSample(self):
+        raise Exception()
     
 def MinMax2FixedValue(BatchSize):
     return

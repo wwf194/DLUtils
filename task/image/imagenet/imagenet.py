@@ -3,20 +3,30 @@ import os
 import torch
 from PIL import Image as Im
 import json
-
+from .. import ImageClassificationTask
 # adapted from
 # https://towardsdatascience.com/downloading-and-using-the-imagenet-dataset-with-pytorch-f0908437c4be
-class ImageNet1k(DLUtils.AbstractModule):
+class ImageNet1k(ImageClassificationTask):
     ParamMap = DLUtils.ExpandIterableKey({
         ("DataPath", "DataSetPath"): "Data.Path",
     })
     def __init__(self, Transform=None, **Dict):
         super().__init__(**Dict)
         self.Transform = Transform
+        if Transform is None:
+            self.Transform = lambda x:x
     def TrainData(self, **Dict):
         return self.DataLoader("Train",  **Dict)
     def ValidationData(self, **Dict):
         return self.DataLoader("Validation", **Dict)
+    def RandomValidationSample(self):
+        Validation = self.Validation
+        Index = DLUtils.math.RandomSelect(0, len(Validation.List))
+        Image = Im.open(Validation.InList[Index]).convert("RGB")
+        if self.Transform:
+            Image = self.Transform(Image)
+        ClassIndex = Validation.OutList[Index]
+        return Image, ClassIndex
     def DataLoader(self, Type, **Dict):
         if Type in ["Train"]:
             InList = self.Train.InList
