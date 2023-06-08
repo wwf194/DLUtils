@@ -878,3 +878,7 @@ import DLUtils.utils.image as image
 import DLUtils.utils.timer as timer
 import DLUtils.utils.sql as sql
 import DLUtils.utils.video as video
+
+
+if GetSystemType() in ["Windows", "win"]:
+    import DLUtils.backend.win as win

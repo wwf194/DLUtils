@@ -43,10 +43,16 @@ def RemoveSuffix(Str, Suffix, MustMatch=True):
     else:
         return MatchResult.group(1)
 
-def Bytes2Str(Bytes, Encoding="utf-8"):
-    return Bytes.decode(Encoding)
+def Bytes2Str(Bytes:bytes, Encoding="utf-8", ErrorHandleMethod="RaiseException"):
+    if ErrorHandleMethod in ["RaiseExcetion"]:
+        errors = "strict"
+    else:
+        errors = "replace"  
 
-def Str2Bytes(Str, Encoding="utf-8"):
+    return Bytes.decode(Encoding, errors=errors)
+
+def Str2Bytes(Str:str, Encoding="utf-8"):
+
     return Str.encode(Encoding)
 
 import re

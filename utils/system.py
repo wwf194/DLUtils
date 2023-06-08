@@ -223,3 +223,6 @@ RunPythonFile = RunPythonScript
 import traceback
 def PrintErrorStack():
     DLUtils.print(traceback.format_exc())
+    
+def Print2StdErr(Str):
+    print(Str, file=sys.stderr)
