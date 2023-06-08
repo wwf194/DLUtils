@@ -480,7 +480,6 @@ class AbstractModule(LogComponent):
     def TorchModel(self):
         return DLUtils.module.TorchModule().FromAbstractModule(self)
 
-    
 EmptyModule = AbstractModule
 
 from ..utils._dict import IterableKeyToElement, ExpandIterableKey

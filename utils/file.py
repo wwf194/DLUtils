@@ -52,23 +52,40 @@ def AfterTrainModelFile(SaveDir):
             List.append(Name)
     return MostRecentlyModified([SaveDir + FileName for FileName in List])
 
-def FileNameFromPath(FilePath):
+def FileNameFromPath(FilePath, StripSuffix=False):
     FileName = os.path.basename(FilePath)
-    return FileName
+    if StripSuffix:
+        Name, Suffix = SeparateFileNameSuffix(FilePath)
+        return Name
+    else:
+        return FileName
 
-def ToStandardPathStr(Path):
-    if Path is None:
+def ToStandardPathStr(PathStr, Type=None):
+    if PathStr is None:
         return None
     # if Path.endswith("/"): # means this is a folder.
     #     assert not ExistsFile(Path.rstrip("/"))
-    if Path.startswith("~"):
-        Path = AbsPath("~") + Path[1:]
-    if ExistsDir(Path):
-        if not Path.endswith("/"):
-            Path += "/"
-    Path = Path.replace("\\", "/") # windows style path
-    return Path
+    if PathStr.startswith("~"):
+        PathStr = AbsPath("~") + PathStr[1:]
+    
+    if Type in ["Dir", "Folder"]:
+        # if ExistsDir(PathStr):
+        if not PathStr.endswith("/"):
+            PathStr += "/"
+    # windows style path
+    PathStr = PathStr.replace("\\\\", "/") 
+    PathStr = PathStr.replace("\\", "/")
+    return PathStr
 StandardizePath = ToStandardPath = ToStandardPathStr
+
+def ToStandardFilePath(PathStr):
+    return ToStandardPathStr(PathStr, Type="File")
+StandardizeFilePath = ToStandardFilePath
+
+def ToStandardDirPath(PathStr):
+    return ToStandardPathStr(PathStr, Type="Dir")
+StandardizeFolderPath = StandardizeDirPath = ToStandardDirPath
+
 def MoveFile(FilePath, FilePathDest, RaiseIfNonExist=False, Overwrite=True, RaiseIfOverwrite=True):
     if not FileExists(FilePath):
         Msg = f"DLUtils.MoveFile: FilePath {FilePath} does not exist."
@@ -92,6 +109,49 @@ def MoveFile(FilePath, FilePathDest, RaiseIfNonExist=False, Overwrite=True, Rais
     shutil.move(FilePath, FilePathDest)
     # DeleteFile(FilePath) # shutil.move will delete file upon successful move.
     return True
+
+def ListFileNameWithPattern(DirPath, FileNamePattern):
+    FileNameList = []
+    FileNamePatternCompiled = re.compile(FileNamePattern)
+    for FileName in DLUtils.ListFileNames(DirPath):
+        if FileNamePatternCompiled.match(FileName) is not None:
+            FileNameList.append(FileName)
+    return FileNameList
+
+def ListFilePathWithPattern(DirPath, FileNamePattern):
+    if not DirPath.endswith("/"):
+        DirPath += "/"
+    FilePathList = []
+    FileNamePatternCompiled = re.compile(FileNamePattern)
+    for FileName in DLUtils.ListFileNames(DirPath):
+        if FileNamePatternCompiled.match(FileName) is not None:
+            FilePathList.append(DirPath + FileName)
+    return FilePathList
+AllFilePathsWithFileNamePattern = ListFileNameWithPattern
+
+def MoveFileWithFileNamePattern(DirSource, DirDest, FileNamePattern=None):
+    DirSource = DLUtils.file.StandardizeDirPath(DirSource)
+    assert DLUtils.file.ExistsDir(DirSource)
+    DirDest = DLUtils.file.StandardizeDirPath(DirDest)
+    DLUtils.EnsureDir(DirDest)
+    if FileNamePattern is None:
+        for FileName in DLUtils.ListFileNames(DirSource):
+            FilePathSource = DirSource + FileName
+            FilePathDest = DirDest + FileName
+            Result = DLUtils.file.MoveFile(
+                FilePathSource, FilePathDest
+            )
+            DLUtils.print(f"Moved File. ({FilePathSource})-->({FilePathDest})")
+    else:
+        FileNamePatternCompiled = re.compile(FileNamePattern)
+        for FileName in DLUtils.ListFileNames(DirSource):
+            if FileNamePatternCompiled.match(FileName) is not None: 
+                FilePathSource = DirSource + FileName
+                FilePathDest = DirDest + FileName
+                Result = DLUtils.file.MoveFile(
+                    FilePathSource, FilePathDest
+                )
+                DLUtils.print(f"Moved File. ({FilePathSource})-->({FilePathDest})")
 
 def MoveFolder(FolderPath, FolderPathNew, RaiseIfNonExist=False, Overwrite=True):
     if not FolderExists(FolderPath):
@@ -130,7 +190,21 @@ def CopyFile(FilePath, FilePathDest):
 def IsSameFile(FilePath1, FilePath2):
     return os.path.samefile(FilePath1, FilePath2)
 
-def DeleteFile(FilePath, RaiseIfNonExist=False):
+
+from send2trash import send2trash
+import traceback
+def DeleteFile(FilePath, RaiseIfNonExist=False, Move2TrashBin=False):
+    FilePath = StandardizeFilePath(FilePath)
+    if Move2TrashBin:
+        if DLUtils.system.IsWindows():
+            try:
+                assert ExistsFile(FilePath)
+                send2trash(FilePath)
+            except Exception:
+                DLUtils.print("failed to delete file to trashbin (%s)"%FilePath)
+                DLUtils.print(traceback.format_exc())
+                DLUtils.print("trying delete only.")
+                pass
     if not FileExists(FilePath):
         Msg = f"DLUtils.DeleteFile: FilePath {FilePath} does not exist."
         if RaiseIfNonExist:
@@ -139,6 +213,12 @@ def DeleteFile(FilePath, RaiseIfNonExist=False):
             warnings.warn(Msg)
     else:
         os.remove(FilePath)
+
+def DeleteFile2TrashBin(FilePath):    
+    # assert ExistsFile(FilePath)
+    # from send2trash import send2trash
+    # send2trash(FilePath)
+    return DeleteFile(FilePath, RaiseIfNonExist=False, Move2TrashBin=True)
 
 def DeleteAllFilesAndSubFolders(DirPath):
     for FilePath in ListFilesPath(DirPath):
@@ -513,12 +593,26 @@ def AppendOnCurrentFileNameAndChangeSuffix(__File__, Append, Suffix):
     Name, _Suffix = SeparateFileNameSuffix(FilePath)
     Suffix = Suffix.lstrip(".")
     return Name + Append + "." + Suffix
+<<<<<<< HEAD
     
 def ChangeFileNameSuffix(FilePath, Suffix):
     FilePath = DLUtils.StandardizePath(FilePath)
     Name, _Suffix = SeparateFileNameSuffix(FilePath)
     Suffix = Suffix.lstrip(".")
     return Name + "." + Suffix 
+=======
+
+def ChangeFileNameSuffix(FileName, Suffix):
+    Name, _Suffix = SeparateFileNameSuffix(FileName)
+    Suffix = Suffix.lstrip(".")
+    return Name + "." + Suffix
+
+def ChangeFileDirPath(FilePath, DirPath):
+    DirPath = StandardizeDirPath(DirPath)
+    return DirPath + FileNameFromPath(FilePath)
+
+ChangeCurrentFileNameSuffix = ChangeFileNameSuffix
+>>>>>>> 6136d033a568a9eb81df9c930b77dfead3e3a147
 
 ParseFileNameSuffix = SeparateFileNameSuffix
 
@@ -711,9 +805,20 @@ Obj2File = Obj2FilePickle
 Obj2BinaryFile = Obj2FilePickle
 JsonObj2DataFile = Obj2File
 
+def Append2TextFile(Str, FilePath):
+    with open(FilePath, 'a') as f:
+        f.write(Str)
+
 def Str2TextFile(Str, FilePath):
     with open(FilePath, 'w') as f:
         f.write(Str)
+import hashlib
+def Str2MD5(Str):
+    Bytes = Str.encode('utf-8')
+    return hashlib.md5(Bytes).hexdigest()
+
+def ToMD5(Obj):
+    return Str2MD5(str(Obj))
 
 def File2MD5(FilePath):
     import hashlib
