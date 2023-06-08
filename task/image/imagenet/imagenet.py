@@ -49,7 +49,7 @@ class ImageNet1k(DLUtils.AbstractModule):
         self.InList = [] # input data sample list
         self.OutList = []
         
-        self.Mode = Param.setdefault("Mode", "Validation")
+        # self.Mode = Param.setdefault("Mode", "Validation")
     
         ClassIndex2ClassCodeNameFilePath = self.DataPath + "class-code-2-class-index.dat"
         
@@ -132,7 +132,7 @@ class ImageNet1k(DLUtils.AbstractModule):
 
             DLUtils.Obj2File(self.TrainFileName2ClassIndex, TrainFileName2ClassIndexFilePath)
         else:
-            self.TrainFileName2ClassIndex = DLUtils.Obj2File(TrainFileName2ClassIndexFilePath)
+            self.TrainFileName2ClassIndex = DLUtils.File2Obj(TrainFileName2ClassIndexFilePath)
 
         TrainFileNameList = list(self.TrainFileName2ClassIndex.keys())
         Train.InList = [

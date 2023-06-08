@@ -3,7 +3,10 @@ class DLUtilsDict(dict):
     def update(self, *List):
         dict.update(self, *List)
         return self
-
+    def hasattr(self, Key):
+        return Key in self
+    def getattr(self, Key, Default=None):
+        return self.get(Key, Default)
 def UpdateDict(DictSource, DictTarget, KeyPrefix=None):
     if KeyPrefix is None:
         for Key, Value in DictSource.keys():
