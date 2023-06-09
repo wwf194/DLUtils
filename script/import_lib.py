@@ -8,7 +8,8 @@ DLUtilsPath = [
     "..",
     "../..",
     "~/Project",
-    "/home/wwf/Project"
+    "/home/wwf/Project",
+    "root/"
 ]
 EnvDict = {}
 print("trying import DLUtils.")

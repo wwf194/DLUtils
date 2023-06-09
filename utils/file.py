@@ -1,7 +1,6 @@
 from ast import Is
 import os
 import re
-import pandas as pd
 import shutil # sh_utils
 import DLUtils
 #from DLUtils.attr import *
@@ -190,8 +189,10 @@ def CopyFile(FilePath, FilePathDest):
 def IsSameFile(FilePath1, FilePath2):
     return os.path.samefile(FilePath1, FilePath2)
 
-
-from send2trash import send2trash
+try:
+    from send2trash import send2trash
+except Exception:
+    warnings.warn("lib send2trash not found.")
 import traceback
 def DeleteFile(FilePath, RaiseIfNonExist=False, Move2TrashBin=False):
     FilePath = StandardizeFilePath(FilePath)
@@ -1154,14 +1155,6 @@ def JsonDict2JsonFile(JsonDict, FilePath, Mode=None):
     Str2TextFile(JsonStr, FilePath)
 JsonDict2File = JsonDict2JsonFile
 
-import cv2
-def Jpg2NpArray(Path):
-    Path = DLUtils.StandardizePath(Path)
-    assert FileExists(Path)
-    Image = cv2.imread(Path)
-    assert Image is not None
-    return Image
-JPG2NpArray = Jpeg2NpArray = Jpg2NpArray
 
 def RemoveAllFileWithSuffix(DirPath, Suffix):
     DirPath = StandardizePath(DirPath)
