@@ -1,5 +1,4 @@
 
-import torch
 import DLUtils
 import numpy as np
 import re

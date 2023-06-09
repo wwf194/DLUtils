@@ -1,7 +1,6 @@
 from ast import Is
 import os
 import re
-import pandas as pd
 import shutil # sh_utils
 import DLUtils
 #from DLUtils.attr import *
@@ -190,8 +189,10 @@ def CopyFile(FilePath, FilePathDest):
 def IsSameFile(FilePath1, FilePath2):
     return os.path.samefile(FilePath1, FilePath2)
 
-
-from send2trash import send2trash
+try:
+    from send2trash import send2trash
+except Exception:
+    warnings.warn("lib send2trash not found.")
 import traceback
 def DeleteFile(FilePath, RaiseIfNonExist=False, Move2TrashBin=False):
     FilePath = StandardizeFilePath(FilePath)
@@ -252,6 +253,11 @@ def FolderPathOfFile(FilePath):
 DirPathOfFile = ParentFolderPath = FolderPathOfFile
 CurrentDirPath = DirPathOfCurrentFile = FolderPathOfFile
 
+def DirPathFromFilePath(FilePath):
+    FilePath = StandardizeFilePath(FilePath)
+    Name, Suffix = SeparateFileNameSuffix(FilePath)
+    assert Suffix is not None and Suffix not in [""]
+    return StandardizeDirPath(Name)
 
 def CurrentFilePath(FilePath):
     # FilePath: __file__ variable of caller .py file.
@@ -604,6 +610,10 @@ def ChangeFileDirPath(FilePath, DirPath):
     return DirPath + FileNameFromPath(FilePath)
 
 ChangeCurrentFileNameSuffix = ChangeFileNameSuffix
+<<<<<<< HEAD
+>>>>>>> 729faebb49f81f2c80808cbc3cd2713fcd5d7a7e
+=======
+>>>>>>> e9e01d6... update
 
 ParseFileNameSuffix = SeparateFileNameSuffix
 
@@ -1136,19 +1146,15 @@ def FileList2ZipFile(FilePathList, ZipFilePath):
             zipObj.write(FilePathAbs, os.path.basename(FilePathAbs))
     return ZipFilePath
 
-def JsonDict2JsonFile(JsonDict, FilePath):
-    JsonStr = JsonDict2Str(JsonDict)
+import json
+def JsonDict2JsonFile(JsonDict, FilePath, Mode=None):
+    if Mode in ["Simple"]:
+        JsonStr = json.dumps(JsonDict, indent=4)
+    else:
+        JsonStr = JsonDict2Str(JsonDict)
     Str2TextFile(JsonStr, FilePath)
 JsonDict2File = JsonDict2JsonFile
 
-import cv2
-def Jpg2NpArray(Path):
-    Path = DLUtils.StandardizePath(Path)
-    assert FileExists(Path)
-    Image = cv2.imread(Path)
-    assert Image is not None
-    return Image
-JPG2NpArray = Jpeg2NpArray = Jpg2NpArray
 
 def RemoveAllFileWithSuffix(DirPath, Suffix):
     DirPath = StandardizePath(DirPath)

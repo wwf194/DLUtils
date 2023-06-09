@@ -111,9 +111,16 @@ def RandomStr(Length, CharList="a-z"):
             CharList = list(string.ascii_lowercase)
         else:
             CharList = [Char for Char in CharList]
-    
+    # print(CharList)
     return "".join(DLUtils.math.RandomSelectRepeat(CharList, Length))
 
+
+def NaturalCmp(StrA, StrB):
+    # judge whether StrA > StrB
+    if len(StrB) > len(StrA):
+        return -1 # StrB is larger
+    else:
+        return StrA > StrB
 def Bytes2Hex(Bytes):
     return Bytes.hex()
 
