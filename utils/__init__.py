@@ -184,7 +184,9 @@ def ToRunFormat(Data):
     else:
         return Data
 
-def ToNpArray(data, DataType=np.float32):
+def ToNpArray(data, DataType=None):
+    if DataType is None:
+        DataType = np.float32
     if isinstance(data, np.ndarray):
         return data
     elif isinstance(data, list):
@@ -196,7 +198,9 @@ def ToNpArray(data, DataType=np.float32):
     else:
         raise Exception(type(data))
 
-def ToNpArrayOrNum(data, DataType=np.float32):
+def ToNpArrayOrNum(data, DataType=None):
+    if DataType is None:
+        DataType = np.float32
     if isinstance(data, float):
         return data
     if isinstance(data, int):
@@ -282,13 +286,15 @@ def DeleteKeysIfExist(Dict, Keys):
             Dict.pop(Key)
     return Dict
 
+try:
+    NpDataTypeMap = IterableKeyToKeys({    
+        ("np.float32", "Float32", "Float", "float"): np.float32,
+        ("np.int8", "Int8", "int8"): np.int8
+    })
+except Exception:
+    warnings.warn("lib numpy is not found")
 
-NpDataTypeMap = IterableKeyToKeys({    
-    ("np.float32", "Float32", "Float", "float"): np.float32,
-    ("np.int8", "Int8", "int8"): np.int8
-})
-
-def ParseDataTypeNp(DataType):
+def ParseDataTypeNp(DataType):    
     if isinstance(DataType, str):
         DataTypeParsed = NpDataTypeMap.get("DataType")
         if DataTypeParsed is not None:
@@ -383,7 +389,7 @@ def ContainAll(List, Items, *args):
             return False
     return True
 
-import timeout_decorator
+# import timeout_decorator
 
 def CallFunctionWithTimeLimit(TimeLimit, Function, *Args, **ArgsKw):
     # TimeLimit: in seconds.
@@ -667,31 +673,11 @@ def check_suffix(name, suffix=None, is_path=True):
 
 from ._string import HasSuffix, RemoveSuffix
 
-def scan_files(path, pattern, ignore_folder=True, raise_not_found_error=False):
-    if not path.endswith('/'):
-        path.append('/')
-    files_path = os.listdir(path)
-    matched_files = []
-    if isinstance(pattern, _str):
-        pattern = re.compile(pattern)
-    for file_name in files_path:
-        #print(file_name)
-        if pattern.match(file_name) is not None:
-            if os.path.isdir(path + file_name):
-                if ignore_folder:
-                    matched_files.append(file_name)
-                else:
-                    warnings.warn('%s is a folder, and will be ignored.'%(path + file))
-            else:
-                matched_files.append(file_name)
-    
-    if raise_not_found_error:
-        if len(matched_files)==0:
-            raise Exception('scan_files: cannot find any files that match pattern %s'%pattern)
+try:
+    from .math import RandomIntInRange, RandomSelect, RandomSelectFromList
+except Exception:
+    pass
 
-    return matched_files
-
-from .math import RandomIntInRange, RandomSelect, RandomSelectFromList
 from .format import NpArray2D2Str, NpArray2D2TextFile, NpArray2Str, NpArray2TextFile
 
 def MultipleRandomIntInRange(Left, Right, Num, IncludeRight=False):
@@ -869,11 +855,23 @@ from ..backend.torch.format import ToTorchTensor, ToTorchTensorOrNum, NpArray2Te
 from ..backend.torch import GetTensorByteNum, GetTensorElementNum
 
 import DLUtils.utils.network as network
-import DLUtils.utils.image as image
-import DLUtils.utils.timer as timer
-import DLUtils.utils.sql as sql
-import DLUtils.utils.video as video
-
+try:
+    import DLUtils.utils.image as image
+except Exception:
+    warnings.warn("failed to import DLUtils.utils.image")
+    pass
+try:
+    import DLUtils.utils.timer as timer
+except Exception:
+    pass
+try:
+    import DLUtils.utils.sql as sql
+except Exception:
+    pass
+try:
+    import DLUtils.utils.video as video
+except Exception:
+    pass
 
 if GetSystemType() in ["Windows", "win"]:
     import DLUtils.backend.win as win

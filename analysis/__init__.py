@@ -136,4 +136,6 @@ def PlotTotalLossEpochBatch(LogTrain, LogTest=None, SaveDir=None, SaveName=None,
 PlotLossEpochBatch = PlotTotalLossEpochBatch
 
 from DLUtils.analysis.accuracy import LogForAccuracy, LogForAccuracyAlongTrain, PlotAccuracyEpochBatch
-from DLUtils.analysis.PCA import LogForPCA, LogForPCAAlongTrain, ScanLogPCA, AnalyzePCAForEpochBatchTrain, PlotPCAAlongTrain
+try:
+    from DLUtils.analysis.PCA import LogForPCA, LogForPCAAlongTrain, ScanLogPCA, AnalyzePCAForEpochBatchTrain, PlotPCAAlongTrain
+except Exception: pass

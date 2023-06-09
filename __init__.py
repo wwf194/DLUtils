@@ -19,8 +19,10 @@ import DLUtils.module as module
 from DLUtils.module import AbstractModule, AbstractNetwork, AbstractOperator
 import DLUtils.transform as transform
 import DLUtils.transform.norm as norm
-
-import DLUtils.log as log # log -> transform
+try:
+    import DLUtils.log as log # log -> transform
+except Exception:
+    pass
 
 import DLUtils.utils.attrs as attrs
 import DLUtils.utils.parse as parse
@@ -50,8 +52,11 @@ from .task import Task, Dataset
 from .optimize import Optimizer
 from .optimize import SGD, Adam
 from .train.evaluate import Evaluator, EvaluationLog
-import DLUtils.plot as plot
 
+try:
+    import DLUtils.plot as plot
+except Exception:
+    pass
 import DLUtils.loss as loss
 
 import DLUtils.data as data
@@ -74,17 +79,22 @@ import DLUtils.geometry2D as geometry2D
 
 from DLUtils.train import TrainSession, EpochBatchTrainSession
 
-from DLUtils.log import \
-    ResetGlobalLogIndex, \
-    GlobalLogIndex
-
+try:
+    from DLUtils.log import \
+        ResetGlobalLogIndex, \
+        GlobalLogIndex
+except Exception:
+    pass
+try:
+    from DLUtils.plot import \
+        NpArray2ImageFile, \
+        Tensor2ImageFile
+except Exception:
+    pass
 from DLUtils.utils.func import \
     EmptyFunction
 from DLUtils.utils.file import ParseSavePath
 import DLUtils.utils.system as system
-from DLUtils.plot import \
-    NpArray2ImageFile, \
-    Tensor2ImageFile
 
 import DLUtils.example as example
 

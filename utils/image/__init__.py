@@ -1,4 +1,3 @@
-import DLUtils.utils.image.compress as compress
 import DLUtils
 import cv2
 import numpy as np
