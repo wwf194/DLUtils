@@ -1,6 +1,4 @@
 import warnings
-import torch
-import torch.nn.functional as F
 import DLUtils
 from ..module import LogComponent
 
@@ -45,13 +43,13 @@ class AbstractModule(LogComponent):
             self.SubModules[Name] = ModuleClass().LoadParam(SubModule)
         return self
     def GetParamMap(self, UseParamMapDefault=True):
-        if hasattr(self, "ParamMap"):
-            ParamMap = self.ParamMap
-        else:
-            ParamMap = {}
         if UseParamMapDefault or \
             hasattr(self, "UseParamMapDefault") and self.UseParamMapDefault:
-            ParamMap.update(ParamMapDefault)
+            ParamMap = GetParamMapDefault()
+        else:
+            ParamMap = {}
+        if hasattr(self, "ParamMap"):
+            ParamMap.update(self.ParamMap)
         return ParamMap
     def SetParam(self, Key=None, Value=None, **Dict):
         Param = self.Param
@@ -95,10 +93,36 @@ class AbstractModule(LogComponent):
         elif isinstance(Param, DLUtils.param):
             self.Param.Absorb(Param)
         return self
-    def AbsorbParam(self, Param, Remove=True):
+    def AbsorbParam(self, Param, Prefix=None, Remove=True, PrefixOnly=False):
         ParamMap = self.GetParamMap()
-        for Key, Value in Param.items():
-            if ParamMap.hasattr(Key):
+
+        if Prefix is not None:
+            PrefixLength = len(Prefix)
+            if PrefixOnly:
+                assert isinstance(Prefix, str)
+                for Key, Value in Param.iteritems():
+                    if Key.startswith(Prefix) and len(Key) > PrefixLength:
+                        self.Param.setattr(Key[PrefixLength:], Value)
+                        if Remove:
+                            Param.deleteattr(Key)
+                return self
+            else:
+                for Key, Value in Param.iteritems():
+                    Sig = False
+                    if Key.startswith(Prefix) and len(Key) > PrefixLength:
+                        self.Param.setattr(Key[PrefixLength], Value)
+                        Sig
+                    elif Key in ParamMap:
+                        self.Param.setattr(ParamMap.getattr(Key), Value)
+                        Sig = True
+
+                    if Sig:
+                        if Remove:
+                            Param.deleteattr(Key)
+                return self
+
+        for Key, Value in Param.iteritems():
+            if Key in ParamMap:
                 self.Param.setattr(ParamMap.getattr(Key), Value)
                 if Remove:
                     Param.deleteattr(Key)
@@ -137,6 +161,8 @@ class AbstractModule(LogComponent):
         return self
     # 1D dropout
     def _DropOut(self, X):
+        import torch
+        import torch.nn.functional as F
         return F.dropout(X, self.DropOutProbability, training=self.IsTrain(), inplace=self.DropOutInPlace)
     def _DropOutNull(self, X):
         return X
@@ -346,6 +372,7 @@ class AbstractModule(LogComponent):
         self.Log(f"{self.PathStr()}({self.ClassStr()}): {Content}", Type=Type)
         return self
     def SetDevice(self, Device=None, IsRoot=True):
+        import torch
         if Device is None:
             Device = self.Device
         else:

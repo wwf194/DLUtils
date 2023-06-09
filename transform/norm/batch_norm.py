@@ -10,8 +10,11 @@ class BatchNorm2D(DLUtils.module.TorchModuleWrapper):
         "History.NumBatchesTracked": "num_batches_tracked"
     }
     ParamMap = DLUtils.ExpandIterableKey({
-        ("FeatureNum"): "Feature.Num"
+        ("InNum", "FeatureNum"): "In.Num"
     })
+    def __init__(self, *List, **Dict):
+        super().__init__(*List, **Dict)
+        a = 1
     def Receive(self, In):
         """
         In: (BatchSize, ChannelNum, Height, Width)
@@ -45,7 +48,7 @@ class BatchNorm2D(DLUtils.module.TorchModuleWrapper):
                 Momentum = 0.0
         
             self.module = torch.nn.BatchNorm2d(
-                num_features=Param.Feature.Num,
+                num_features=Param.In.Num,
                 affine=Param.Affine.Enable,
                 track_running_stats=Param.Momentum.Enable,
                 momentum=Momentum
@@ -55,7 +58,7 @@ class BatchNorm2D(DLUtils.module.TorchModuleWrapper):
         else:
             # self.UpdateModuleFromParam()
             self.module = torch.nn.BatchNorm2d(
-                num_features=Param.Feature.Num
+                num_features=Param.In.Num
             )
             self.module.load_state_dict(Param.Module.Data)
             

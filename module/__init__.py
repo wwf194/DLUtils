@@ -1,6 +1,3 @@
-import torch.optim as optim
-import torch.nn as nn
-import torch.nn.functional as F
 import DLUtils
 import functools
 import warnings
@@ -119,4 +116,7 @@ class AbstractModuleGroup(AbstractNetwork):
 
 from .module_graph import ModuleGraph
 from .module_series import ModuleList, ModuleSeries, _ModuleList, _ModuleSeries
-from ..backend.torch.module import TorchModuleWrapper, TorchModule, TorchModuleParallel
+try:
+    from ..backend.torch.module import TorchModuleWrapper, TorchModule, TorchModuleParallel
+except Exception:
+    pass

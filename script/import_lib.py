@@ -6,13 +6,17 @@ DLUtilsPath = [
     "A:/0 Science/项目 软件",
     "C:/Users/Tim Wang/script",
     "..",
-    "../.."
+    "../..",
+    "~/Project",
+    "/home/wwf/Project",
+    "root/"
 ]
 EnvDict = {}
 print("trying import DLUtils.")
 Verbose = True
 Sig = False
 for Path in DLUtilsPath:
+    Path = os.path.abspath(Path)
     if os.path.exists(Path):
         try:
             sys.path.append(Path)

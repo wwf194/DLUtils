@@ -713,7 +713,7 @@ def PlotMatrix(
         #origin = 'lower'
         if Origin is None:
             Origin = "UpperLeft"
-    elif Coordinate in ["X0Y1", "Y1X0", "XFirst"]:
+    elif Coordinate in ["X0Y1", "Y1X0", "XFirst", "XLeftYTop"]:
         # Place the [0, 0] index of the data in the upper left
         if Origin is None:
             Origin = "LowerLeft"
@@ -841,7 +841,7 @@ def PlotMatrix(
     # imshow interprets dimension 0 as Y dimension, and dimension 1 as X dimension.
     if Coordinate in ["X1Y0", "Y0X1", "Fig"]:
         _DataInColor = dataInColor
-    elif Coordinate in ["X0Y1", "Y1X0"]:
+    elif Coordinate in ["X0Y1", "Y1X0", "XLeftYTop"]:
         _DataInColor = dataInColor.transpose(1, 0, 2)
     else:
         raise Exception()

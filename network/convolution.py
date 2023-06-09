@@ -10,8 +10,8 @@ ConvParamMap = DLUtils.IterableKeyToElement({
 
 def GetParamMapDefaultConv():
     return DLUtils.ExpandIterableKey({
-        ("InNum"): "In.Num",
-        ("OutNum"): "Out.Num",
+        ("InNum", "InChannelNum"): "In.Num",
+        ("OutNum", "OutChannelNum"): "Out.Num",
         ("Stride"): "Stride",
         ("KernelSize", "Kernel.Size"): "Kernel.Size",
         ("Padding"): "Padding.Value",
