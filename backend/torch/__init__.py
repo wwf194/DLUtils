@@ -1,4 +1,8 @@
-from .format import ToTorchTensor, ToTorchTensorOrNum, NpArray2Tensor, NpArray2TorchTensor
+import torch
+try:
+    from .format import ToTorchTensor, ToTorchTensorOrNum, NpArray2Tensor, NpArray2TorchTensor
+except Exception:
+    pass
 # from .module import TorchModule, TorchModuleWrapper
 
 def GetTensorByteNum(Tensor): # Byte
@@ -6,8 +10,6 @@ def GetTensorByteNum(Tensor): # Byte
 
 def GetTensorElementNum(Tensor): # Byte
     return Tensor.nelement()
-
-import torch
 
 def SampleFrom01NormalDistributionTorch(Shape):
     return torch.randn(Shape)

@@ -677,8 +677,10 @@ try:
     from .math import RandomIntInRange, RandomSelect, RandomSelectFromList
 except Exception:
     pass
-
-from .format import NpArray2D2Str, NpArray2D2TextFile, NpArray2Str, NpArray2TextFile
+try:
+    from .format import NpArray2D2Str, NpArray2D2TextFile, NpArray2Str, NpArray2TextFile
+except Exception:
+    pass
 
 def MultipleRandomIntInRange(Left, Right, Num, IncludeRight=False):
     if not IncludeRight:
@@ -851,8 +853,11 @@ NormWithinStd2Range = functools.partial(NormWithinNStd2Range, N=1.0)
 NormWithin1Std2Range = NormWithinStd2Range
 
 # import DLUtils.utils.network as network
-from ..backend.torch.format import ToTorchTensor, ToTorchTensorOrNum, NpArray2Tensor, NpArray2TorchTensor
-from ..backend.torch import GetTensorByteNum, GetTensorElementNum
+try:
+    from ..backend.torch.format import ToTorchTensor, ToTorchTensorOrNum, NpArray2Tensor, NpArray2TorchTensor
+    from ..backend.torch import GetTensorByteNum, GetTensorElementNum
+except Exception:
+    pass
 
 import DLUtils.utils.network as network
 try:

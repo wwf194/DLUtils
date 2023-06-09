@@ -1,5 +1,5 @@
 import DLUtils
-import torch
+
 import numpy as np
 from .abstract_module import AbstractModule
 class AbstractNetwork(AbstractModule):
@@ -94,6 +94,7 @@ class AbstractNetwork(AbstractModule):
             Path = Param.Tensor.getattr(Name)
             return Param.getattr(Path)
     def UpdateTensorFromDict(self, Recur=False):
+        import torch
         Param = self.Param        
         if self.HandleTensorBySelf():
             pass
