@@ -4,7 +4,7 @@ import sys
 import os
 import time
 import signal
-import psutil
+import warnings
 import datetime
 import traceback
 from inspect import Traceback
@@ -14,12 +14,17 @@ def KillProcessbyPID(PID):
     os.kill(PID, signal.SIGTERM) #or signal.SIGKILL 
     # p = psutil.Process(pid)
     # p.terminate()  #or p.kill()
+try:
 
-def ProcessExists(PID):
-    if psutil.pid_exists(PID):
-        return True
-    else:
-        return False
+    import psutil
+    def ProcessExists(PID):
+        if psutil.pid_exists(PID):
+            return True
+        else:
+            return False
+    ExistsProcess = ProcessExists
+except Exception:
+    warnings.warn("lib psutil not found.")
 
 def TeminateProcess(ExitCode):
     if IsWindowsSystem():
@@ -34,7 +39,6 @@ def IsWindowsSystem():
     return platform.system() in ["Windows"]
 IsWindows = IsWindowsSystem
 
-ExistsProcess = ProcessExists
 
 def GetCurrentProcessID():
     return os.getpid()

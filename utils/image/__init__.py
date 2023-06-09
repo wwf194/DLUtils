@@ -80,3 +80,11 @@ def ImageFile2JpgImageFile(FilePath, Verbose=True):
     return Result
 
 File2JpgFile = ImageFile2JpgFile = ImageFile2JpgImageFile
+
+def Jpg2NpArray(Path):
+    Path = DLUtils.StandardizePath(Path)
+    assert DLUtils.file.FileExists(Path)
+    Image = cv2.imread(Path)
+    assert Image is not None
+    return Image
+JPG2NpArray = Jpeg2NpArray = Jpg2NpArray

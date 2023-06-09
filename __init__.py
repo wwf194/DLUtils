@@ -33,7 +33,6 @@ import DLUtils.utils.sql as sql
 # import DLUtils.python as python
 from .utils.__struct__ import FixedSizeQueuePassiveOutInt, FixedSizeQueuePassiveOutFloat
 
-
 import DLUtils.optimize as optimize # module -> optimize
 import DLUtils.evaluate as evaluate
 import DLUtils.analysis as analysis
@@ -72,7 +71,6 @@ from DLUtils.data.generate import \
     DefaultVanillaRNNHiddenWeight
 
 import DLUtils.geometry2D as geometry2D
-
 
 from DLUtils.train import TrainSession, EpochBatchTrainSession
 
