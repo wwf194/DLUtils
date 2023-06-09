@@ -20,7 +20,10 @@ from .sample import SampleFromNormalDistribution
 from .dimension import AddDimBeforeFirstDim, AddDimAfterLastDim, InsertDim
 
 from .convolution import Conv2D, UpConv2D
-from .recurrent import VanillaRNN
+try:
+    from .recurrent import VanillaRNN
+except Exception:
+    pass
 
 from .residual import ResidualLayer
 from .attention import MultiHeadSelfAttention, MultiHeadAttention, MultiheadSelfAttentionLayer, TransformerEncoder
