@@ -15,7 +15,6 @@ def KillProcessbyPID(PID):
     # p = psutil.Process(pid)
     # p.terminate()  #or p.kill()
 try:
-
     import psutil
     def ProcessExists(PID):
         if psutil.pid_exists(PID):
@@ -26,6 +25,8 @@ try:
 except Exception:
     warnings.warn("lib psutil not found.")
 
+KillProcess = KillProcessbyID = KillProcessbyPID
+
 def TeminateProcess(ExitCode):
     if IsWindowsSystem():
         os._exit(ExitCode)
@@ -33,11 +34,6 @@ def TeminateProcess(ExitCode):
         # sends a SIGINT to the main thread which raises a KeyboardInterrupt.
         # With that you have a proper cleanup. 
         os.kill(os.getpid(), signal.SIGINT)
-
-import platform
-def IsWindowsSystem():
-    return platform.system() in ["Windows"]
-IsWindows = IsWindowsSystem
 
 
 def GetCurrentProcessID():
@@ -56,6 +52,12 @@ def ReportPyTorchInfo():
     Report += "Torch version:"+torch.__version__
     return Report
 
+import platform
+def IsWindowsSystem():
+    return platform.system() in ["Windows"]
+IsWindows = IsWindowsSystem
+
+
 def GetSystemType():
     if "win" in sys.platform is not None:
         SystemType = 'Windows'
@@ -65,6 +67,7 @@ def GetSystemType():
         SystemType = 'Unknown'
     return SystemType
 SystemType = SysType = GetSysType = GetSystemType
+SystemType = GetSystemType()
 
 def ClassPathStr(Obj):
     # https://stackoverflow.com/questions/2020014/get-fully-qualified-class-name-of-an-object-in-python
@@ -184,12 +187,15 @@ def Test():
 import locale
 try:
     import chardet
-    def RunPythonScript(FilePath, ArgList=[]):
+    def RunPythonScript(FilePath, ArgList=[], PassPID=True):
         FilePath = DLUtils.file.StandardizeFilePath(FilePath)
         # os.system('chcp 65001')
         StrList = ["python -u"]
         StrList.append("\"" + FilePath + "\"")
         StrList += ArgList
+        if PassPID:
+            StrList.append("--parent-pid")
+            StrList.append("%d"%DLUtils.system.CurrentProcessID())
         Command = " ".join(StrList)
         ExitCode = 0
         try:
@@ -234,3 +240,10 @@ def PrintErrorStack():
     
 def Print2StdErr(Str):
     print(Str, file=sys.stderr)
+    
+
+def CloseWindow(*List, **Dict):
+    if SystemType in ["Windows"]:
+        DLUtils.backend.win.CloseWindow(*List, **Dict)
+    else:
+        raise Exception()

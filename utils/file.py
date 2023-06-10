@@ -194,7 +194,7 @@ try:
 except Exception:
     warnings.warn("lib send2trash not found.")
 import traceback
-def DeleteFile(FilePath, RaiseIfNonExist=False, Move2TrashBin=False):
+def DeleteFile(FilePath, RaiseIfNonExist=False, Move2TrashBin=False, Verbose=True):
     FilePath = StandardizeFilePath(FilePath)
     if Move2TrashBin:
         if DLUtils.system.IsWindows():
@@ -202,24 +202,26 @@ def DeleteFile(FilePath, RaiseIfNonExist=False, Move2TrashBin=False):
                 assert ExistsFile(FilePath)
                 send2trash(FilePath)
             except Exception:
-                DLUtils.print("failed to delete file to trashbin (%s)"%FilePath)
-                DLUtils.print(traceback.format_exc())
-                DLUtils.print("trying delete only.")
+                if Verbose:
+                    DLUtils.print("failed to delete file to trashbin (%s)"%FilePath)
+                    DLUtils.print(traceback.format_exc())
+                    DLUtils.print("trying delete only.")
                 pass
     if not FileExists(FilePath):
         Msg = f"DLUtils.DeleteFile: FilePath {FilePath} does not exist."
         if RaiseIfNonExist:
             raise Exception(Msg)
         else:
-            warnings.warn(Msg)
+            if Verbose:
+                warnings.warn(Msg)
     else:
         os.remove(FilePath)
 
-def DeleteFile2TrashBin(FilePath):    
+def DeleteFile2TrashBin(FilePath, Verbose=True): 
     # assert ExistsFile(FilePath)
     # from send2trash import send2trash
     # send2trash(FilePath)
-    return DeleteFile(FilePath, RaiseIfNonExist=False, Move2TrashBin=True)
+    return DeleteFile(FilePath, RaiseIfNonExist=False, Move2TrashBin=True, Verbose=Verbose)
 
 def DeleteAllFilesAndSubFolders(DirPath):
     for FilePath in ListFilesPath(DirPath):

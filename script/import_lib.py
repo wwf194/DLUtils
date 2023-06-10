@@ -12,7 +12,9 @@ DLUtilsPath = [
     "root/"
 ]
 EnvDict = {}
-print("trying import DLUtils.")
+def WriteUTF8(Str):
+    sys.stdout.buffer.write(Str.encode("utf-8"))
+WriteUTF8("trying import DLUtils. ")
 Verbose = True
 Sig = False
 for Path in DLUtilsPath:
@@ -39,8 +41,7 @@ for Path in DLUtilsPath:
             sys.path.pop()
             continue
 
-def WriteUTF8(Str):
-    sys.stdout.buffer.write(Str.encode("utf-8"))
+
 
 if not Sig:
     WriteUTF8("ERROR: Cannot import DLUtils.")

@@ -137,8 +137,25 @@ import sys
 from io import StringIO
 PrintBuf = StringIO()
 def _print(*List, Encoding="utf-8", Indent=None, **Dict):
+    PrintBuf.seek(0)
+    PrintBuf.truncate(0)
     print(*List, **Dict, file=PrintBuf)
     Str = PrintBuf.getvalue()
+    PrintBuf.flush()
+    Result = sys.stdout.buffer.write(Str.encode(Encoding))
+    sys.stdout.flush()
+    return Result
+
+def PrintWithTimeStr(*List, Encoding="utf-8", Indent=None, **Dict):
+    Buf = StringIO()
+    # faster than reusing.
+    # https://stackoverflow.com/questions/4330812/how-do-i-clear-a-stringio-object
+    print(*List, **Dict, file=Buf)
+    Str = Buf.getvalue()
+    if Str.endswith("\n"):
+        Str = Str[:-1] + " time: %s."%DLUtils.system.CurrentTimeStr() + "\n"
+    else:
+        Str = Str + " time: %s."%DLUtils.system.CurrentTimeStr()
     Result = sys.stdout.buffer.write(Str.encode(Encoding))
     sys.stdout.flush()
     return Result

@@ -101,23 +101,6 @@ def LoadTaskFile(FilePath="./task.jsonc"):
     TaskObj = DLUtils.json.JsonFile2PyObj(FilePath)
     return TaskObj
 
-def LoadJsonFile(Args):
-    if isinstance(Args, DLUtils.PyObj):
-        Args = GetAttrs(Args)
-    if isinstance(Args, dict):
-        _LoadJsonFile(DLUtils.json.JsonObj2PyObj(Args))
-    elif isinstance(Args, list):
-        for Arg in Args:
-            _LoadJsonFile(Arg)
-    elif isinstance(Args, DLUtils.PyObj):
-        _LoadJsonFile(Args)
-    else:
-        raise Exception()
-
-def _LoadJsonFile(Args, **kw):
-    Obj = DLUtils.json.JsonFile2PyObj(Args.FilePath)
-    MountObj(Args.MountPath, Obj, **kw)
-
 def SaveObj(Args):
     Obj = DLUtils.parse.ResolveStr(Args.MountPath, ObjRoot=DLUtils.GetGlobalParam()),
     Obj.Save(SaveDir=Args.SaveDir)
@@ -236,8 +219,6 @@ def ToTrainableTorchTensor(data):
     else:
         raise Exception(type(data))
 
-
-
 def _1DTo2D(data):
     # turn 1-D data to 2-D data for visualization
     DimensionNum = DLUtils.GetDimensionNum(data)
@@ -268,7 +249,6 @@ def EnsureFlatNp(data):
 
 EnsureFlat = EnsureFlatNp
 
-
 def NpArray2List(data):
     return data.tolist()
 
@@ -278,8 +258,6 @@ def ToStandardizeTorchDataType(DataType):
     elif DataType in ["Double", "double"]:
         return torch.float64
 
-
-
 def DeleteKeysIfExist(Dict, Keys):
     for Key in Keys:
         if Key in Dict:
@@ -287,6 +265,7 @@ def DeleteKeysIfExist(Dict, Keys):
     return Dict
 
 try:
+    import numpy as np
     NpDataTypeMap = IterableKeyToKeys({    
         ("np.float32", "Float32", "Float", "float"): np.float32,
         ("np.int8", "Int8", "int8"): np.int8
