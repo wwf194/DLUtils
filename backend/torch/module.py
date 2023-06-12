@@ -107,7 +107,7 @@ class TorchModuleWrapper(AbstractNetwork):
             return Param
         else:
             return "MODULE_WITHOUT_PARAM"
-    def ExtractTrainParam(self, TrainParam={}, PathStrPrefix=True, Recur=True):
+    def ExtractTrainParam(self, TrainParamDict={}, PathStrPrefix=True, Recur=True):
         assert isinstance(self.module, torch.nn.Module)
         self.UpdateDictFromTensor(Recur=False)
         Param = self.Param
@@ -117,10 +117,10 @@ class TorchModuleWrapper(AbstractNetwork):
             Prefix = ""
         if Param.get("TrainParam") is not None:
             for Name, Param in self.module.named_parameters():
-                TrainParam[Prefix + Name] = Param
+                TrainParamDict[Prefix + Name] = Param
         if Recur:
-            self.ExtractTrainParamRecur(TrainParam=TrainParam, PathStrPrefix=PathStrPrefix)
-        return TrainParam
+            self.ExtractTrainParamRecur(TrainParamDict=TrainParamDict, PathStrPrefix=PathStrPrefix)
+        return TrainParamDict
     def SetTest(self, Recur=True):
         self.module.eval()
         return super().SetTest(Recur=Recur)

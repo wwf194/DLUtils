@@ -1,8 +1,8 @@
 import DLUtils
 
 class ImageClassificationTask(DLUtils.module.AbstractModule):
-    def __init__(self, Type=None):
-        super().__init__()
+    def __init__(self, Type=None, *List, **Dict):
+        super().__init__(*List, **Dict)
         if Type is not None:
             self.SetType(Type)
     def MNIST(self):

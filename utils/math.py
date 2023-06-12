@@ -76,11 +76,14 @@ def RandomSelect(List, Num, Repeat=False):
     else:
         Num = DLUtils.GetLength(List)
 
-    if Num > Num:
+    if len(List) > Num:
         return random.sample(List, Num)
     else:
-        return List
+        return list(List)
 RandomSelectFromList = RandomSelect
+
+def RandomSelectOne(List):
+    return RandomSelect(List, 1)[0]
 
 def RandomSelectFromListRepeat(List, Num):
     # return random.choices(List, Num)
