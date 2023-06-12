@@ -1,6 +1,7 @@
-
 from .utils._dict import IterableKeyToElement, IterableKeyToKeys
+pass
 import DLUtils.utils as utils
+
 from .utils.json import \
     IsJsonObj, PyObj, EmptyPyObj, IsPyObj, IsDictLikePyObj, \
     IsListLikePyObj, CheckIsLegalPyName
@@ -16,11 +17,22 @@ from .utils import *
 SystemType = GetSystemType()
 
 import DLUtils.module as module
-from DLUtils.module import AbstractModule, AbstractNetwork, AbstractOperator
-import DLUtils.transform as transform
-import DLUtils.transform.norm as norm
+try:
+    from .module import AbstractModule, AbstractNetwork, AbstractOperator
+    from .module.abstract_module import GetParamMapDefault
+    from .network.convolution import GetParamMapDefaultConv
+except Exception:
+    pass
 
-import DLUtils.log as log # log -> transform
+import DLUtils.transform as transform
+try:
+    import DLUtils.transform.norm as norm
+except Exception:
+    pass
+try:
+    import DLUtils.log as log # log -> transform
+except Exception:
+    pass
 
 import DLUtils.utils.attrs as attrs
 import DLUtils.utils.parse as parse
@@ -32,70 +44,97 @@ import DLUtils.utils.system as system
 import DLUtils.utils.sql as sql
 # import DLUtils.python as python
 from .utils.__struct__ import FixedSizeQueuePassiveOutInt, FixedSizeQueuePassiveOutFloat
-
-
-import DLUtils.optimize as optimize # module -> optimize
+try:
+    import DLUtils.optimize as optimize # module -> optimize
+    from .optimize import Optimizer
+    from .optimize import SGD, Adam
+except Exception:
+    pass
 import DLUtils.evaluate as evaluate
 import DLUtils.analysis as analysis
 import DLUtils.transform as transform
-import DLUtils.train as train # module -> train
-import DLUtils.network as network
-# import DLUtils.network.nonlinear as NonLinear
-
-import DLUtils.task as task
-from .task import Task, Dataset
+try:
+    import DLUtils.train as train # module -> train
+    from .train.evaluate import Evaluator, EvaluationLog
+    from .train import TrainSession, EpochBatchTrainSession
+except Exception:
+    pass
+try:
+    import DLUtils.network as network
+except Exception:
+    pass
+try:
+    import DLUtils.task as task
+    from .task import Task, Dataset
+except Exception:
+    pass
 
 # from .functions import *
 # from .log import *
 
-from .optimize import Optimizer
-from .optimize import SGD, Adam
-from .train.evaluate import Evaluator, EvaluationLog
-import DLUtils.plot as plot
+try:
+    import DLUtils.plot as plot
+except Exception:
+    pass
+try:
+    import DLUtils.loss as loss
+except Exception:
+    pass
+try:
+    import DLUtils.data as data
+    from DLUtils.data.generate import \
+        SampleFromKaimingNormal, \
+        SampleFromKaimingUniform, \
+        SampleFromXaiverNormal, \
+        SampleFromXaiverUniform, \
+        SampleFromConstantDistribution, \
+        SampleFromNormalDistribution, \
+        SampleFrom01NormalDistribution, \
+        SampleFromGaussianDistribution, \
+        SampleFromUniformDistribution, \
+        DefaultConv2DKernel, DefaultUpConv2DKernel, ShapeWithSameValue, \
+        DefaultNonLinearLayerWeight, DefaultNonLinearLayerBias, DefaultLinearLayerWeight, \
+        DefaultUpConv2DBias, DefaultConv2DBias, DefaultLinearLayerBias, \
+        DefaultVanillaRNNHiddenWeight
+except Exception:
+    pass
 
-import DLUtils.loss as loss
+try:
+    import DLUtils.geometry2D as geometry2D
+except Exception:
+    pass
 
-import DLUtils.data as data
-from DLUtils.data.generate import \
-    SampleFromKaimingNormal, \
-    SampleFromKaimingUniform, \
-    SampleFromXaiverNormal, \
-    SampleFromXaiverUniform, \
-    SampleFromConstantDistribution, \
-    SampleFromNormalDistribution, \
-    SampleFrom01NormalDistribution, \
-    SampleFromGaussianDistribution, \
-    SampleFromUniformDistribution, \
-    DefaultConv2DKernel, DefaultUpConv2DKernel, ShapeWithSameValue, \
-    DefaultNonLinearLayerWeight, DefaultNonLinearLayerBias, DefaultLinearLayerWeight, \
-    DefaultUpConv2DBias, DefaultConv2DBias, DefaultLinearLayerBias, \
-    DefaultVanillaRNNHiddenWeight
-
-import DLUtils.geometry2D as geometry2D
-
-
-from DLUtils.train import TrainSession, EpochBatchTrainSession
-
-from DLUtils.log import \
-    ResetGlobalLogIndex, \
-    GlobalLogIndex
-
+try:
+    from DLUtils.log import \
+        ResetGlobalLogIndex, \
+        GlobalLogIndex
+except Exception:
+    pass
+try:
+    from DLUtils.plot import \
+        NpArray2ImageFile, \
+        Tensor2ImageFile
+except Exception:
+    pass
 from DLUtils.utils.func import \
     EmptyFunction
 from DLUtils.utils.file import ParseSavePath
 import DLUtils.utils.system as system
-from DLUtils.plot import \
-    NpArray2ImageFile, \
-    Tensor2ImageFile
 
-import DLUtils.example as example
+try:
+    import DLUtils.example as example
+except Exception:
+    pass
 
-import DLUtils.backend as backend
-import DLUtils.backend.torch as torch
+try:
+    import DLUtils.backend as backend
+    import DLUtils.backend.torch as torch
+except Exception:
+    pass
 
-from .module.abstract_module import GetParamMapDefault
-from .network.convolution import GetParamMapDefaultConv
+
 
 PackageFolderPath = DLUtils.file.FolderPathOfFile(__file__)
 
 from DLUtils.utils._string import _print as print
+from DLUtils.utils._string import PrintWithTimeStr

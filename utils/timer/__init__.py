@@ -1,7 +1,7 @@
 import DLUtils
 import schedule
 import time
-
+import apscheduler
 from ...module import AbstractModule
 class EventTrigger(AbstractModule):
     def SetTime(self):
@@ -17,6 +17,3 @@ class EventTrigger(AbstractModule):
         return self
 
 
-
-
-import apscheduler
