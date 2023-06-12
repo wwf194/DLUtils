@@ -93,9 +93,6 @@ class AbstractNetwork(AbstractModule):
         else:
             Path = Param.Tensor.getattr(Name)
             return Param.getattr(Path)
-<<<<<<< HEAD
-
-=======
     def UpdateTensorFromDict(self, Recur=False):
         import torch
         Param = self.Param        
@@ -141,7 +138,6 @@ class AbstractNetwork(AbstractModule):
                 if hasattr(SubModule, "UpdateDictFromTensor"):
                     SubModule.UpdateDictFromTensor(Recur=True)
         return self
->>>>>>> 375ca5983c42b5e3ce359bfe9237a271e11bdb66
     def ExtractTrainParam(self, TrainParamDict={}, PathStrPrefix=True, Recur=True):
         self.UpdateDictFromTensor(Recur=False)
         # self.UpdateTensorFromDict()
