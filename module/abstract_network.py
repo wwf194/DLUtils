@@ -93,50 +93,7 @@ class AbstractNetwork(AbstractModule):
         else:
             Path = Param.Tensor.getattr(Name)
             return Param.getattr(Path)
-    def UpdateTensorFromDict(self, Recur=False):
-        Param = self.Param        
-        if self.HandleTensorBySelf():
-            pass
-        else:
-            if Param.hasattr("Tensor"):
-                for Name, Path in Param.Tensor.items():
-                    assert Param.hasattr(Path)
-                    TensorData = Param.getattr(Path)
-                    Tensor = DLUtils.ToTorchTensorOrNum(TensorData)
-                    if hasattr(self, "Device"):
-                        TensorDevice = Tensor.to(self.Device).detach()
-                        TensorDevice.requires_grad = Tensor.requires_grad
-                    else:
-                        TensorDevice = Tensor
-                    setattr(self, Name, TensorDevice)
-            if Param.hasattr("TrainParam"):
-                for Name, Path in Param.TrainParam.items():
-                    assert Param.Tensor.hasattr(Name)
-                    Tensor = getattr(self, Name)
-                    Tensor.requires_grad = True
-                    Tensor = torch.nn.Parameter(Tensor, requires_grad=True)
-                    setattr(self, Name, Tensor)
-        if Recur:
-            for Name, SubModule in self.SubModules.items():
-                if hasattr(SubModule, "UpdateTensorFromDict"):
-                    SubModule.UpdateTensorFromDict(Recur=True)
-        self.OnTensorMovement()
-        return self
-    def UpdateDictFromTensor(self, Recur=False):
-        Param = self.Param
-        if self.HandleTensorBySelf():
-            pass
-        else:
-            if Param.hasattr("TrainParam"):
-                for Name, Path in Param.TrainParam.items():
-                    if hasattr(self, Name):
-                        TrainParamData = getattr(self, Name)
-                        Param.setattr(Path, DLUtils.ToNpArray(TrainParamData))
-        if Recur:
-            for Name, SubModule in self.SubModules.items():
-                if hasattr(SubModule, "UpdateDictFromTensor"):
-                    SubModule.UpdateDictFromTensor(Recur=True)
-        return self
+
     def ExtractTrainParam(self, TrainParamDict={}, PathStrPrefix=True, Recur=True):
         self.UpdateDictFromTensor(Recur=False)
         # self.UpdateTensorFromDict()
@@ -225,20 +182,19 @@ class AbstractNetwork(AbstractModule):
             if hasattr(SubModule, "PlotWeight"):
                 SubModule.PlotWeight(SaveDir, SaveName)
         return self
-    
     def ReceiveNpArray(self, *List, **Dict):
         List = list(List)
         for Index, Item in enumerate(List):
-            if isinstance(Item, np.ndarray):
-                List[Index] = DLUtils.ToTorchTensor(Item)
+            if isinstance(Item, np.ndarray) or isinstance(Item, torch.Tensor):
+                List[Index] = DLUtils.ToTorchTensor(Item).to(self.Device)
         for Key, Value in Dict.items():
-            if isinstance(Item, np.ndarray):
-                Dict[Key] = DLUtils.ToTorchTensor(Value)
+            if isinstance(Item, np.ndarray) or isinstance(Item, torch.Tensor):
+                Dict[Key] = DLUtils.ToTorchTensor(Value).to(self.Device)
         return self.Receive(*List, **Dict)
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         super().Init(IsSuper=True, IsRoot=IsRoot)
-        self.UpdateTensorFromDict()
+
         if IsRoot:
             self.Log(f"{Param._CLASS}: initialization finished.", Type="initialization")
         return self

@@ -95,6 +95,50 @@ class AbstractModule(LogComponent):
         elif isinstance(Param, DLUtils.param):
             self.Param.Absorb(Param)
         return self
+    def UpdateTensorFromDict(self, Recur=False):
+        Param = self.Param        
+        if self.HandleTensorBySelf():
+            pass
+        else:
+            if Param.hasattr("Tensor"):
+                for Name, Path in Param.Tensor.items():
+                    assert Param.hasattr(Path)
+                    TensorData = Param.getattr(Path)
+                    Tensor = DLUtils.ToTorchTensorOrNum(TensorData)
+                    if hasattr(self, "Device"):
+                        TensorDevice = Tensor.to(self.Device).detach()
+                        TensorDevice.requires_grad = Tensor.requires_grad
+                    else:
+                        TensorDevice = Tensor
+                    setattr(self, Name, TensorDevice)
+            if Param.hasattr("TrainParam"):
+                for Name, Path in Param.TrainParam.items():
+                    assert Param.Tensor.hasattr(Name)
+                    Tensor = getattr(self, Name)
+                    Tensor.requires_grad = True
+                    Tensor = torch.nn.Parameter(Tensor, requires_grad=True)
+                    setattr(self, Name, Tensor)
+        if Recur:
+            for Name, SubModule in self.SubModules.items():
+                if hasattr(SubModule, "UpdateTensorFromDict"):
+                    SubModule.UpdateTensorFromDict(Recur=True)
+        self.OnTensorMovement()
+        return self
+    def UpdateDictFromTensor(self, Recur=False):
+        Param = self.Param
+        if self.HandleTensorBySelf():
+            pass
+        else:
+            if Param.hasattr("TrainParam"):
+                for Name, Path in Param.TrainParam.items():
+                    if hasattr(self, Name):
+                        TrainParamData = getattr(self, Name)
+                        Param.setattr(Path, DLUtils.ToNpArray(TrainParamData))
+        if Recur:
+            for Name, SubModule in self.SubModules.items():
+                if hasattr(SubModule, "UpdateDictFromTensor"):
+                    SubModule.UpdateDictFromTensor(Recur=True)
+        return self
     def AbsorbParam(self, Param, Prefix=None, Remove=True, PrefixOnly=False):
         ParamMap = self.GetParamMap()
 
@@ -344,7 +388,6 @@ class AbstractModule(LogComponent):
         if hasattr(self, "_Log"):
             self.SetLogRecur(self._Log)
         self.SetConnectEvents()
-
         self.SetTrain() # default : train mode. might influence dropout etc.
 
         if hasattr(self, "Receive"):
@@ -365,7 +408,7 @@ class AbstractModule(LogComponent):
                 pass
         if IsRoot:
             self.SetTest()
-        # assert hasattr(self, "CallMethod")
+        self.UpdateTensorFromDict()
         self._InitFinished = True
         return self
     def LogWithSelfInfo(self, Content, Type="Unknown"):

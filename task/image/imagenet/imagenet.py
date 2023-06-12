@@ -21,7 +21,7 @@ class ImageNet1k(ImageClassificationTask):
         return self.DataLoader("Validation", **Dict)
     def RandomValidationSample(self):
         Validation = self.Validation
-        Index = DLUtils.math.RandomSelect(0, len(Validation.List))
+        Index = DLUtils.math.RandomSelectOne(range(len(Validation.InList)))
         Image = Im.open(Validation.InList[Index]).convert("RGB")
         if self.Transform:
             Image = self.Transform(Image)
@@ -52,7 +52,7 @@ class ImageNet1k(ImageClassificationTask):
         Param = self.Param
         # dataset folder path setting
         assert Param.hasattr("Data.Path")
-        Param.Data.Path = DLUtils.file.StandardizePath(Param.Data.Path)
+        Param.Data.Path = DLUtils.file.StandardizeDirPath(Param.Data.Path)
         self.DataPath = Param.Data.Path
         assert self.DataPath.endswith("/")
         
