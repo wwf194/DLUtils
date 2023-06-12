@@ -4,7 +4,7 @@ import sys
 import os
 import time
 import signal
-import psutil
+import warnings
 import datetime
 import traceback
 from inspect import Traceback
@@ -14,12 +14,18 @@ def KillProcessbyPID(PID):
     os.kill(PID, signal.SIGTERM) #or signal.SIGKILL 
     # p = psutil.Process(pid)
     # p.terminate()  #or p.kill()
+try:
+    import psutil
+    def ProcessExists(PID):
+        if psutil.pid_exists(PID):
+            return True
+        else:
+            return False
+    ExistsProcess = ProcessExists
+except Exception:
+    warnings.warn("lib psutil not found.")
 
-def ProcessExists(PID):
-    if psutil.pid_exists(PID):
-        return True
-    else:
-        return False
+KillProcess = KillProcessbyID = KillProcessbyPID
 
 def TeminateProcess(ExitCode):
     if IsWindowsSystem():
@@ -29,12 +35,6 @@ def TeminateProcess(ExitCode):
         # With that you have a proper cleanup. 
         os.kill(os.getpid(), signal.SIGINT)
 
-import platform
-def IsWindowsSystem():
-    return platform.system() in ["Windows"]
-IsWindows = IsWindowsSystem
-
-ExistsProcess = ProcessExists
 
 def GetCurrentProcessID():
     return os.getpid()
@@ -52,6 +52,12 @@ def ReportPyTorchInfo():
     Report += "Torch version:"+torch.__version__
     return Report
 
+import platform
+def IsWindowsSystem():
+    return platform.system() in ["Windows"]
+IsWindows = IsWindowsSystem
+
+
 def GetSystemType():
     if "win" in sys.platform is not None:
         SystemType = 'Windows'
@@ -61,6 +67,7 @@ def GetSystemType():
         SystemType = 'Unknown'
     return SystemType
 SystemType = SysType = GetSysType = GetSystemType
+SystemType = GetSystemType()
 
 def ClassPathStr(Obj):
     # https://stackoverflow.com/questions/2020014/get-fully-qualified-class-name-of-an-object-in-python
@@ -120,20 +127,23 @@ def CurrentTimeStr(format="%Y-%m-%d %H-%M-%S", verbose=False):
     return TimeStr
 GetCurrentTime = GetTime = CurrentTimeStr
 
-import dateutil
-def GetTimeDifferenceFromStr(TimeStr1, TimeStr2):
-    Time1 = dateutil.parser.parse(TimeStr1)
-    Time2 = dateutil.parser.parse(TimeStr2)
+try:
+    import dateutil
+    def GetTimeDifferenceFromStr(TimeStr1, TimeStr2):
+        Time1 = dateutil.parser.parse(TimeStr1)
+        Time2 = dateutil.parser.parse(TimeStr2)
 
-    TimeDiffSeconds = (Time2 - Time1).total_seconds()
-    TimeDiffSeconds = round(TimeDiffSeconds)
+        TimeDiffSeconds = (Time2 - Time1).total_seconds()
+        TimeDiffSeconds = round(TimeDiffSeconds)
 
-    _Second = TimeDiffSeconds % 60
-    Minute = TimeDiffSeconds // 60
-    _Minute = Minute % 60
-    Hour = Minute // 60
-    TimeDiffStr = "%d:%02d:%02d"%(Hour, _Minute, _Second)
-    return TimeDiffStr
+        _Second = TimeDiffSeconds % 60
+        Minute = TimeDiffSeconds // 60
+        _Minute = Minute % 60
+        Hour = Minute // 60
+        TimeDiffStr = "%d:%02d:%02d"%(Hour, _Minute, _Second)
+        return TimeDiffStr
+except Exception:
+    warnings.warn("lib dateutil not found")
 
 def Stack2File(FilePath):
     DLUtils.EnsureFileDir(FilePath)
@@ -174,51 +184,55 @@ def Test():
     TimeFloat = DateTimeObj2TimeStampFloat(datetime(1800, 1, 19, 3, 15, 14, 200))
     print(TimeFloat) # 2147451300.0
     DateTimeObj = TimeStamp2DateTimeObj(TimeFloat)
-
-import chardet
 import locale
-def RunPythonScript(FilePath, ArgList=[]):
-    FilePath = DLUtils.file.StandardizeFilePath(FilePath)
-    # os.system('chcp 65001')
-    StrList = ["python -u"]
-    StrList.append("\"" + FilePath + "\"")
-    StrList += ArgList
-    Command = " ".join(StrList)
-    ExitCode = 0
-    try:
-        # # unrecognized encoding problem
-        # OutBytes = subprocess.check_output(
-        #     Command, shell=True, stderr=subprocess.STDOUT
-        # )
-        Result = subprocess.Popen(Command, stdout=subprocess.PIPE, shell=True)
-        # (OutBytes, ErrBytes) = Result.communicate()
-        OutBytes = Result.stdout.read()
-        # OutBytes = OutStr.encode("utf-8")
-        
-        # ExitCode = os.system(Command)
-        # OutBytes = "None".encode("utf-8")     
-    except subprocess.CalledProcessError as grepexc:                                                                                                   
-        ExitCode = grepexc.returncode
-        # grepexc.output
-    # print(OutBytes.hex())
-    try:
-        # print("try decoding with utf-8")
-        OutStr = OutBytes.decode("utf-8", errors="replace")
-        # Encoding = chardet.detect(OutBytes)['encoding']
-        # print("Encoding:", Encoding)
-        # OutStr = OutBytes.decode(Encoding)
-    except Exception:
-        print("error in decoding OutBytes with %s."%Encode)
+try:
+    import chardet
+    def RunPythonScript(FilePath, ArgList=[], PassPID=True):
+        FilePath = DLUtils.file.StandardizeFilePath(FilePath)
+        # os.system('chcp 65001')
+        StrList = ["python -u"]
+        StrList.append("\"" + FilePath + "\"")
+        StrList += ArgList
+        if PassPID:
+            StrList.append("--parent-pid")
+            StrList.append("%d"%DLUtils.system.CurrentProcessID())
+        Command = " ".join(StrList)
+        ExitCode = 0
         try:
-            Encode = locale.getdefaultlocale()[1]
-            print("decoding with %s"%Encode)
-            OutStr = OutBytes.decode(Encode)
+            # # unrecognized encoding problem
+            # OutBytes = subprocess.check_output(
+            #     Command, shell=True, stderr=subprocess.STDOUT
+            # )
+            Result = subprocess.Popen(Command, stdout=subprocess.PIPE, shell=True)
+            # (OutBytes, ErrBytes) = Result.communicate()
+            OutBytes = Result.stdout.read()
+            # OutBytes = OutStr.encode("utf-8")
+            
+            # ExitCode = os.system(Command)
+            # OutBytes = "None".encode("utf-8")     
+        except subprocess.CalledProcessError as grepexc:                                                                                                   
+            ExitCode = grepexc.returncode
+            # grepexc.output
+        # print(OutBytes.hex())
+        try:
+            # print("try decoding with utf-8")
+            OutStr = OutBytes.decode("utf-8", errors="replace")
+            # Encoding = chardet.detect(OutBytes)['encoding']
+            # print("Encoding:", Encoding)
+            # OutStr = OutBytes.decode(Encoding)
         except Exception:
-            OutStr = OutBytes.hex()
-    return OutStr
+            print("error in decoding OutBytes with %s."%Encode)
+            try:
+                Encode = locale.getdefaultlocale()[1]
+                print("decoding with %s"%Encode)
+                OutStr = OutBytes.decode(Encode)
+            except Exception:
+                OutStr = OutBytes.hex()
+        return OutStr
 
-RunPythonFile = RunPythonScript
-
+    RunPythonFile = RunPythonScript
+except Exception:
+    warnings.warn("lib chardet not found")
 
 import traceback
 def PrintErrorStack():
@@ -226,3 +240,10 @@ def PrintErrorStack():
     
 def Print2StdErr(Str):
     print(Str, file=sys.stderr)
+    
+
+def CloseWindow(*List, **Dict):
+    if SystemType in ["Windows"]:
+        DLUtils.backend.win.CloseWindow(*List, **Dict)
+    else:
+        raise Exception()

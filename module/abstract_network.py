@@ -1,5 +1,5 @@
 import DLUtils
-import torch
+
 import numpy as np
 from .abstract_module import AbstractModule
 class AbstractNetwork(AbstractModule):
@@ -93,7 +93,55 @@ class AbstractNetwork(AbstractModule):
         else:
             Path = Param.Tensor.getattr(Name)
             return Param.getattr(Path)
+<<<<<<< HEAD
 
+=======
+    def UpdateTensorFromDict(self, Recur=False):
+        import torch
+        Param = self.Param        
+        if self.HandleTensorBySelf():
+            pass
+        else:
+            if Param.hasattr("Tensor"):
+                for Name, Path in Param.Tensor.items():
+                    assert Param.hasattr(Path)
+                    TensorData = Param.getattr(Path)
+                    Tensor = DLUtils.ToTorchTensorOrNum(TensorData)
+                    if hasattr(self, "Device"):
+                        TensorDevice = Tensor.to(self.Device).detach()
+                        TensorDevice.requires_grad = Tensor.requires_grad
+                    else:
+                        TensorDevice = Tensor
+                    setattr(self, Name, TensorDevice)
+            if Param.hasattr("TrainParam"):
+                for Name, Path in Param.TrainParam.items():
+                    assert Param.Tensor.hasattr(Name)
+                    Tensor = getattr(self, Name)
+                    Tensor.requires_grad = True
+                    Tensor = torch.nn.Parameter(Tensor, requires_grad=True)
+                    setattr(self, Name, Tensor)
+        if Recur:
+            for Name, SubModule in self.SubModules.items():
+                if hasattr(SubModule, "UpdateTensorFromDict"):
+                    SubModule.UpdateTensorFromDict(Recur=True)
+        self.OnTensorMovement()
+        return self
+    def UpdateDictFromTensor(self, Recur=False):
+        Param = self.Param
+        if self.HandleTensorBySelf():
+            pass
+        else:
+            if Param.hasattr("TrainParam"):
+                for Name, Path in Param.TrainParam.items():
+                    if hasattr(self, Name):
+                        TrainParamData = getattr(self, Name)
+                        Param.setattr(Path, DLUtils.ToNpArray(TrainParamData))
+        if Recur:
+            for Name, SubModule in self.SubModules.items():
+                if hasattr(SubModule, "UpdateDictFromTensor"):
+                    SubModule.UpdateDictFromTensor(Recur=True)
+        return self
+>>>>>>> 375ca5983c42b5e3ce359bfe9237a271e11bdb66
     def ExtractTrainParam(self, TrainParamDict={}, PathStrPrefix=True, Recur=True):
         self.UpdateDictFromTensor(Recur=False)
         # self.UpdateTensorFromDict()

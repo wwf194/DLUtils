@@ -1,6 +1,4 @@
 import warnings
-import torch
-import torch.nn.functional as F
 import DLUtils
 from ..module import LogComponent
 
@@ -207,6 +205,8 @@ class AbstractModule(LogComponent):
         return self
     # 1D dropout
     def _DropOut(self, X):
+        import torch
+        import torch.nn.functional as F
         return F.dropout(X, self.DropOutProbability, training=self.IsTrain(), inplace=self.DropOutInPlace)
     def _DropOutNull(self, X):
         return X
@@ -415,6 +415,7 @@ class AbstractModule(LogComponent):
         self.Log(f"{self.PathStr()}({self.ClassStr()}): {Content}", Type=Type)
         return self
     def SetDevice(self, Device=None, IsRoot=True):
+        import torch
         if Device is None:
             Device = self.Device
         else:

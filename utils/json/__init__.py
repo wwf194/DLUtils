@@ -1,6 +1,10 @@
 import re
 import json
-import json5
+import warnings
+try:
+    import json5
+except Exception:
+    warnings.warn("lib json5 not found.")
 from typing import List
 
 import DLUtils
