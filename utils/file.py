@@ -399,7 +399,7 @@ def ListFileNames(DirPath):
 ListAllFiles = ListAllFileNames = GetAllFiles = ListFilesName = ListFileNames
 
 def ListFilePaths(DirPath):
-    DirPath = StandardizePath(DirPath)
+    DirPath = StandardizeDirPath(DirPath)
     FileNameList = ListFilesName(DirPath)
     return [DirPath + FileName for FileName in FileNameList]
 
