@@ -29,6 +29,23 @@ try:
                 "Var": np.nanvar(data)
             })
             return DataStat
+
+        def NpArrayStatisticsStr(data, verbose=False):
+            DataStat = {
+                "Min": np.nanmin(data),
+                "Max": np.nanmax(data),
+                "Mean": np.nanmean(data),
+                "Std": np.nanstd(data),
+                "Var": np.nanvar(data)
+            }
+            StrList = []
+            for Name, Key in DataStat.items():
+                StrList.append(Name)
+                StrList.append(": ")
+                StrList.append(DLUtils.Float2StrDisplay(Key))
+                StrList.append("\n")
+            return "".join(StrList)
+
         NpArrayStat = NpStatistics = NpArrayStatistics
 
         def ReplaceNaNOrInfWithZeroNp(data):
@@ -217,7 +234,10 @@ try:
             return Amp * np.exp(Exponent)
 
         def Float2BaseAndExponent(Float, Base=10.0):
-            Exponent = math.floor(math.log(Float, Base))
+            if Float < 0.0:
+                Exponent = math.floor(math.log(-Float, Base))
+            else:
+                Exponent = math.floor(math.log(Float, Base))
             Coefficient = Float / 10.0 ** Exponent
             return Coefficient, Exponent
 
