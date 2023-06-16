@@ -247,3 +247,69 @@ def CloseWindow(*List, **Dict):
         DLUtils.backend.win.CloseWindow(*List, **Dict)
     else:
         raise Exception()
+
+def GetCmdArgList():
+    return sys.argv
+GetCmdArgList = CommandLineArgList = GetComamndLineArgList = GetCmdArgList()
+
+def NewCmdArg(**Dict):
+    NameList = []
+    for Key in ["CmdName", "Name", "NameList", "NamePattern"]:
+        NameList += DLUtils.ToList(Dict.get(Key, []))
+    assert len(NameList) > 0
+    
+    NumStr = Dict.get("Num", "0~")
+    if isinstance(NumStr, int):
+        ValueNum = NumStr
+    elif isinstance(NumStr, list):
+        # ?
+        pass
+    else:
+        if NumStr in ["0~1", "?", "01", "AtMostOne"]:
+            ValueNum = "?"
+        elif NumStr in ["1~", "+", "AtLeastOne"]:
+            ValueNum = "+"
+        elif NumStr in ["0~", "*", "Any"]:
+            ValueNum = "*"
+        else:
+            raise Exception()
+    
+    Type = Dict.get("Type", str)
+    
+    PythonName = Dict.get("PythonName")
+    if PythonName is None:
+        PythonName = NameList[0]
+    
+    if isinstance(Type, type):
+        pass
+    elif isinstance(Type, str):
+        if Type in ["str", "string"]:
+            Type = str
+        elif Type in ["int", "integer"]:
+            Type = int
+        else:
+            Type = type(Type)
+    else:
+        DLUtils.ToList()
+
+    ValueDefault = DLUtils.GetFromKeyList(Dict, "Default", "ValueDefault")
+    return DLUtils.Dict(
+        CmdName=NameList,
+        ValueNum=ValueNum,
+        ValueDefault=ValueDefault,
+        Type=Type,
+        PythonName=PythonName
+    )
+
+def ParseCmdArg(*CmdArgItem):
+    import argparse
+    parser = argparse.ArgumentParser()
+    for Item in CmdArgItem:
+        parser.add_argument(
+            *Item.CmdName, #"-pp", "--parent-pid", "-parent-pid",
+            dest=Item.PythonName,
+            nargs=Item.ValueNum, 
+            type=Item.Type, default=-1
+        )
+    CmdArg = parser.parse_args()
+    return CmdArg

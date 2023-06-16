@@ -2055,7 +2055,7 @@ def NpArray2ImageFileFloat01MPL(Data, ImageFilePath):
     # Data: (Height, Width, ChannelNum)
         # ChannelNum: RGB or RGBA
     DLUtils.EnsureFileDir(ImageFilePath)
-    ImageFilePath = DLUtils.file.RenameFileIfExists(ImageFilePath)
+    # ImageFilePath = DLUtils.file.RenameFileIfExists(ImageFilePath)
     matplotlib.image.imsave(ImageFilePath, Data)
     return
 NpArray2ImageFile = NpArray2ImageFileFloat01MPL
