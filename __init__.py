@@ -137,4 +137,5 @@ except Exception:
 PackageFolderPath = DLUtils.file.FolderPathOfFile(__file__)
 
 from DLUtils.utils._string import _print as print
-from DLUtils.utils._string import PrintWithTimeStr
+from DLUtils.utils._string import PrintWithTimeStr, SetStdOut, ResetStdOut
+from DLUtils.utils.system import NewCmdArg, ParseCmdArg
