@@ -34,13 +34,22 @@ NamedColor = DLUtils.Param().from_dict({
 #     RGB color; the keyword argument name must be a standard mpl colormap name.'''
 #     return plt.cm.get_cmap(name, n)
 
-def GenerateColors(Num=10, ColorMap="gist_rainbow"):
+def GenerateColors(Num=10, ColorMap="Auto"):
     # ColorMap: hsv: some colors look too similar.
-    ColorFunction = plt.cm.get_cmap(ColorMap, Num)
-    Colors = []
+    assert isinstance(Num, int) and Num > 0
+    if Num <= 10:
+        ColorMap = "tab10"
+    elif Num <= 20:
+        ColorMap = "tab20"
+    else:
+        raise Exception()
+    cmap = plt.cm.get_cmap(ColorMap)  # type: matplotlib.colors.ListedColormap
+    Colors = cmap.colors  # type: list
+    ColorList = []
     for Index in range(Num):
-        Colors.append(ColorFunction(Index))
-    return Colors
+        ColorList.append(Colors[Index])
+    
+    return ColorList
 
 def PlotLinesPlt(ax, XYsStart, XYsEnd=None, Width=1.0, Color=NamedColor.Black):
     if XYsEnd is None:
@@ -263,22 +272,22 @@ def SetXTicksAndRangeInt(ax, Xs, Range=None, **Dict):
     SetXTicksInt(ax, XMin, XMax)
     SetXRangeMinMaxInt(ax, XMin, XMax)
 
-def SetYTicksAndRangeInt(ax, Xs, Range=None, **Dict):
+def SetYTicksAndRangeInt(ax, Ys, Range=None, **Dict):
     YMin = Dict.setdefault("YMin", None)
     YMax = Dict.setdefault("YMax", None)
     DimNum = Dict.setdefault("DimNum", 1)
     if Range is None:
         if YMin is None:
-            YMin = Min(Xs, DimNum)
+            YMin = Min(Ys, DimNum)
             YMin = math.floor(YMin)
         if YMax is None:
-            YMax = Max(Xs, DimNum)
+            YMax = Max(Ys, DimNum)
             YMax = math.ceil(YMax)
     else:
         YMin, YMax = Range[0], Range[1]
-    assert isinstance(YMin, float) and isinstance(YMax, float)
-    SetXTicksInt(ax, YMin, YMax)
-    SetXRangeMinMaxInt(ax, YMin, YMax)
+    assert isinstance(YMin, int) and isinstance(YMax, int)
+    SetYTicksInt(ax, YMin, YMax)
+    SetYRangeMinMaxInt(ax, YMin, YMax)
 
 def SetYTicksInt(ax, Min, Max, Method="Auto", **Dict):
     if Min > Max:
@@ -875,15 +884,17 @@ def _OffsetTicks(Ticks, Offset):
     return Ticks
 
 def PlotActivityAndDistributionAlongTime(
-        axes, activity, activityPlot, 
+        axes=None, Data=None, activityPlot=None, 
         Title=None,
         Save=True, SavePath=None,
     ):
-    BatchSize = activity.shape[0]
-    TimeNum = activity.shape[1]
-    ActivityNum = activity.shape[2]
+    
+    # activity: (BatchSize, StepNum, NeuronNum)
+    BatchSize = Data.shape[0]
+    TimeNum = Data.shape[1]
+    ActivityNum = Data.shape[2]
 
-    activity = DLUtils.ToNpArray(activity)
+    Data = DLUtils.ToNpArray(Data)
     activityPlot = DLUtils.ToNpArray(activityPlot).transpose(1, 0)
     if axes is None:
         #fig, axes = plt.subplots(nrows=1, ncols=2)
@@ -906,8 +917,8 @@ def PlotActivityAndDistributionAlongTime(
         ax2, Xs=range(TimeNum), 
         #Mean=DLUtils.math.ReplaceNaNOrInfWithZero(np.nanmean(activity, axis=(0, 2))),
         #Std=DLUtils.math.ReplaceNaNOrInfWithZero(np.nanstd(activity, axis=(0, 2))),
-        Mean = np.nanmean(activity, axis=(0, 2)),
-        Std = np.nanstd(activity, axis=(0,2)),
+        Mean = np.nanmean(Data, axis=(0, 2)),
+        Std = np.nanstd(Data, axis=(0,2)),
         XLabel="Time Index", YLabel="Mean And Std", Title="Mean and Std Along Time",
         Save=False
     )
@@ -1267,7 +1278,8 @@ def PlotLineChart(ax=None, Xs=None, Ys=None,
     SaveFigForPlt(Save, SavePath)
     return ax
 
-def PlotMultiLineChart(ax=None, XsList=None, YsList=None,
+def PlotMultiLineChart(
+        ax=None, XsList=None, YsList=None,
         Title="Untitled", Labels=None,
         ColorList=None, LineWidth=2.0,
         Save=False, SavePath=None, **Dict
@@ -1294,15 +1306,16 @@ def PlotMultiLineChart(ax=None, XsList=None, YsList=None,
             ax, Xs=Xs, Ys=Ys,
             Label=Label,
             Color=ColorList[Index],
-            LineWidth=LineWidth, Save=False,
+            LineWidth=LineWidth,
+            Save=False,
             SetTicks=False
         )
         Index += 1
 
     SetTicks = Dict.setdefault("SetTicks", True)
     if SetTicks:
-        XTicks = Dict.setdefault("XTicks", "X")
-        YTicks = Dict.setdefault("YTicks", "Y")
+        XTicks = Dict.setdefault("XTicks", "float")
+        YTicks = Dict.setdefault("YTicks", "float")
         SetXTicksAndRange(ax, Xs=XsList, DimNum=2, **Dict)
         SetYTicksAndRange(ax, Ys=YsList, DimNum=2, **Dict)
     SetXYLabelForAx(ax, XLabel, YLabel)
@@ -1317,8 +1330,8 @@ def PlotMultiLineChartWithSameXs(ax=None, Xs=None, YsDict=None,
         Title="Undefined", Color="Auto", LineWidth=1.0,
         Save=False, SavePath=None, **Dict
     ):
-    XTicks = Dict.setdefault("XTicks", "X")
-    YTicks = Dict.setdefault("YTicks", "Y")
+    XTicks = Dict.setdefault("XTicks", "float")
+    YTicks = Dict.setdefault("YTicks", "float")
     XLabel = Dict.setdefault("XLabel", "X")
     YLabel = Dict.setdefault("YLabel", "Y")
 
