@@ -137,8 +137,6 @@ class Conv2D(DLUtils.module.AbstractNetwork):
                             # default torch weight initialization does not consider NonLinear.
                         ) # (InNum, OutNum // GroupNum, KernelHeight, KernelWidth)
                     )
-                    return self
-
 
                 # bias setting
                 Param.Bias.setdefault("Enable", True)

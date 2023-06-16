@@ -166,35 +166,39 @@ def ToRunFormat(Data):
         return ToTorchTensor(Data)
     else:
         return Data
+try:
+    import torch
+except Exception:
+    pass
+else:
+    def ToNpArray(Data, DataType=None):
+        if DataType is None:
+            DataType = np.float32
+        if isinstance(Data, np.ndarray):
+            return Data
+        elif isinstance(Data, list):
+            return np.array(Data, dtype=DataType)
+        elif isinstance(Data, torch.Tensor):
+            return Tensor2NpArray(Data)
+        elif isinstance(Data, float):
+            return np.asarray([Data],dtype=DataType)
+        else:
+            raise Exception(type(Data))
 
-def ToNpArray(data, DataType=None):
+def ToNpArrayOrNum(Data, DataType=None):
     if DataType is None:
         DataType = np.float32
-    if isinstance(data, np.ndarray):
-        return data
-    elif isinstance(data, list):
-        return np.array(data, dtype=DataType)
-    elif isinstance(data, torch.Tensor):
-        return Tensor2NpArray(data)
-    elif isinstance(data, float):
-        return np.asarray([data],dtype=DataType)
-    else:
-        raise Exception(type(data))
-
-def ToNpArrayOrNum(data, DataType=None):
-    if DataType is None:
-        DataType = np.float32
-    if isinstance(data, float):
-        return data
-    if isinstance(data, int):
-        return data
-    data = ToNpArray(data)
-    if data.size == 0: # empty array
+    if isinstance(Data, float):
+        return Data
+    if isinstance(Data, int):
+        return Data
+    Data = ToNpArray(Data)
+    if Data.size == 0: # empty array
         return None
-    elif data.size == 1: # single element array
-        return data.reshape(1)[0]
+    elif Data.size == 1: # single element array
+        return Data.reshape(1)[0]
     else:
-        return data
+        return Data
 
 def ToNpArrayIfIsTensor(data):
     if isinstance(data, torch.Tensor):
@@ -733,29 +737,23 @@ def Float2StrDisplay(Float):
     if np.isnan(Float):
         return "NaN"
 
-    if Float==0.0:
-        return "0.0"
-
-    Positive = Float < 0.0
-    if not Positive:
-        Float = - Float
-        Sign = - 1.0
-    else:
-        Sign = 1.0
+    if Float == 0.0:
+        return "0.00"
 
     Base, Exp = DLUtils.math.Float2BaseAndExponent(Float)
     TicksStr = []
     if 1 <= Exp <= 2:
-        FloatStr = _str(int(Float))
+        FloatStr = str(int(Float))
     elif Exp == 0:
-        FloatStr = '%.1f'%Float
+        FloatStr = '%.2f'%Float
     elif Exp == -1:
         FloatStr = '%.2f'%Float
     elif Exp == -2:
         FloatStr = '%.3f'%Float
     else:
         FloatStr = '%.2e'%Float
-    return FloatStr * Sign
+
+    return FloatStr
 
 def Floats2StrDisplay(Floats):
     Floats = ToNpArray(Floats)

@@ -2,7 +2,7 @@
 import DLUtils
 import numpy as np
 import re
-
+import pandas as pd
 B = 1
 KB = 1024
 MB = 1048576
@@ -82,9 +82,21 @@ def NpArray2D2Str(Data, ColName=None, RowName=None, **Dict):
         # to be implemented
         pass
     return pd.DataFrame(Data).to_string()
-def NpArray2D2TextFile(Data, ColName=None, RowName=None, SavePath=None):
+def NpArray2D2TextFile(Data, ColName=None, RowName=None, WriteStat=True, SavePath=None):
+    StrList = []
+    StrShape = "Shape: %s\n"%Data.shape
+    StrList.append(StrShape)
+    if len(Data.shape) == 1:
+        Data = Data[:, np.newaxis]
     Str = NpArray2D2Str(Data, ColName=ColName, RowName=RowName, SavePath=SavePath)
-    DLUtils.Str2File(Str, SavePath)
+    StrList.append(Str)
+    if WriteStat:
+        StrStat = DLUtils.math.NpArrayStatisticsStr(Data, verbose=False)
+        StrList.append(StrStat)
+    DLUtils.Str2File(
+        "".join(StrList), 
+        FilePath=SavePath
+    )
 
 def NpArray2TextFile(Data, SavePath, **Dict):
     DimNum = len(Data.shape)    

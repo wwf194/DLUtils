@@ -54,9 +54,9 @@ class BatchNorm2D(DLUtils.module.TorchModuleWrapper):
                 momentum=Momentum
                 # var_apply = (1 - momentum) var_history + varmomentum * var_current
             )
-            # self.UpdateParamFromModule()
+            self.UpdateParamFromModule()
         else:
-            # self.UpdateModuleFromParam()
+            self.UpdateModuleFromParam()
             self.module = torch.nn.BatchNorm2d(
                 num_features=Param.In.Num
             )
