@@ -142,7 +142,8 @@ def _print(*List, Encoding="utf-8", Indent=None, **Dict):
     print(*List, **Dict, file=PrintBuf)
     Str = PrintBuf.getvalue()
     PrintBuf.flush()
-    Result = sys.stdout.buffer.write(Str.encode(Encoding))
+    # Result = sys.stdout.buffer.write(Str.encode(Encoding))
+    Result = sys.stdout.write(Str)
     sys.stdout.flush()
     return Result
 
