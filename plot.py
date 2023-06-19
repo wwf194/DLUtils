@@ -937,7 +937,7 @@ def PlotData1D(Name, Data, SavePath, **Dict):
     # turn 1D weight to 2D shape
     DimentionNum = DLUtils.GetDimensionNum(Data)
     if DimentionNum == 1:
-        dataReshape, MaskReshape = DLUtils._1DTo2D(Data)
+        dataReshape, MaskReshape = DLUtils.utils._1DTo2D(Data)
     else:
         MaskReshape = None
     PlotMatrix(
@@ -970,7 +970,7 @@ def PlotDataAndDistribution1D(Data=None, axes=None, Name=None, Save=True, SavePa
     if isinstance(Data, float) or isinstance(Data, int):
         Data = np.asarray([Data])
     Data = DLUtils.ToNpArray(Data)
-    DataReshape, MaskReshape = DLUtils._1DTo2D(Data)
+    DataReshape, MaskReshape = DLUtils.utils._1DTo2D(Data)
     PlotDataAndDistribution2D(axes=axes, Data=DataReshape, Name=Name, Save=Save, SavePath=SavePath, 
         dataMask=MaskReshape, Ticks="AccumulateOnX", **Dict
     )
@@ -2063,6 +2063,22 @@ def NpArray2ImageFileGreyFloat01PIL(Image, ImageFilePath):
     _Image.save(ImageFilePath)
 
 import matplotlib.image
+
+def NpArray2ImageFile(Data, ImageFilePath):
+    if isinstance(Data, np.ndarray):
+        TypeStr = str(Data.dtype)
+        if isinstance(Data.flat[0], np.integer):
+            NpArray2ImageFileFloat01MPL(
+                Data.astype(np.float32) / 255.0,
+                ImageFilePath
+            )
+        elif isinstance(Data.flat[0], np.floating):
+            NpArray2ImageFileFloat01MPL(Data, ImageFilePath)
+        else:
+            raise Exception()
+    else:
+        raise Exception()
+
 def NpArray2ImageFileFloat01MPL(Data, ImageFilePath):
     # requires Data is float, values in [0.0, 1.0].
     # Data: (Height, Width, ChannelNum)
@@ -2071,7 +2087,7 @@ def NpArray2ImageFileFloat01MPL(Data, ImageFilePath):
     ImageFilePath = DLUtils.file.RenameFileIfExists(ImageFilePath)
     matplotlib.image.imsave(ImageFilePath, Data)
     return
-NpArray2ImageFile = NpArray2ImageFileFloat01MPL
+
 NpArray2ImageFileFloat = NpArray2ImageFileFloat01MPL
 NpArray2ImageFileInt255 = NpArray2ImageFileFloat01MPL
 

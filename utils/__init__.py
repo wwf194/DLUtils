@@ -184,6 +184,10 @@ else:
             return np.asarray([Data],dtype=DataType)
         else:
             raise Exception(type(Data))
+    
+    
+def ToMean0Std1(Data):
+    return (Data - Data.mean()) / Data.std()
 
 def ToNpArrayOrNum(Data, DataType=None):
     if DataType is None:

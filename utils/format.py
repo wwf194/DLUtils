@@ -84,7 +84,7 @@ def NpArray2D2Str(Data, ColName=None, RowName=None, **Dict):
     return pd.DataFrame(Data).to_string()
 def NpArray2D2TextFile(Data, ColName=None, RowName=None, WriteStat=True, SavePath=None):
     StrList = []
-    StrShape = "Shape: %s\n"%Data.shape
+    StrShape = "Shape: %s\n"%(str(Data.shape))
     StrList.append(StrShape)
     if len(Data.shape) == 1:
         Data = Data[:, np.newaxis]
