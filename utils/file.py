@@ -128,7 +128,15 @@ def ListFilePathWithPattern(DirPath, FileNamePattern):
     return FilePathList
 AllFilePathsWithFileNamePattern = ListFileNameWithPattern
 
+def MoveAllFile(DirSource, DirDest):
+    DirSource = DLUtils.file.StandardizeDirPath(DirSource)
+    DirDest = DLUtils.file.StandardizeDirPath(DirDest)
+    assert DLUtils.file.ExistsDir(DirSource)
+    for FileName in ListAllFileNames(DirSource):
+        MoveFile(DirSource + FileName, DirDest + FileName)
+    
 def MoveFileWithFileNamePattern(DirSource, DirDest, FileNamePattern=None):
+    Num = 0
     DirSource = DLUtils.file.StandardizeDirPath(DirSource)
     assert DLUtils.file.ExistsDir(DirSource)
     DirDest = DLUtils.file.StandardizeDirPath(DirDest)
@@ -141,6 +149,7 @@ def MoveFileWithFileNamePattern(DirSource, DirDest, FileNamePattern=None):
                 FilePathSource, FilePathDest
             )
             DLUtils.print(f"Moved File. ({FilePathSource})-->({FilePathDest})")
+            Num += 1
     else:
         FileNamePatternCompiled = re.compile(FileNamePattern)
         for FileName in DLUtils.ListFileNames(DirSource):
@@ -151,7 +160,8 @@ def MoveFileWithFileNamePattern(DirSource, DirDest, FileNamePattern=None):
                     FilePathSource, FilePathDest
                 )
                 DLUtils.print(f"Moved File. ({FilePathSource})-->({FilePathDest})")
-
+                Num += 1
+    return Num
 def MoveFolder(FolderPath, FolderPathNew, RaiseIfNonExist=False, Overwrite=True):
     if not FolderExists(FolderPath):
         Msg = f"DLUtils.MoveFile: FilePath {FolderPath} does not exist."
@@ -194,8 +204,9 @@ try:
 except Exception:
     warnings.warn("lib send2trash not found.")
 import traceback
-def DeleteFile(FilePath, RaiseIfNonExist=False, Move2TrashBin=False, Verbose=True):
+def DeleteFile(FilePath, RaiseIfNonExist=False, Move2TrashBin=False, DeleteIfMove2TrashBinFail=True, Verbose=True):
     FilePath = StandardizeFilePath(FilePath)
+    SigMove2TrashBinFail = False
     if Move2TrashBin:
         if DLUtils.system.IsWindows():
             try:
@@ -205,8 +216,9 @@ def DeleteFile(FilePath, RaiseIfNonExist=False, Move2TrashBin=False, Verbose=Tru
                 if Verbose:
                     DLUtils.print("failed to delete file to trashbin (%s)"%FilePath)
                     DLUtils.print(traceback.format_exc())
-                    DLUtils.print("trying delete only.")
-                pass
+                    if DeleteIfMove2TrashBinFail:
+                        DLUtils.print("trying delete only.")
+                SigMove2TrashBinFail = True
     if not FileExists(FilePath):
         Msg = f"DLUtils.DeleteFile: FilePath {FilePath} does not exist."
         if RaiseIfNonExist:
@@ -215,13 +227,22 @@ def DeleteFile(FilePath, RaiseIfNonExist=False, Move2TrashBin=False, Verbose=Tru
             if Verbose:
                 warnings.warn(Msg)
     else:
-        os.remove(FilePath)
+        if Move2TrashBin and not DeleteIfMove2TrashBinFail: 
+            return
+        else:
+            os.remove(FilePath)
 
-def DeleteFile2TrashBin(FilePath, Verbose=True): 
+def DeleteFile2TrashBin(FilePath, Verbose=True, DeleteIfMove2TrashBinFail=True): 
     # assert ExistsFile(FilePath)
     # from send2trash import send2trash
     # send2trash(FilePath)
-    return DeleteFile(FilePath, RaiseIfNonExist=False, Move2TrashBin=True, Verbose=Verbose)
+    return DeleteFile(
+        FilePath,
+        RaiseIfNonExist=False,
+        Move2TrashBin=True,
+        Verbose=Verbose,
+        DeleteIfMove2TrashBinFail=DeleteIfMove2TrashBinFail
+    )
 
 def DeleteAllFilesAndSubFolders(DirPath):
     for FilePath in ListFilesPath(DirPath):
@@ -455,10 +476,10 @@ EnsureFolder = EnsureDirectory
 
 def EnsureFileDirectory(FilePath):
     assert not FilePath.endswith("/"), FilePath
-    FilePath = Path2AbsolutePath(FilePath)
+    FilePath = DLUtils.StandardizeFilePath(FilePath)
     FileDir = os.path.dirname(FilePath)
     EnsureDir(FileDir)
-    return
+    return FilePath
 EnsureFileDir = EnsureFileDirectory
 
 def GetFileDir(FilePath):
@@ -625,7 +646,7 @@ def ChangeFileDirPath(FilePath, DirPath):
     DirPath = StandardizeDirPath(DirPath)
     return DirPath + FileNameFromPath(FilePath)
 
-ChangeCurrentFileNameSuffix = ChangeFileNameSuffix
+ChangeCurrentFileNameSuffix = ChangeNameSuffix = ChangeFileNameSuffix
 
 ParseFileNameSuffix = SeparateFileNameSuffix
 

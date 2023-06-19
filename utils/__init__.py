@@ -329,16 +329,32 @@ def List2NpArray(data, Type=None):
 def ToList(Obj):
     if isinstance(Obj, list):
         return Obj
-    elif isinstance(Obj, np.ndarray):
-        return Obj.tolist()
-    elif isinstance(Obj, torch.Tensor):
-        return NpArray2List(Tensor2NpArray(Obj))
+
     elif DLUtils.IsListLikePyObj(Obj):
         return Obj.ToList()
     elif isinstance(Obj, dict) or DLUtils.IsDictLikePyObj(Obj):
         raise Exception()
     else:
         return [Obj]
+    
+def ToList(Obj):
+    if isinstance(Obj, str):
+        return [Obj]
+    elif isinstance(Obj, list):
+        return Obj
+    elif isinstance(Obj, tuple):
+        return list(Obj)
+    elif Obj is None:
+        return []
+    else:
+        if "numpy" in sys.modules:
+            if isinstance(Obj, np.ndarray):
+                return Obj.tolist()
+        elif "torch" in sys.modules:
+            if isinstance(Obj, torch.Tensor):
+                return NpArray2List(Tensor2NpArray(Obj))
+        else:
+            raise Exception()
 
 def ToDict(Obj):
     if isinstance(Obj, dict):

@@ -80,10 +80,19 @@ def ImageFile2JpgImageFile(FilePath, Verbose=True):
 
 File2JpgFile = ImageFile2JpgFile = ImageFile2JpgImageFile
 
-def Jpg2NpArray(Path):
-    Path = DLUtils.StandardizePath(Path)
-    assert DLUtils.file.FileExists(Path)
-    Image = cv2.imread(Path)
-    assert Image is not None
+from matplotlib import pyplot as plt
+def ImageFile2NpArray(FilePath):
+    FilePath = DLUtils.StandardizeFilePath(FilePath)
+    assert DLUtils.file.FileExists(FilePath)
+    Image = plt.imread(FilePath)
+    # data type: float. value range: [0.0, 1.0]
+    # Image = cv2.cv.LoadImage(FilePath)
+    if Image is not None: # some error occurs:
+        return Image
+    Image = cv2.imread(FilePath)
     return Image
-JPG2NpArray = Jpeg2NpArray = Jpg2NpArray
+
+def ImageUInt2Float(Image):
+    return Image / 255.0
+
+JPG2NpArray = Jpeg2NpArray = Jpg2NpArray = ImageFile2NpArray

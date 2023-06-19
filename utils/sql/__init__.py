@@ -45,10 +45,15 @@ def CreateSession(DataPath):
     Session = sqlite3.connect(DataPath)
     return Session
 
+def CreateSessionAndOperator(DataPath):
+    Session = CreateSession(DataPath)
+    Operator = CreateOperator(Session)
+    return Session, Operator
+
 def CreateOperator(Session):
     return Session.cursor()
 
-def TableExists(Operator, TableName, Verbose=True):
+def TableExists(Operator, TableName, Verbose=False):
     TableList = ListTable(Operator)
     if Verbose:
         print(TableList)
@@ -76,3 +81,4 @@ def CreateDataBase(FilePath):
 #                         name TEXT NOT NULL,
 #                         joiningDate timestamp
 #                     );'''
+

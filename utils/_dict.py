@@ -1,12 +1,20 @@
-
-class DLUtilsDict(dict):
-    def update(self, *List):
-        dict.update(self, *List)
-        return self
+class Dict(dict):
+    def __init__(self, Dict=None, **_Dict):
+        super().__init__()
+        if _Dict is None:
+            assert isinstance(Dict, dict)
+        if Dict is not None:
+            self.update(Dict)
+        self.update(_Dict)
+        a = 1
+    # def update(self, *List):
+    #     dict.update(self, *List)
+    #     return self
     def hasattr(self, Key):
         return Key in self
-    def getattr(self, Key, Default=None):
+    def __getattr__(self, Key, Default=None):
         return self.get(Key, Default)
+    getattr = __getattr__
 def UpdateDict(DictSource, DictTarget, KeyPrefix=None):
     if KeyPrefix is None:
         for Key, Value in DictSource.keys():
@@ -31,15 +39,21 @@ def PrintDict(Dict, Out="Std"):
     else:
         raise Exception()
 
-def IterableKeyToKeys(Dict):
-    for Key, Value in dict(Dict).items():
+def IterableKeyToKeys(_Dict):
+    for Key, Value in dict(_Dict).items():
         if isinstance(Key, tuple) or isinstance(Key, set):
             for _Key in Key:
-                Dict[_Key] = Value
-            Dict.pop(Key)
+                _Dict[_Key] = Value
+            _Dict.pop(Key)
 
-    if isinstance(Dict, dict):
-        Dict = DLUtilsDict(Dict)
-    return Dict
+    if isinstance(_Dict, dict):
+        _Dict = Dict(_Dict)
+    return _Dict
 
 ExpandIterableKey = IterableKeyToElement = IterableKeyToKeys
+
+def GetFromKeyList(Dict, *KeyList, Default=None):
+    for Key in KeyList:
+        if Key in Dict:
+            return Dict[Key]
+    return Default

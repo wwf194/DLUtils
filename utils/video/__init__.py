@@ -76,3 +76,42 @@ def CompressVideo(FilePath, SavePath, Ratio=None, FileSizeTarget=None):
 
 if __name__ == "__main__":
     Test()
+    
+    
+    
+
+import os
+from moviepy.video.io.ImageSequenceClip import ImageSequenceClip
+import moviepy
+from moviepy.editor import concatenate_videoclips
+import cv2
+def ImageList2Video(ImageList, FilePath, FPS=24):
+    # ImageList: value range: [0, 255]
+    FilePath = DLUtils.EnsureFileDir(FilePath)
+    # for Frame in ImageList:
+    #     pass
+    # FrameList = concatenate_videoclips(ImageList, method="compose")
+    # FrameList.write_videofile(FilePath, fps=24)
+    clip = ImageSequenceClip(ImageList, fps=24)
+    moviepy_logger = "bar" # or None
+    clip.write_videofile(FilePath, logger=moviepy_logger)
+
+def ImageList2VideoCv(ImageList, FilePath):
+    FilePath = DLUtils.EnsureFileDir(FilePath)
+    
+    # Each video has a frame per second which is number of frames in every second
+    frame_per_second = 15
+    w, h = None, None
+    for Frame in ImageList:
+        # frame = cv2.imread(file)
+
+        if w is None:
+            # Setting up the video writer
+            h, w, _ = Frame.shape
+            fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
+            writer = cv2.VideoWriter(FilePath, fourcc, frame_per_second, (w, h))
+
+        # # Repating the frame to fill the duration
+        # for repeat in range(duration * frame_per_second):
+        #     writer.write(frame)
+    writer.release()
