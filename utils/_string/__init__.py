@@ -134,17 +134,36 @@ def HexStr2Bytes(HexStr):
 #     string_out.write('Bar')
 # string_out.getvalue()  # Could be 'Foo' or 'FooBar'
 import sys
-from io import StringIO
+from io import StringIO, BytesIO, TextIOWrapper
+
+StdOut = sys.stdout
 PrintBuf = StringIO()
+Write2StdOut = None
+def SetStdOut(_StdOut):
+    global StdOut
+    StdOut = _StdOut
+    global Write2StdOut
+    if StdOut == sys.stdout or isinstance(StdOut, TextIOWrapper):
+        Write2StdOut = lambda StdOut, x: StdOut.buffer.write(x)
+    else:
+        Write2StdOut = lambda StdOut, x: StdOut.write(x)
+    
+def ResetStdOut():
+    global StdOut
+    StdOut = sys.stdout
+    global Write2StdOut
+    Write2StdOut = lambda StdOut, x: StdOut.buffer.write(x)
+
+ResetStdOut()
+
 def _print(*List, Encoding="utf-8", Indent=None, **Dict):
     PrintBuf.seek(0)
     PrintBuf.truncate(0)
     print(*List, **Dict, file=PrintBuf)
     Str = PrintBuf.getvalue()
     PrintBuf.flush()
-    # Result = sys.stdout.buffer.write(Str.encode(Encoding))
-    Result = sys.stdout.write(Str)
-    sys.stdout.flush()
+    Result = Write2StdOut(StdOut, Str.encode(Encoding))
+    StdOut.flush()
     return Result
 
 def PrintWithTimeStr(*List, Encoding="utf-8", Indent=None, **Dict):
@@ -157,6 +176,6 @@ def PrintWithTimeStr(*List, Encoding="utf-8", Indent=None, **Dict):
         Str = Str[:-1] + " time: %s."%DLUtils.system.CurrentTimeStr() + "\n"
     else:
         Str = Str + " time: %s."%DLUtils.system.CurrentTimeStr()
-    Result = sys.stdout.buffer.write(Str.encode(Encoding))
-    sys.stdout.flush()
+    Result = Write2StdOut(StdOut, Str.encode(Encoding))
+    StdOut.flush()
     return Result
