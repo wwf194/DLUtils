@@ -13,3 +13,10 @@ def GetTensorElementNum(Tensor): # Byte
 
 def SampleFrom01NormalDistributionTorch(Shape):
     return torch.randn(Shape)
+
+import DLUtils
+def TorchModel2File(Model, FilePath):
+    DLUtils.file.EnsureFileDir(FilePath)
+    torch.save(Model.state_dict(), FilePath)
+
+
