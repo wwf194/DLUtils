@@ -34,7 +34,6 @@ try:
 except Exception:
     pass
 
-import DLUtils.utils.attrs as attrs
 import DLUtils.utils.parse as parse
 import DLUtils.utils.file as file
 import DLUtils.utils.func as function

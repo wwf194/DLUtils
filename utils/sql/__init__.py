@@ -82,3 +82,7 @@ def CreateDataBase(FilePath):
 #                         joiningDate timestamp
 #                     );'''
 
+try:
+    from .mysql import MySQLVersion, GetMySQLVersion, CreateMySQLSession
+except Exception:
+    pass

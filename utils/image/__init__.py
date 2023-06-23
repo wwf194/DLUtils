@@ -95,4 +95,6 @@ def ImageFile2NpArray(FilePath):
 def ImageUInt2Float(Image):
     return Image / 255.0
 
+from .transform import ImageFile2Jpg, ImageFile2PNG, ImageFile2Webp
+
 JPG2NpArray = Jpeg2NpArray = Jpg2NpArray = ImageFile2NpArray
