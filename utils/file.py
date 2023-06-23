@@ -441,9 +441,11 @@ ExistsDir = DirExists = FolderExists
 ExistsFolder = FolderExists
 
 def CheckFileExists(FilePath):
-    if not DLUtils.ExistsFile(FilePath):
+    FilePath = DLUtils.StandardizeFilePath(FilePath)
+    if not ExistsFile(FilePath):
         raise Exception("%s does not exist."%FilePath)
-
+    return FilePath
+    
 def Path2AbsolutePath(Path):
     return os.path.abspath(Path)
 
