@@ -173,7 +173,10 @@ try:
                 return (data - mean) / std
 
         ToMean0Std1 = ToMean0Std1Np
-
+        
+        def ToRangeMinus1Positive1(Data):
+            Min, Max = Data.min(), Data.max()
+            return (Data - Min) / (Max - Min)
         def Norm2GivenMeanStdNp(data, Mean, Std, StdThreshold=1.0e-9):
             data = ToMean0Std1Np(data, StdThreshold)
             return data * Std + Mean
@@ -359,7 +362,11 @@ try:
                     "VarianceExplainedRatio": DLUtils.ToNpArray(PCATransform.explained_variance_ratio_)
                 })
             else:
-                raise Exception(ReturnType)
+                raise Exception(ReturnType)            
+    def ManhattanDistance(Point1, Point2):
+        return np.linalg.norm(Point1, Point2, ord=1)
+    def Distance(Point1, Point2, Norm=2):
+        return np.linalg.norm(Point1, Point2, ord=Norm)
 
 except Exception:
     pass

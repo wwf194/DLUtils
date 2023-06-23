@@ -131,10 +131,10 @@ try:
 except Exception:
     pass
 
-
-
 PackageFolderPath = DLUtils.file.FolderPathOfFile(__file__)
 
 from DLUtils.utils._string import _print as print
+from DLUtils.utils._string import PrintWithTimeStr
+import DLUtils.utils._time as time
 from DLUtils.utils._string import PrintWithTimeStr, SetStdOut, ResetStdOut
 from DLUtils.utils.system import NewCmdArg, ParseCmdArg

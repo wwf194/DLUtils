@@ -5,7 +5,6 @@ import os
 import time
 import signal
 import warnings
-import datetime
 import traceback
 from inspect import Traceback
 import DLUtils
@@ -81,28 +80,6 @@ def ClassPathStr(Obj):
 import platform
 import subprocess
 
-def Time():
-    return 
-
-def TimeStr2Second(TimeStr):
-    if isinstance(TimeStr, int):
-        return TimeStr
-    elif isinstance(TimeStr, float):
-        return round(TimeStr)
-    
-    Pattern = r"(\d*\.\d*)([days|d|])"
-
-    Result = re.match(Pattern, TimeStr)
-    
-    if Result is not None:
-        NumStr = Result.group(1)
-        UnitStr = Result.group(2)
-        
-        
-    else:
-        raise Exception()
-
-
 def GetSystemType2():
     SystemType = platform.system().lower()
     if SystemType in ['windows']:
@@ -119,66 +96,14 @@ def ReportMemoryOccupancy(Obj):
     ByteNum = GetBytesInMemory(Obj)
     return DLUtils.ByteNum2Str(Obj)
 
+from ._time import TimeStamp2DateTimeObj, TimeStr2Second, DateTimeObj2TimeStampFloat
+from ._time import CurrentTimeStampInt, CurrentTimeStr
 
-def CurrentTimeStr(format="%Y-%m-%d %H-%M-%S", verbose=False):
-    TimeStr = time.strftime(format, time.localtime()) # Time display style: 2016-03-20 11:45:39
-    if verbose:
-        print(TimeStr)
-    return TimeStr
-GetCurrentTime = GetTime = CurrentTimeStr
 
-try:
-    import dateutil
-    def GetTimeDifferenceFromStr(TimeStr1, TimeStr2):
-        Time1 = dateutil.parser.parse(TimeStr1)
-        Time2 = dateutil.parser.parse(TimeStr2)
-
-        TimeDiffSeconds = (Time2 - Time1).total_seconds()
-        TimeDiffSeconds = round(TimeDiffSeconds)
-
-        _Second = TimeDiffSeconds % 60
-        Minute = TimeDiffSeconds // 60
-        _Minute = Minute % 60
-        Hour = Minute // 60
-        TimeDiffStr = "%d:%02d:%02d"%(Hour, _Minute, _Second)
-        return TimeDiffStr
-except Exception:
-    warnings.warn("lib dateutil not found")
 
 def Stack2File(FilePath):
     DLUtils.EnsureFileDir(FilePath)
     traceback.print_exc(file=open(FilePath, "w"))
-
-def DateTimeObj2TimeStampFloat(DataTimeObj):
-    # return time.mktime(DataTimeObj.timetuple())
-    # TimeStamp = DataTimeObj.timestamp() # >= Python 3.3
-    TimeDiff = DataTimeObj - TimeStampBase
-    TimeStamp = TimeDiff.total_seconds()
-    return TimeStamp
-    
-def DateTimeObj2TimeStampInt(DataTimeObj):
-    return round(time.mktime(DataTimeObj.timetuple()))
-
-def TimeStamp2DateTimeObj(TimeStamp):
-    # TimeStamp: float or int. unit: second.
-    # millisecond is supported, and will not be floored.
-    DateTimeObj = TimeStampBase + datetime.timedelta(seconds=TimeStamp)
-    return DateTimeObj
-    # might throw error for out of range time stamp.
-    # DateTimeObj = date.fromtimestamp(TimeStamp)
-
-def GetCurrentTimeStampFloat():
-    return DateTimeObj2TimeStampFloat(datetime.datetime.now())
-GetCurrentTimeStamp = GetCurrentTimeStamp = GetCurrentTimeStampFloat
-
-def GetCurrentTimeStampInt():
-    return round(GetCurrentTimeStampFloat())
-CurrentTimeStampInt = GetCurrentTimeStampInt
-
-def GetCurrentTimeStampInt():
-    return round(DateTimeObj2TimeStampFloat(datetime.datetime.now()))
-
-TimeStampBase = datetime.datetime(1970, 1, 1, 0, 0, 0, 0)
 
 def Test():
     TimeFloat = DateTimeObj2TimeStampFloat(datetime(1800, 1, 19, 3, 15, 14, 200))
@@ -238,10 +163,12 @@ import traceback
 def PrintErrorStack():
     DLUtils.print(traceback.format_exc())
     
+def ExcStack2File(File):
+    traceback.format_exc()
+    
 def Print2StdErr(Str):
     print(Str, file=sys.stderr)
     
-
 def CloseWindow(*List, **Dict):
     if SystemType in ["Windows"]:
         DLUtils.backend.win.CloseWindow(*List, **Dict)

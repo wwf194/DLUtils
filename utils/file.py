@@ -428,7 +428,12 @@ ListAllFolders = ListDirs
 
 def FileExists(FilePath):
     return os.path.isfile(FilePath)
-ExistsFile = FileExists
+_ExistsFile = ExistsFile = FileExists
+
+def _FolderExists(DirPath):
+    # no path string style checking
+    return os.path.isdir(DirPath)
+_ExistsDir = _DirExists = _FolderExists
 
 def FolderExists(DirPath):
     IsDir = os.path.isdir(DirPath)
@@ -441,11 +446,18 @@ ExistsDir = DirExists = FolderExists
 ExistsFolder = FolderExists
 
 def CheckFileExists(FilePath):
-    FilePath = DLUtils.StandardizeFilePath(FilePath)
-    if not ExistsFile(FilePath):
+    FilePath = ToStandardFilePath(FilePath)
+    if not _ExistsFile(FilePath):
         raise Exception("%s does not exist."%FilePath)
     return FilePath
-    
+
+def CheckFolderExists(DirPath):
+    DirPath = ToStandardDirPath(DirPath)
+    assert _ExistsDir(DirPath)
+    return DirPath
+
+CheckDirExists = CheckFolderExists
+
 def Path2AbsolutePath(Path):
     return os.path.abspath(Path)
 
