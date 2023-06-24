@@ -34,7 +34,6 @@ try:
 except Exception:
     pass
 
-import DLUtils.utils.attrs as attrs
 import DLUtils.utils.parse as parse
 import DLUtils.utils.file as file
 import DLUtils.utils.func as function
@@ -42,7 +41,7 @@ import DLUtils.utils.math as math
 import DLUtils.utils.__struct__ as struct
 import DLUtils.utils.system as system
 import DLUtils.utils.sql as sql
-# import DLUtils.python as python
+import DLUtils.utils.python as python
 from .utils.__struct__ import FixedSizeQueuePassiveOutInt, FixedSizeQueuePassiveOutFloat
 try:
     import DLUtils.optimize as optimize # module -> optimize
@@ -128,7 +127,7 @@ except Exception:
 
 try:
     import DLUtils.backend as backend
-    import DLUtils.backend.torch as torch
+    import DLUtils.backend._torch as torch
 except Exception:
     pass
 
@@ -141,4 +140,9 @@ import DLUtils.utils._time as time
 =======
 from DLUtils.utils._string import PrintWithTimeStr, SetStdOut, ResetStdOut
 from DLUtils.utils.system import NewCmdArg, ParseCmdArg
+<<<<<<< HEAD
 >>>>>>> 98ecc20f76252cf026599f981f8b06624a9a0788
+=======
+
+from DLUtils.backend._torch import NullParameter, ToTorchTensor
+>>>>>>> f2774e6... update

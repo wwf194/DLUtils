@@ -56,7 +56,6 @@ def IsWindowsSystem():
     return platform.system() in ["Windows"]
 IsWindows = IsWindowsSystem
 
-
 def GetSystemType():
     if "win" in sys.platform is not None:
         SystemType = 'Windows'
@@ -67,15 +66,6 @@ def GetSystemType():
     return SystemType
 SystemType = SysType = GetSysType = GetSystemType
 SystemType = GetSystemType()
-
-def ClassPathStr(Obj):
-    # https://stackoverflow.com/questions/2020014/get-fully-qualified-class-name-of-an-object-in-python
-    Class = Obj.__class__
-    Module = Class.__module__
-    if Module == 'builtins':
-        return Module.__qualname__ # avoid outputs like 'builtins.str'
-    _ClassPathStr = Module + '.' + Class.__qualname__
-    return _ClassPathStr
 
 import platform
 import subprocess

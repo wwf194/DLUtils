@@ -32,7 +32,7 @@ def CheckIsLegalPyName(name):
     if not IsLegalPyName(name):
         raise Exception("%s is not a legal python name."%name)
 
-def ParseClass(ClassPath):
+def ClassPathStr2Class(ClassPath):
     try:
         Module = DLUtils.ImportModule(ClassPath)
         if hasattr(Module, "__MainClass__"):
@@ -55,9 +55,18 @@ def ParseClass(ClassPath):
     except Exception:
         pass
     raise Exception()
-
+ParseClass = ClassPathStr2Class
 def ImportModule(ModulePath):
     try:
         return importlib.import_module(ModulePath)
     except Exception:
         return eval(ModulePath)
+
+def ClassPathStr(Obj):
+    # https://stackoverflow.com/questions/2020014/get-fully-qualified-class-name-of-an-object-in-python
+    Class = Obj.__class__
+    Module = Class.__module__
+    if Module == 'builtins':
+        return Module.__qualname__ # avoid outputs like 'builtins.str'
+    _ClassPathStr = Module + '.' + Class.__qualname__
+    return _ClassPathStr

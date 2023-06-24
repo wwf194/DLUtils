@@ -83,6 +83,7 @@ def NpArray2D2Str(Data, ColName=None, RowName=None, **Dict):
         pass
     return pd.DataFrame(Data).to_string()
 def NpArray2D2TextFile(Data, ColName=None, RowName=None, WriteStat=True, SavePath=None):
+    assert SavePath is not None
     StrList = []
     StrShape = "Shape: %s\n"%(str(Data.shape))
     StrList.append(StrShape)

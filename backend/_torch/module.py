@@ -73,8 +73,9 @@ def PrintOptimizerStateDict(Optimizer, Out="Std"):
 def GetLR(optimizer):
     return optimizer.state_dict()['param_groups'][0]['lr']
 
-def StateDict2CPU(state_dict):
+def TorchModelStateDict2CPU(state_dict):
     return StateDict2CPURecur(state_dict)
+StateDict2CPU = TorchModelStateDict2CPU
 
 def StateDict2CPURecur(Obj):
     if isinstance(Obj, dict):
@@ -91,6 +92,46 @@ def StateDict2CPURecur(Obj):
         ObjCPU = Obj
     return ObjCPU
 
+class TorchModelWrapper():
+    def __init__(self, Class:torch.nn.Module=None, *List, **Dict):
+        param = self.param = DLUtils.Param()
+        param.ModuleInitArgList = list(List)
+        param.ModuleInitArgDict = dict(Dict)
+        param.ModuleClassStr = DLUtils.python.ClassPathStr(Class)
+        self.module = Class(*List, **Dict)
+    def ToFile(self, FilePath, RetainSelf=False):
+        DLUtils.file.Obj2BinaryFile(
+            {
+                "state_dict": TorchModelStateDict2CPU(self.module.state_dict()),
+                "param": self.param
+            },
+            FilePath
+        )
+    def FromFile(self, FilePath):
+        ModelData = DLUtils.file.BinaryFile2Obj(FilePath)
+        Class = DLUtils.python.ClassPathStr2Class()
+        assert isinstance(Class, torch.nn.Module)
+        self.module = Class(
+            *self.param.ModuleInitArgList, **self.param.ModuleInitArgDict
+        )
+        self.param = ModelData["param"]
+        self.module.load_state_dict(
+            ModelData["state_dict"]
+        )
+        return self.module
+    def LoadModel(self, state_dict):
+        if hasattr(self, "module"):
+            module = self.module
+            self.module.load_state_dict(state_dict)
+            return self.module
+        else:
+            param = self.param
+            Class = DLUtils.python.ClassPathStr2Class(param.ModuleClassStr)
+            self.module = Class(
+                *self.param.ModuleInitArgList, **self.param.ModuleInitArgDict
+            )
+            self.module.load_state_dict(state_dict)
+            return self.module
 from ...module.abstract_network import AbstractNetwork
 class TorchModuleWrapper(AbstractNetwork):
     def __init__(self, *List, **Dict):
@@ -236,3 +277,40 @@ class TorchModuleParallel(torch.nn.parallel.DistributedDataParallel):
         self.eval()
     def forward(self, *List, **Dict):
         return self.Parent.Receive(*List, **Dict)
+
+
+import DLUtils
+def TorchModel2File(Model, FilePath):
+    DLUtils.file.EnsureFileDir(FilePath)
+    torch.save(Model.state_dict(), FilePath)
+
+def File2TorchModel(Class, FilePath, *List, **Dict):
+    FilePath = DLUtils.file.CheckFileExists(FilePath)
+    state_dict = torch.load(FilePath)
+    Model = Class(*List, **Dict)
+    Model.load_state_dict(state_dict)
+    return Model
+    
+def TorchModelWithAdditionalParam2File(Model, FilePath):
+    if hasattr(Model, "ExtractParam"):
+        Param = Model.ExtractParam()
+    else:
+        Param = Model.Param
+    ModelData = {
+        "state_dict": TorchModelStateDict2CPU(Model.state_dict()),
+        "param": Param
+    }
+    DLUtils.Obj2BinaryFile(ModelData, FilePath)
+
+def File2TorchModelWithAdditionalParam(Class, FilePath, *List, **Dict):
+    ModelData = DLUtils.BinaryFile2Obj(FilePath)
+    state_dict = ModelData["state_dict"]
+    Param = ModelData["param"]
+    if hasattr(Model, "LoadParam"):
+        Model.LoadParam(Param)
+        Model = Class(*List, **Dict)
+        Model.load_state_dict(state_dict)
+    else:
+        Model = Class(param=Param, *List, **Dict)
+        Model.load_state_dict(state_dict)
+    return Model

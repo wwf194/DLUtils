@@ -1,7 +1,9 @@
 import torch
 import DLUtils
 
-class BatchNorm2D(DLUtils.module.TorchModuleWrapper):
+
+from ...backend._torch import TorchModuleWrapper
+class BatchNorm2D(TorchModuleWrapper):
     ModuleParamMap = {
         "Affine.Weight": "weight",
         "Affine.Bias": "bias",

@@ -117,6 +117,6 @@ class AbstractModuleGroup(AbstractNetwork):
 from .module_graph import ModuleGraph
 from .module_series import ModuleList, ModuleSeries, _ModuleList, _ModuleSeries
 try:
-    from ..backend.torch.module import TorchModuleWrapper, TorchModule, TorchModuleParallel
+    from ..backend.torch.module import TorchModuleWrapper, TorchModelWrapper, TorchModule, TorchModuleParallel
 except Exception:
     pass

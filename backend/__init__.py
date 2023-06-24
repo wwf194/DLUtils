@@ -1,5 +1,5 @@
 try:
-    import DLUtils.backend.torch as torch
+    import DLUtils.backend._torch as torch
 except Exception:
     pass
 
