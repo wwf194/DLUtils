@@ -43,6 +43,7 @@ def RemoveSuffix(Str, Suffix, MustMatch=True):
     else:
         return MatchResult.group(1)
 
+
 def Bytes2Str(Bytes:bytes, Encoding="utf-8", ErrorHandleMethod="RaiseException"):
     if ErrorHandleMethod in ["RaiseExcetion"]:
         errors = "strict"
@@ -152,7 +153,7 @@ def ResetStdOut():
     global StdOut
     StdOut = sys.stdout
     global Write2StdOut
-    Write2StdOut = lambda StdOut, x: StdOut.buffer.write(x)
+    Write2StdOut = lambda StdOut, x: StdOut.write(x)
 
 ResetStdOut()
 
@@ -162,7 +163,7 @@ def _print(*List, Encoding="utf-8", Indent=None, **Dict):
     print(*List, **Dict, file=PrintBuf)
     Str = PrintBuf.getvalue()
     PrintBuf.flush()
-    Result = Write2StdOut(StdOut, Str.encode(Encoding))
+    Result = Write2StdOut(StdOut, Str)
     StdOut.flush()
     return Result
 

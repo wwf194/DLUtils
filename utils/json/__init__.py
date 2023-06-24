@@ -88,6 +88,41 @@ def PyObj2DataObj(Obj):
     else:
         return Obj
 
+def Obj2JsonFile(Obj, FilePath):
+    FilePath = DLUtils.EnsureFileDir(FilePath)
+    DLUtils.JsonDict2File(
+        _Obj2JsonFile(Obj), FilePath
+    )
+
+def _Obj2JsonFile(Obj):
+    if isinstance(Obj, str):
+        return Obj
+    elif isinstance(Obj, list) or isinstance(Obj, tuple):
+        List = []
+        for Item in Obj:
+            List.append(_Obj2JsonFile(Item))
+        return List
+    elif isinstance(Obj, bool):
+        if Obj:
+            return "True"
+        else:
+            return "False"
+    elif isinstance(Obj, int) or isinstance(Obj, np.integer):
+        return Obj
+    elif isinstance(Obj, float) or isinstance(Obj, np.floating):
+        return Obj
+    elif Obj is None:
+        return "None"
+    elif isinstance(Obj, object) and hasattr(Obj, "__dict__"):
+        JsonDict = {}
+        for Attr, Value in Obj.__dict__.items():
+            JsonDict[Attr] = _Obj2JsonFile(
+                    _Obj2JsonFile(Value)
+                )
+        return JsonDict
+    else:
+        return str(type(Obj))
+
 def PyObj2JsonFile(Obj, FilePath):
     JsonStr = PyObj2JsonStr(Obj)
     JsonStr2JsonFile(JsonStr, FilePath)
