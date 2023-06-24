@@ -1,6 +1,24 @@
 import numpy as np
-import torch
-import torch.nn as nn
+try:
+    import torch
+    import torch.nn as nn
+except Exception:
+    pass
+else:
+    def ToGivenDataTypeTorch(Data, DataType=torch.float32):
+        if Data.dtype == DataType:
+            return Data
+        else:
+            return Data.to(DataType)
+    Tensor2GivenDataType = ToGivenDataTypeTorch
+    def NpArray2TorchTensor(Data, Location="cpu", DataType=torch.float32, RequiresGrad=False):
+        Data = torch.from_numpy(Data)
+        Data = Tensor2GivenDataType(Data, DataType)
+        Data = Data.to(Location)
+        Data.requires_grad = RequiresGrad
+        return Data
+    NpArray2Tensor = NpArray2TorchTensor
+
 import DLUtils
 def NullParameter(Shape=(1)):
     return nn.Parameter(torch.empty(Shape))
@@ -25,18 +43,4 @@ def ToTorchTensorOrNum(data):
     else:
         return ToTorchTensor(data)
 
-def ToGivenDataTypeTorch(Data, DataType=torch.float32):
-    if Data.dtype == DataType:
-        return Data
-    else:
-        return Data.to(DataType)
-Tensor2GivenDataType = ToGivenDataTypeTorch
 
-def NpArray2TorchTensor(Data, Location="cpu", DataType=torch.float32, RequiresGrad=False):
-    Data = torch.from_numpy(Data)
-    Data = Tensor2GivenDataType(Data, DataType)
-    Data = Data.to(Location)
-    Data.requires_grad = RequiresGrad
-    return Data
-
-NpArray2Tensor = NpArray2TorchTensor
