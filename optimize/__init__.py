@@ -1,8 +1,4 @@
 
-
-
-
-
 from .gradient_descend import GradientDescendOptimizer, GradientDescend
 from .adam import Adam
 from .sgd import SGD
