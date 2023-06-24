@@ -405,7 +405,7 @@ def ListFileNames(DirPath):
 ListAllFiles = ListAllFileNames = GetAllFiles = ListFilesName = ListFileNames
 
 def ListFilePaths(DirPath):
-    DirPath = StandardizePath(DirPath)
+    DirPath = StandardizeDirPath(DirPath)
     FileNameList = ListFilesName(DirPath)
     return [DirPath + FileName for FileName in FileNameList]
 
@@ -452,6 +452,13 @@ ExistsDir = DirExists = FolderExists
 ExistsFolder = FolderExists
 
 def CheckFileExists(FilePath):
+<<<<<<< HEAD
+    FilePath = DLUtils.StandardizeFilePath(FilePath)
+    if not ExistsFile(FilePath):
+        raise Exception("%s does not exist."%FilePath)
+    return FilePath
+    
+=======
     FilePath = ToStandardFilePath(FilePath)
     if not _ExistsFile(FilePath):
         raise Exception("%s does not exist."%FilePath)
@@ -464,6 +471,7 @@ def CheckFolderExists(DirPath):
 
 CheckDirExists = CheckFolderExists
 
+>>>>>>> 884aad96bde46fb3b81d788ce8b084e34f85c6d9
 def Path2AbsolutePath(Path):
     return os.path.abspath(Path)
 
