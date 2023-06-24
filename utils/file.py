@@ -8,7 +8,9 @@ import warnings
 
 from DLUtils.utils._param import JsonFile2Param
 
-from ._time import LastModifiedTime
+def LastModifiedTime(Path):
+    return os.path.getmtime(Path)
+
 def MostRecentlyModified(PathList, Num=None):
     if Num is None:
         Num = len(PathList)
@@ -185,16 +187,9 @@ def CopyFile2AllSubDirsUnderDestDir(FileName, SourceDir, DestDir):
         except Exception:
             continue
 
-def CopyFile2Folder(FilePath=None, FileName=None, SourceDir=None, DestDir=None):
-    if FilePath is not None:
-        DestDir = EnsureDir(DestDir)
-        FilePath = CheckFileExists(FilePath)
-        FileName = FileNameFromPath(FilePath)
-        shutil.copy(FilePath, DestDir + FileName)
-    else:
-        EnsureFileDir(DestDir + FileName)
-        shutil.copy(SourceDir + FileName, DestDir + FileName)
-CopyFile2Dir = CopyFile2Folder
+def CopyFile2Folder(FileName, SourceDir, DestDir):
+    EnsureFileDir(DestDir + FileName)
+    shutil.copy(SourceDir + FileName, DestDir + FileName)
 
 def CopyFile(FilePath, FilePathDest):
     FilePath = StandardizePath(FilePath)
@@ -286,7 +281,6 @@ def DirPathFromFilePath(FilePath):
     Name, Suffix = SeparateFileNameSuffix(FilePath)
     assert Suffix is not None and Suffix not in [""]
     return StandardizeDirPath(Name)
-DirPathFromFileName = DirPathFromFilePath
 
 def CurrentFilePath(FilePath):
     # FilePath: __file__ variable of caller .py file.
@@ -423,18 +417,18 @@ def ListDirs(DirPath):
             Dir = Name + "/"
             Dirs.append(Dir)
     return Dirs
+ListAllDirs = GetAllDirs = ListDirs
+ListAllFolders = ListDirs
+
 def ListDirsPath(DirPath):
     if not DirPath.endswith("/"):
         DirPath += "/"
     DirNameList = ListDirs(DirPath)
     return [DirPath + DirName for DirName in DirNameList]
 
-ListAllDirs = GetAllDirs = ListDirs
-ListAllFolders = ListDirs
-
 def FileExists(FilePath):
     return os.path.isfile(FilePath)
-Exists = _ExistsFile = ExistsFile = FileExists
+_ExistsFile = ExistsFile = FileExists
 
 def _FolderExists(DirPath):
     # no path string style checking
@@ -467,25 +461,24 @@ CheckDirExists = CheckFolderExists
 def Path2AbsolutePath(Path):
     return os.path.abspath(Path)
 
-def EnsureDirectory(DirPath):
+def EnsureDirectory(FolderPath):
     #DirPathAbs = Path2AbsolutePath(DirPath)
-    DirPath = StandardizeDirPath(DirPath)
-    if os.path.exists(DirPath):
-        if not os.path.isdir(DirPath):
-            raise Exception("%s already exists but is NOT a directory."%DirPath)
+    FolderPath = AbsPath(FolderPath)
+    if os.path.exists(FolderPath):
+        if not os.path.isdir(FolderPath):
+            raise Exception("%s Already Exists but Is NOT a Directory."%FolderPath)
     else:
-        if not DirPath.endswith("/"):
-            DirPath += "/"
-        os.makedirs(DirPath)
-    return DirPath
+        if not FolderPath.endswith("/"):
+            FolderPath += "/"
+        os.makedirs(FolderPath)
 EnsureDir = EnsureDirectory
 EnsureFolder = EnsureDirectory
 
 def EnsureFileDirectory(FilePath):
     assert not FilePath.endswith("/"), FilePath
     FilePath = DLUtils.StandardizeFilePath(FilePath)
-    DirPath = DLUtils.DirPathOfFile(FilePath)
-    EnsureDir(DirPath)
+    FileDir = os.path.dirname(FilePath)
+    EnsureDir(FileDir)
     return FilePath
 EnsureFileDir = EnsureFileDirectory
 
@@ -611,14 +604,6 @@ def ExistsPath(Path):
 
 def GetFileSuffix(FilePath):
     return SeparateFileNameSuffix(FilePath)[1]
-
-def RemoveFileNameSuffix(FilePath, RaiseIfNoSuffix=False):
-    Name, Suffix = SeparateFileNameSuffix(FilePath)
-    if RaiseIfNoSuffix:
-        if Suffix is None or Suffix in [""]:
-            raise Exception()
-    return Name
-RemoveFileSuffix = RemoveFilePathSuffix = RemoveFileNameSuffix
 
 def AppendSuffix2FileName(FileName, Suffix):
     Name, _Suffix = SeparateFileNameSuffix(FileName)
@@ -847,7 +832,7 @@ def File2ObjPickle(FilePath):
 File2Obj = File2ObjPickle
 BinaryFile2Obj = File2ObjPickle
 def Obj2FilePickle(Obj, FilePath):
-    FilePath = DLUtils.EnsureFileDir(FilePath)
+    DLUtils.EnsureFileDir(FilePath)
     with open(FilePath, "wb") as f:
         pickle.dump(Obj, f)
 Obj2File = Obj2FilePickle
@@ -985,6 +970,20 @@ def VisitDirAndApplyMethodOnDirs(DirPath=None, Method=None, Recur=False, **Dict)
         for DirName in DirList:
             VisitDirAndApplyMethodOnFiles(DirPath + DirName + "/", Method, Recur, **Dict)
 
+def GetTreeStruct(DirPath):
+    DirPath = CheckDirExists(DirPath)
+    Dict = {
+        "DirList": [],
+        "FileList": []
+    }
+    for DirName in ListAllDirs(DirPath):
+        Dict["DirList"][DirName.rstrip("/")] = GetTreeStruct(
+            DirPath + DirName
+        )
+    for FileName in ListAllFileNames(DirPath):
+        Dict["FileList"].append(FileName)
+    return Dict
+
 def EnsureDirFormat(Dir):
     if not Dir.endswith("/"):
         Dir += "/"
@@ -1031,7 +1030,7 @@ def Data2TextFile(data, Name=None, FilePath=None):
     DLUtils.Str2File(str(data), FilePath)
 
 from .json import PyObj2DataFile, DataFile2PyObj, PyObj2JsonFile, \
-    JsonFile2PyObj, JsonFile2JsonDict, JsonObj2JsonFile, DataFile2JsonObj, JsonFile2Dict, Obj2JsonFile
+    JsonFile2PyObj, JsonFile2JsonDict, JsonObj2JsonFile, DataFile2JsonObj, JsonFile2Dict
 
 from ._param import JsonDict2Str
 
