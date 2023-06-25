@@ -119,7 +119,6 @@ from DLUtils.utils.func import \
     EmptyFunction
 from DLUtils.utils.file import ParseSavePath
 import DLUtils.utils.system as system
-<<<<<<< HEAD
 
 try:
     import DLUtils.example as example
@@ -140,29 +139,4 @@ import DLUtils.utils._time as time
 from DLUtils.utils._string import PrintWithTimeStr, SetStdOut, ResetStdOut
 from DLUtils.utils.system import NewCmdArg, ParseCmdArg
 
-=======
-
-try:
-    import DLUtils.example as example
-except Exception:
-    pass
-
-try:
-    import DLUtils.backend as backend
-    import DLUtils.backend._torch as torch
-except Exception:
-    pass
-
-PackageFolderPath = DLUtils.file.FolderPathOfFile(__file__)
-
-from DLUtils.utils._string import _print as print
-from DLUtils.utils._string import PrintWithTimeStr
-try:
-    import DLUtils.utils._time as time
-except Exception:
-    pass
-from DLUtils.utils._string import PrintWithTimeStr, SetStdOut, ResetStdOut
-from DLUtils.utils.system import NewCmdArg, ParseCmdArg
-
->>>>>>> 312cd1e34230841141c04fa6d32e6782cd09db27
 from DLUtils.backend._torch import NullParameter, ToTorchTensor

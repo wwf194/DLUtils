@@ -876,8 +876,4 @@ except Exception:
     pass
 
 if GetSystemType() in ["Windows", "win"]:
-<<<<<<< HEAD
     import DLUtils.backend.win as win
-=======
-    import DLUtils.backend.win as win
->>>>>>> 312cd1e34230841141c04fa6d32e6782cd09db27

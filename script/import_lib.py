@@ -41,8 +41,6 @@ for Path in DLUtilsPath:
             sys.path.pop()
             continue
 
-
-
 if not Sig:
     WriteUTF8("ERROR: Cannot import DLUtils.")
     if Verbose:
