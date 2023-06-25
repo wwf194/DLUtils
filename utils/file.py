@@ -286,7 +286,10 @@ def DirPathFromFilePath(FilePath):
     Name, Suffix = SeparateFileNameSuffix(FilePath)
     assert Suffix is not None and Suffix not in [""]
     return StandardizeDirPath(Name)
+<<<<<<< HEAD
 DirPathFromFileName = DirPathFromFilePath
+=======
+>>>>>>> 426047aa2b8d15bb4de6474c91a842bf2b77945b
 
 def CurrentFilePath(FilePath):
     # FilePath: __file__ variable of caller .py file.
@@ -434,7 +437,11 @@ def ListDirsPath(DirPath):
 
 def FileExists(FilePath):
     return os.path.isfile(FilePath)
+<<<<<<< HEAD
 Exists = _ExistsFile = ExistsFile = FileExists
+=======
+_ExistsFile = ExistsFile = FileExists
+>>>>>>> 426047aa2b8d15bb4de6474c91a842bf2b77945b
 
 def _FolderExists(DirPath):
     # no path string style checking
@@ -452,11 +459,22 @@ ExistsDir = DirExists = FolderExists
 ExistsFolder = FolderExists
 
 def CheckFileExists(FilePath):
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> 5b9f4e8b37a7f0d67e395f10fe214cd449dc3e39
     FilePath = DLUtils.StandardizeFilePath(FilePath)
     if not ExistsFile(FilePath):
         raise Exception("%s does not exist."%FilePath)
     return FilePath
     
+<<<<<<< HEAD
+=======
+=======
+=======
+>>>>>>> 426047aa2b8d15bb4de6474c91a842bf2b77945b
+>>>>>>> 5b9f4e8b37a7f0d67e395f10fe214cd449dc3e39
     FilePath = ToStandardFilePath(FilePath)
     if not _ExistsFile(FilePath):
         raise Exception("%s does not exist."%FilePath)
@@ -489,8 +507,13 @@ EnsureFolder = EnsureDirectory
 def EnsureFileDirectory(FilePath):
     assert not FilePath.endswith("/"), FilePath
     FilePath = DLUtils.StandardizeFilePath(FilePath)
+<<<<<<< HEAD
     DirPath = DLUtils.DirPathOfFile(FilePath)
     EnsureDir(DirPath)
+=======
+    FileDir = os.path.dirname(FilePath)
+    EnsureDir(FileDir)
+>>>>>>> 426047aa2b8d15bb4de6474c91a842bf2b77945b
     return FilePath
 EnsureFileDir = EnsureFileDirectory
 
@@ -666,9 +689,22 @@ def ChangeFileDirPath(FilePath, DirPath):
     DirPath = StandardizeDirPath(DirPath)
     return DirPath + FileNameFromPath(FilePath)
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> 5b9f4e8b37a7f0d67e395f10fe214cd449dc3e39
 ChangeCurrentFileNameSuffix = ChangeFileNameSuffix
 ChangeCurrentFileNameSuffix = ChangeNameSuffix = ChangeFileNameSuffix
+<<<<<<< HEAD
 ChangeCurrentFileNameSuffix = ChangeNameSuffix = ChangeFileNameSuffix
+=======
+>>>>>>> 70e9424... update
+=======
+ChangeCurrentFileNameSuffix = ChangeNameSuffix = ChangeFileNameSuffix
+>>>>>>> 426047aa2b8d15bb4de6474c91a842bf2b77945b
+
+>>>>>>> 5b9f4e8b37a7f0d67e395f10fe214cd449dc3e39
 ParseFileNameSuffix = SeparateFileNameSuffix
 
 def AddSuffixToFileWithFormat(FilePath, Suffix):
@@ -991,6 +1027,11 @@ def VisitDirAndApplyMethodOnDirs(DirPath=None, Method=None, Recur=False, **Dict)
         for DirName in DirList:
             VisitDirAndApplyMethodOnFiles(DirPath + DirName + "/", Method, Recur, **Dict)
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+>>>>>>> 5b9f4e8b37a7f0d67e395f10fe214cd449dc3e39
 def GetTreeStruct(DirPath):
     DirPath = CheckDirExists(DirPath)
     Dict = {
@@ -1005,6 +1046,10 @@ def GetTreeStruct(DirPath):
         Dict["FileList"].append(FileName)
     return Dict
 
+<<<<<<< HEAD
+=======
+>>>>>>> 426047aa2b8d15bb4de6474c91a842bf2b77945b
+>>>>>>> 5b9f4e8b37a7f0d67e395f10fe214cd449dc3e39
 def EnsureDirFormat(Dir):
     if not Dir.endswith("/"):
         Dir += "/"

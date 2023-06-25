@@ -1,4 +1,3 @@
-
 try:
     import torch
     from .format import ToTorchTensor, ToTorchTensorOrNum, NpArray2Tensor, NpArray2TorchTensor
@@ -36,10 +35,8 @@ def GetTorchModelTensor(model):
     return Dict
 GetModelTrainParam = GetTorchModelTrainParam
 
-
-from .module import TorchModelWithAdditionalParam2File, File2TorchModelWithAdditionalParam
-
 try:
+    from .module import TorchModelWithAdditionalParam2File, File2TorchModelWithAdditionalParam
     from .module import TorchModel2File, File2TorchModel, TorchModelWrapper
 except Exception:
     pass
