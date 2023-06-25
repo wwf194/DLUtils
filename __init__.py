@@ -145,4 +145,8 @@ from DLUtils.utils.system import NewCmdArg, ParseCmdArg
 =======
 
 from DLUtils.backend._torch import NullParameter, ToTorchTensor
+<<<<<<< HEAD
 >>>>>>> f2774e6... update
+=======
+
+>>>>>>> aed5d48... update
