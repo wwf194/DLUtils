@@ -2,7 +2,6 @@ import DLUtils
 import functools
 import warnings
 
-
 def BuildModule(param, **Dict):
     if hasattr(param, "ClassPath"):
         try:
@@ -72,21 +71,15 @@ class AbstractOperator(AbstractModule):
         super().__init__(*List, **Dict)
     def AddSubModule(self, Name, SubModule):
         raise Exception("AbstractOperator module.")
-
-from .abstract_network import AbstractNetwork
-class AbstractModuleGroup(AbstractNetwork):
-    def __init__(self, *List, **Dict):
-        super().__init__(**Dict)
-        if len(List) == 0:
-            ModuleList = Dict.get("ModuleList")
-        else:
-            assert Dict.get("ModuleList") is None
-            if len(List) == 1 and DLUtils.IsIterable(List[0]):
-                if isinstance(List[0], dict):
-                    ModuleList = List[0]
-                else:
-                    ModuleList = List[0]
+try:
+    from .abstract_network import AbstractNetwork
+    class AbstractModuleGroup(AbstractNetwork):
+        def __init__(self, *List, **Dict):
+            super().__init__(**Dict)
+            if len(List) == 0:
+                ModuleList = Dict.get("ModuleList")
             else:
+<<<<<<< HEAD
                 ModuleList = List
         self.ModuleList = []
         if ModuleList is not None:
@@ -116,6 +109,51 @@ class AbstractModuleGroup(AbstractNetwork):
 
 from .module_graph import ModuleGraph
 from .module_series import ModuleList, ModuleSeries, _ModuleList, _ModuleSeries
+=======
+                assert Dict.get("ModuleList") is None
+                if len(List) == 1 and DLUtils.IsIterable(List[0]):
+                    if isinstance(List[0], dict):
+                        ModuleList = List[0]
+                    else:
+                        ModuleList = List[0]
+                else:
+                    ModuleList = List
+            self.ModuleList = []
+            if ModuleList is not None:
+                if isinstance(ModuleList, tuple):
+                    ModuleList = list(ModuleList)
+                assert isinstance(ModuleList, list) or isinstance(ModuleList, dict)
+                self.SetModuleList(ModuleList)
+        def SetModuleList(self, ModuleList):
+            Param = self.Param
+            if isinstance(ModuleList, list):
+                for Index, SubModule in enumerate(ModuleList):
+                    self.AddSubModule(f"L{Index}", SubModule)
+                self.ModuleList = ModuleList
+            if isinstance(ModuleList, dict):
+                for Name, SubModule in ModuleList.items():
+                    self.AddSubModule(
+                        Name, SubModule
+                    )
+                self.ModuleList = list(ModuleList.values())
+            return self
+        def Init(self, IsSuper=False, IsRoot=True):
+            Param = self.Param
+            if self.IsLoad():
+                self.ModuleList = list(self.SubModules.values())
+            self.ModuleNum = Param.Module.Num = len(self.ModuleList)
+            return super().Init(IsSuper=True, IsRoot=IsRoot)
+except Exception:
+    pass
+try:
+    from .module_graph import ModuleGraph
+except Exception:
+    pass
+try:
+    from .module_series import ModuleList, ModuleSeries, _ModuleList, _ModuleSeries
+except Exception:
+    pass
+>>>>>>> 312cd1e34230841141c04fa6d32e6782cd09db27
 try:
     from ..backend.torch.module import TorchModuleWrapper, TorchModelWrapper, TorchModule, TorchModuleParallel
 except Exception:

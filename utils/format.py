@@ -2,7 +2,14 @@
 import DLUtils
 import numpy as np
 import re
+<<<<<<< HEAD
 import pandas as pd
+=======
+try:
+    import pandas as pd
+except Exception:
+    pass
+>>>>>>> 312cd1e34230841141c04fa6d32e6782cd09db27
 B = 1
 KB = 1024
 MB = 1048576
