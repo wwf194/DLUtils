@@ -2,7 +2,10 @@
 import DLUtils
 import numpy as np
 import re
-import pandas as pd
+try:
+    import pandas as pd
+except Exception:
+    pass
 B = 1
 KB = 1024
 MB = 1048576

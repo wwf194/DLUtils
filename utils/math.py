@@ -1,5 +1,6 @@
 import DLUtils
 import random
+<<<<<<< HEAD
 
 def NpArrayStatistics(data, verbose=False):
     DataStat = DLUtils.param({
@@ -502,6 +503,182 @@ try:
 
         ToMean0Std1 = ToMean0Std1Np
         
+=======
+try:
+    import numpy as np
+    def RandomSelectFromListRepeat(List, Num):
+        # return random.choices(List, Num)
+        # assert isinstance(Num, int)
+        return np.random.choice(List, size=Num, replace=True)
+    RandomSelectWithReplacement = RandomSelectFromListWithReplacement = RandomSelectFromListRepeat
+
+    RandomSelectRepeat = RandomSelectFromListRepeat
+
+    try:
+        import torch
+        import math
+        import pandas as pd
+        import scipy
+        import sklearn
+        from sklearn.decomposition import PCA as PCAsklearn # sklearn.decomposition.PCA not supported
+    except Exception:
+        pass
+    else:
+        def NpArrayStatistics(data, verbose=False):
+            DataStat = DLUtils.param({
+                "Min": np.nanmin(data),
+                "Max": np.nanmax(data),
+                "Mean": np.nanmean(data),
+                "Std": np.nanstd(data),
+                "Var": np.nanvar(data)
+            })
+            return DataStat
+
+        def NpArrayStatisticsStr(data, verbose=False):
+            DataStat = {
+                "Min": np.nanmin(data),
+                "Max": np.nanmax(data),
+                "Mean": np.nanmean(data),
+                "Std": np.nanstd(data),
+                "Var": np.nanvar(data)
+            }
+            StrList = []
+            for Name, Key in DataStat.items():
+                StrList.append(Name)
+                StrList.append(": ")
+                StrList.append(DLUtils.Float2StrDisplay(Key))
+                StrList.append("\n")
+            return "".join(StrList)
+
+        NpArrayStat = NpStatistics = NpArrayStatistics
+
+        def ReplaceNaNOrInfWithZeroNp(data):
+            data[~np.isfinite(data)] = 0.0
+            return data
+        ReplaceNaNOrInfWithZero = ReplaceNaNOrInfWithZeroNp
+
+        def IsAllNaNOrInf(data):
+            return (np.isnan(data) | np.isinf(data)).all()
+
+        def RemoveNaNOrInf(data):
+            # data: 1D np.ndarray.
+            return data[np.isfinite(data)]
+
+        def TorchTrainParamtat(tensor, verbose=False, ReturnType="PyObj"):
+            statistics = {
+                "Min": torch.min(tensor).item(),
+                "Max": torch.max(tensor).item(),
+                "Mean": torch.mean(tensor).item(),
+                "Std": torch.std(tensor).item(),
+                "Var": torch.var(tensor).item()
+            }
+            if ReturnType in ["Dict"]:
+                return statistics
+            elif ReturnType in ["PyObj"]:
+                return DLUtils.PyObj(statistics)
+            else:
+                raise Exception()
+
+        def CreateNpArray(Shape, Value, DataType):
+            return np.full(tuple(Shape), Value, dtype=DataType)
+
+        def SampleFromDistribution(Shape, Type, **Dict):
+            if Type in ["Reyleigh"]:
+                return SamplesFromReyleighDistribution(
+                    Shape = Shape, **Dict
+                )
+            elif Type in ["Gaussian", "Gaussian1D"]:
+                return SampleFromGaussianDistribution(Shape, **Dict)    
+            else:
+                raise Exception()
+
+        def ShuffleList(List, InPlace=False):
+            if InPlace:
+                _List = List
+            else:
+                _List = list(List)
+
+            random.shuffle(_List)
+            return _List
+
+        def RandomSelect(List, Num, Repeat=False):
+            if Repeat:
+                return RandomSelectFromListWithReplacement(List, Num)
+            
+            if isinstance(List, int):
+                Num = List
+                List = range(Num)
+            else:
+                Num = DLUtils.GetLength(List)
+
+            if Num > Num:
+                return random.sample(List, Num)
+            else:
+                return List
+        RandomSelectFromList = RandomSelect
+
+
+
+        def RandomIntInRange(Left, Right, IncludeRight=False):
+            if not IncludeRight:
+                Right -= 1
+            #assert Left <= Right 
+            return random.randint(Left, Right)
+
+        def SampleFromGaussianDistribution(Mean=0.0, Std=1.0, Shape=100):
+            return np.random.normal(loc=Mean, scale=Std, size=DLUtils.parse.ParseShape(Shape))
+
+        def SampleFromGaussianDistributionTorch(Mean=0.0, Std=1.0, Shape=100):
+            data = SampleFromGaussianDistribution(Mean, Std, Shape)
+            data = DLUtils.NpArray2Tensor(data)
+            return data
+
+        def SamplesFromReyleighDistribution(Mean=1.0, Shape=100):
+            # p(x) ~ x^2 / sigma^2 * exp( - x^2 / (2 * sigma^2))
+            # E[X] = 1.253 * sigma
+            # D[X] = 0.429 * sigma^2
+            Shape = DLUtils.parse.ParseShape(Shape)
+            return np.random.rayleigh(Mean / 1.253, Shape)
+
+        def CosineSimilarityNp(vecA, vecB):
+            normA = np.linalg.norm(vecA)
+            normB = np.linalg.norm(vecB)
+            #normA_ = np.sum(vecA ** 2) ** 0.5
+            #normB_ = np.sum(vecB ** 2) ** 0.5
+            CosineSimilarity = np.dot(vecA.T, vecB) / (normA * normB)
+            return CosineSimilarity
+
+        def Vectors2Directions(Vectors):
+            Directions = []
+            for Vector in Vectors:
+                R, Direction = DLUtils.geometry2D.XY2Polar(*Vector)
+                Directions.append(Direction)    
+            return Directions
+
+        def Vector2Norm(VectorNp):
+            return np.linalg.norm(VectorNp)
+
+        def Vectors2NormsNp(VectorsNp): # VectorsNp: [VectorNum, VectorSize]
+            return np.linalg.norm(VectorsNp, axis=-1)
+
+        def Angles2StandardRangeNp(Angles):
+            return np.mod(Angles, np.pi * 2) - np.pi
+
+        def IsAcuteAnglesNp(AnglesA, AnglesB):
+            return np.abs(Angles2StandardRangeNp(AnglesA, AnglesB)) < np.pi / 2
+
+        def ToMean0Std1Np(data, StdThreshold=1.0e-9):
+            std = np.std(data, keepdims=True)
+            mean = np.mean(data, keepdims=True)
+            if std < StdThreshold:
+                DLUtils.AddWarning("ToMean0Std1Np: StandardDeviation==0.0")
+                return data - mean
+            else:
+                return (data - mean) / std
+
+        ToMean0Std1 = ToMean0Std1Np
+        
+>>>>>>> 426047aa2b8d15bb4de6474c91a842bf2b77945b
         def ToRangeMinus1Positive1(Data):
             Min, Max = Data.min(), Data.max()
             return (Data - Min) / (Max - Min)

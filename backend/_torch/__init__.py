@@ -1,9 +1,19 @@
+<<<<<<< HEAD
 import torch
 try:
     from .format import ToTorchTensor, ToTorchTensorOrNum, NpArray2Tensor, NpArray2TorchTensor
 except Exception:
     pass
 from .module import TorchModule, TorchModuleWrapper
+=======
+
+try:
+    import torch
+    from .format import ToTorchTensor, ToTorchTensorOrNum, NpArray2Tensor, NpArray2TorchTensor
+    from .module import TorchModule, TorchModuleWrapper
+except Exception:
+    pass
+>>>>>>> 426047aa2b8d15bb4de6474c91a842bf2b77945b
 
 def GetTensorByteNum(Tensor): # Byte
     return Tensor.nelement() * Tensor.element_size()
@@ -37,5 +47,13 @@ GetModelTrainParam = GetTorchModelTrainParam
 
 
 from .module import TorchModelWithAdditionalParam2File, File2TorchModelWithAdditionalParam
+<<<<<<< HEAD
 from .module import TorchModel2File, File2TorchModel, TorchModelWrapper
+=======
+
+try:
+    from .module import TorchModel2File, File2TorchModel, TorchModelWrapper
+except Exception:
+    pass
+>>>>>>> 426047aa2b8d15bb4de6474c91a842bf2b77945b
 from .format import NullParameter, ToTorchTensor

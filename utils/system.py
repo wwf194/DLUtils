@@ -86,11 +86,19 @@ def ReportMemoryOccupancy(Obj):
     ByteNum = GetBytesInMemory(Obj)
     return DLUtils.ByteNum2Str(Obj)
 
+<<<<<<< HEAD
 from ._time import TimeStamp2DateTimeObj, TimeStr2Second, DateTimeObj2TimeStampFloat
 from ._time import CurrentTimeStampInt, CurrentTimeStr
 
 
 
+=======
+try:
+    from ._time import TimeStamp2DateTimeObj, TimeStr2Second, DateTimeObj2TimeStampFloat
+    from ._time import CurrentTimeStampInt, CurrentTimeStr
+except Exception:
+    pass
+>>>>>>> 426047aa2b8d15bb4de6474c91a842bf2b77945b
 def Stack2File(FilePath):
     DLUtils.EnsureFileDir(FilePath)
     traceback.print_exc(file=open(FilePath, "w"))
