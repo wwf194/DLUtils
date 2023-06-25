@@ -134,19 +134,9 @@ except Exception:
 PackageFolderPath = DLUtils.file.FolderPathOfFile(__file__)
 
 from DLUtils.utils._string import _print as print
-<<<<<<< HEAD
 from DLUtils.utils._string import PrintWithTimeStr
 import DLUtils.utils._time as time
-=======
 from DLUtils.utils._string import PrintWithTimeStr, SetStdOut, ResetStdOut
 from DLUtils.utils.system import NewCmdArg, ParseCmdArg
-<<<<<<< HEAD
->>>>>>> 98ecc20f76252cf026599f981f8b06624a9a0788
-=======
 
 from DLUtils.backend._torch import NullParameter, ToTorchTensor
-<<<<<<< HEAD
->>>>>>> f2774e6... update
-=======
-
->>>>>>> aed5d48... update
