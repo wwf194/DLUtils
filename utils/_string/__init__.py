@@ -168,7 +168,7 @@ def _print(*List, Encoding="utf-8", Indent=None, **Dict):
     print(*List, **Dict, file=PrintBuf)
     Str = PrintBuf.getvalue()
     PrintBuf.flush()
-    Result = Write2StdOut(StdOut, Str)
+    Result = WriteBytes2StdOut(StdOut, Str.encode("utf-8"))
     StdOut.flush()
     return Result
 

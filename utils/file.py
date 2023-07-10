@@ -132,7 +132,24 @@ def MoveAllFile(DirSource, DirDest):
     assert DLUtils.file.ExistsDir(DirSource)
     for FileName in ListAllFileNames(DirSource):
         MoveFile(DirSource + FileName, DirDest + FileName)
-    
+
+def DeleteFileWithFileNamePattern(DirSource, FileNamePattern=None):
+    DirSource = DLUtils.CheckDirExists(DirSource)
+    assert FileNamePattern is not None
+    Num = 0
+    FileNamePatternCompiled = re.compile(FileNamePattern)
+    for FileName in DLUtils.ListFileNames(DirSource):
+        if FileNamePatternCompiled.match(FileName) is not None: 
+            FilePathSource = DirSource + FileName
+            try:
+                DeleteFile(FilePathSource, RaiseIfNonExist=True)
+            except Exception:
+                DLUtils.print(f"Error when deleteing file: ({FilePathSource})")
+            else:
+                DLUtils.print(f"Deleted file: ({FilePathSource})")
+                Num += 1
+    return Num
+
 def MoveFileWithFileNamePattern(DirSource, DirDest, FileNamePattern=None):
     Num = 0
     DirSource = DLUtils.file.StandardizeDirPath(DirSource)
