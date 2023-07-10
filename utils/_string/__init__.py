@@ -152,9 +152,14 @@ def SetStdOut(_StdOut):
 def ResetStdOut():
     global StdOut
     StdOut = sys.stdout
-    global Write2StdOut
-    Write2StdOut = lambda StdOut, x: StdOut.write(x)
-
+    global Write2StdOut, WriteBytes2StdOut, WriteStr2StdOut
+    if hasattr(StdOut, "buffer"):
+        WriteBytes2StdOut = lambda StdOut, x: StdOut.buffer.write(x)
+        WriteStr2StdOut = lambda StdOut, x: StdOut.buffer.write(x.encode("utf-8"))
+    else:
+        WriteBytes2StdOut = lambda StdOut, x: StdOut.write(x.decode("utf-8"))
+        WriteStr2StdOut = lambda StdOut, x: StdOut.write(x)
+        
 ResetStdOut()
 
 def _print(*List, Encoding="utf-8", Indent=None, **Dict):
@@ -177,6 +182,6 @@ def PrintWithTimeStr(*List, Encoding="utf-8", Indent=None, **Dict):
         Str = Str[:-1] + " time: %s."%DLUtils.system.CurrentTimeStr() + "\n"
     else:
         Str = Str + " time: %s."%DLUtils.system.CurrentTimeStr()
-    Result = Write2StdOut(StdOut, Str.encode(Encoding))
+    Result = WriteBytes2StdOut(StdOut, Str.encode(Encoding))
     StdOut.flush()
     return Result
