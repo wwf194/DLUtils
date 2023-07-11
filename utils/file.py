@@ -152,9 +152,8 @@ def DeleteFileWithFileNamePattern(DirSource, FileNamePattern=None):
 
 def MoveFileWithFileNamePattern(DirSource, DirDest, FileNamePattern=None):
     Num = 0
-    DirSource = DLUtils.file.StandardizeDirPath(DirSource)
-    assert DLUtils.file.ExistsDir(DirSource)
-    DirDest = DLUtils.file.StandardizeDirPath(DirDest)
+    DirSource = CheckFileExists(DirSource)
+    DirDest = EnsureDir(DirDest)
     DLUtils.EnsureDir(DirDest)
     if FileNamePattern is None:
         for FileName in DLUtils.ListFileNames(DirSource):
