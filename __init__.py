@@ -38,6 +38,11 @@ import DLUtils.utils.parse as parse
 import DLUtils.utils.file as file
 import DLUtils.utils.func as function
 import DLUtils.utils.math as math
+try:
+    import DLUtils.utils.plot as plot
+except Exception:
+    pass
+
 import DLUtils.utils.__struct__ as struct
 import DLUtils.utils.system as system
 import DLUtils.utils.sql as sql
@@ -71,10 +76,7 @@ except Exception:
 # from .functions import *
 # from .log import *
 
-try:
-    import DLUtils.plot as plot
-except Exception:
-    pass
+
 try:
     import DLUtils.loss as loss
 except Exception:

@@ -185,3 +185,4 @@ def PrintWithTimeStr(*List, Encoding="utf-8", Indent=None, **Dict):
     Result = WriteBytes2StdOut(StdOut, Str.encode(Encoding))
     StdOut.flush()
     return Result
+

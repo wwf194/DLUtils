@@ -176,7 +176,7 @@ else:
             DataType = np.float32
         if isinstance(Data, np.ndarray):
             return Data
-        elif isinstance(Data, list):
+        elif isinstance(Data, list) or isinstance(Data, tuple):
             return np.array(Data, dtype=DataType)
         elif isinstance(Data, torch.Tensor):
             return Tensor2NpArray(Data)

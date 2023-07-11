@@ -269,8 +269,9 @@ def SetXTicksAndRangeInt(ax, Xs, Range=None, **Dict):
     else:
         XMin, XMax = Range[0], Range[1]
     assert isinstance(XMin, int) and isinstance(XMax, int)
-    SetXTicksInt(ax, XMin, XMax)
+    XTicks, XTicksStr = SetXTicksInt(ax, XMin, XMax)
     SetXRangeMinMaxInt(ax, XMin, XMax)
+    return XTicks, XTicksStr
 
 def SetYTicksAndRangeInt(ax, Ys, Range=None, **Dict):
     YMin = Dict.setdefault("YMin", None)
@@ -309,7 +310,7 @@ def SetTicksAndRangeForAx(ax, Xs, Ys, XRange, YRange):
     SetXTicksAndRangeFloat(ax, Xs=Xs, Range=XRange)
     SetYTicksAndRangeFloat(ax, Ys=Ys, Range=YRange)
 
-def SetXTicksAndRangeFloat(ax, Xs, Range=None, **Dict):
+def SetXTicksAndRangeFloat(ax, Xs=None, Range=None, **Dict):
     XMin = Dict.setdefault("XMin", None)
     XMax = Dict.setdefault("XMax", None)
     DimNum = Dict.setdefault("DimNum", 1)
@@ -320,10 +321,11 @@ def SetXTicksAndRangeFloat(ax, Xs, Range=None, **Dict):
             XMax = Max(Xs, DimNum)
     else:
         XMin, XMax = Range[0], Range[1]
-    SetXTicksFloat(ax, XMin, XMax)
+    XTicks, XTicksStr = SetXTicksFloat(ax, XMin, XMax)
     SetXRangeMinMaxFloat(ax, XMin, XMax)
+    return XTicks, XTicksStr
 
-def SetYTicksAndRangeFloat(ax, Ys, Range=None, **Dict):
+def SetYTicksAndRangeFloat(ax, Ys=None, Range=None, **Dict):
     YMin = Dict.setdefault("YMin", None)
     YMax = Dict.setdefault("YMax", None)
     DimNum = Dict.setdefault("DimNum", 1)
@@ -332,9 +334,11 @@ def SetYTicksAndRangeFloat(ax, Ys, Range=None, **Dict):
             YMin = Min(Ys, DimNum)
         if YMax is None:
             YMax = Max(Ys, DimNum)
-        #YMin, YMax = Range[0], Range[1]
-    SetYTicksFloat(ax, YMin, YMax)
+    else:
+        YMin, YMax = Range[0], Range[1]
+    YTicks, YTicksStr = SetYTicksFloat(ax, YMin, YMax)
     SetYRangeMinMaxFloat(ax, YMin, YMax)
+    return YTicks, YTicksStr
 
 def PlotPointsPltNp(
         ax, Points, Color="Blue", Type="Circle", Size=None,
@@ -1255,24 +1259,25 @@ def GetAx(axes, Index=None, RowIndex=None, ColIndex=None):
 
 def PlotLineChart(ax=None, Xs=None, Ys=None,
         Title="Undefined", Label=None,
-        Color="Black", LineWidth=2.0, 
+        XLabel=None, YLabel=None, SetTicks=True,
+        LineColor=None, Color=None, LineWidth=1.0,  
         Save=False, SavePath=None, **Dict
     ):
-    XLabel = Dict.setdefault("XLabel", "X")
-    YLabel = Dict.setdefault("YLabel", "Y")
-    XTicks = Dict.setdefault("XTicks", "Float")
-    YTicks = Dict.setdefault("YTicks", "Float")
-
     if ax is None:
         fig, ax = CreateFigurePlt()
-    Color = (Color)
-    ax.plot(Xs, Ys, color=Color, linewidth=LineWidth, label=Label)
+        
+    if LineColor is None:
+        if Color is not None:
+            LineColor = Color
+        else:
+            LineColor = "Black" 
 
-    SetTicks = Dict.get("SetTicks", True)
+    ax.plot(Xs, Ys, color=LineColor, linewidth=LineWidth, label=Label)
     if SetTicks:
+        XTicks = Dict.setdefault("XTicks", "Float")
+        YTicks = Dict.setdefault("YTicks", "Float")
         SetXTicksAndRange(ax, Xs=Xs, **Dict)
         SetYTicksAndRange(ax, Ys=Ys, **Dict)
-
     SetXYLabelForAx(ax, XLabel, YLabel)
     SetTitleForAx(ax, Title)
     SaveFigForPlt(Save, SavePath)
@@ -1280,14 +1285,12 @@ def PlotLineChart(ax=None, Xs=None, Ys=None,
 
 def PlotMultiLineChart(
         ax=None, XsList=None, YsList=None,
-        Title="Untitled", Labels=None,
+        Title="Untitled", Labels=None, XLabel=None, YLabel=None,
         ColorList=None, LineWidth=2.0,
         Save=False, SavePath=None, **Dict
     ):
     if ax is None:
         fig, ax = CreateFigurePlt()
-    XLabel = Dict.setdefault("XLabel", "X")
-    YLabel = Dict.setdefault("YLabel", "Y")
 
     Index = 0
     LineNum = len(XsList)
@@ -1750,7 +1753,7 @@ def SetXTicksFloat(ax, Min, Max, Method="Auto", Rotate45=True):
 def SetYTicksFloat(ax, Min, Max, Method="Auto"):
     if not np.isfinite(Min) or not np.isfinite(Max):
         Min, Max = -5.0, 5.0
-    if Min==Max:
+    if Min == Max:
         if Min == 0.0:
             Min, Max = -1.0, 1.0
         else:
@@ -1952,28 +1955,109 @@ def CompareDensityCurve(data1, data2, Name1, Name2, Save=True, SavePath=None):
 
     DLUtils.plot.SaveFigForPlt(Save, SavePath)
 
+def PlotMultiMeanAndStdCurve(
+    ax=None, XsList=None, MeanList=None, StdList=None,
+    XTicks="Float", YTicks="Float",
+    LineWidth=1.0, LineColor="Black", FillColor="LightGreen",
+    Title=None, XLabel=None, YLabel=None, SetTicks=True, Labels=None,
+    Save=False, SavePath=None, **Dict
+):
+    if ax is None:
+        fig, ax = CreateFigurePlt()
+    PlotNum = len(XsList)
+    
+    for PlotIndex in range(PlotNum):
+        if StdList[PlotIndex] is not None:
+            StdList[PlotIndex] = DLUtils.ToNpArray(StdList[PlotIndex])
+        MeanList[PlotIndex] = DLUtils.ToNpArray(MeanList[PlotIndex])
+    
+    if SetTicks:
+        if XTicks in ["Int"]:
+            XTicks, XTicksStr = SetXTicksAndRangeInt(ax, XsList, DimNum=2)
+        elif XTicks in ["Float"]:
+            XTicks, XTicksStr = SetXTicksAndRangeFloat(ax, XsList, DimNum=2)
+        else:
+            raise Exception()
+
+    if isinstance(LineColor, str):
+        LineColorList = [LineColor for _ in range(PlotNum)]
+    else:
+        LineColorList = LineColor
+    if isinstance(FillColor, str):
+        FillColor = [FillColor for _ in range(PlotNum)]
+    else:
+        FillColor = FillColor
+    if Labels is None:
+        Labels = [None for _ in range(PlotNum)]
+    for PlotIndex in range(PlotNum):
+        if StdList[PlotIndex] is None:
+            PlotLineChart(
+                ax, Xs=XsList[PlotIndex], Ys=MeanList[PlotIndex],
+                LineColor = LineColorList[PlotIndex],
+                LineWidth=LineWidth,
+                Label=Labels[PlotIndex],
+                SetTicks=False
+            )
+        else:
+            PlotMeanAndStdCurve(
+                ax,
+                Xs=XsList[PlotIndex],
+                Mean=MeanList[PlotIndex],
+                Std=StdList[PlotIndex],
+                LineWidth=LineWidth,
+                LineColor=LineColorList[PlotIndex],
+                FillColor=FillColor[PlotIndex],
+                Label=Labels[PlotIndex],
+                SetTicks=False
+            )
+    
+    if SetTicks:
+        YMinList, YMaxList = [], []
+        for PlotIndex in range(PlotNum):
+            YMean = MeanList[PlotIndex]
+            YStd = StdList[PlotIndex]
+            if YStd is None:
+                YMin, YMax = np.nanmin(YMean), np.nanmax(YMean)
+            else:
+                YMin, YMax = np.nanmin(YMean - YStd / 2.0), np.nanmax(YMean + YStd / 2.0)
+            YMinList.append(YMin)
+            YMaxList.append(YMax)
+        YMin, YMax = min(YMinList), max(YMaxList)
+        if YTicks in ["Int"]:
+            YTicks, YTicksStr = SetYTicksAndRangeInt(ax, Range=[YMin, YMax])
+        elif YTicks in ["Float"]:
+            YTicks, YTicksStr = SetYTicksAndRangeFloat(ax, Range=[YMin, YMax])
+        else:
+            raise Exception()
+    
+    if Labels is not None:
+        ax.legend()
+    
+    SetTitleAndLabelForAx(ax, XLabel, YLabel, Title)
+    SaveFigForPlt(Save, SavePath)
+
 def PlotMeanAndStdCurve(
         ax=None, Xs=None, Mean=None, Std=None,
-        LineWidth=2.0, Color="Black", XTicks="Float",
-        Title=None, XLabel=None, YLabel=None,
-        Save=False, SavePath=None, **kw
+        LineWidth=1.0, LineColor="Black", XTicks="Float", FillColor="LightGreen",
+        Title=None, XLabel=None, YLabel=None, SetTicks=True,
+        Save=False, SavePath=None, **Dict
     ):
     if ax is None:
-        fig, ax = plt.subplots()
+        fig, ax = CreateFigurePlt()
 
-    if XTicks in ["Int"]:
-        XTicks, XTicksStr = SetXTicksInt(ax, min(Xs), max(Xs))
-    elif XTicks in ["Float"]:
-        XTicks, XTicksStr = SetXTicksFloat(ax, min(Xs), max(Xs))
-
+    if SetTicks:
+        if XTicks in ["Int"]:
+            XTicks, XTicksStr = SetXTicksInt(ax, min(Xs), max(Xs))
+        elif XTicks in ["Float"]:
+            XTicks, XTicksStr = SetXTicksFloat(ax, min(Xs), max(Xs))
+        else:
+            raise Exception()
+        YTicks, YTicksStr = SetYTicksFloat(ax, np.nanmin(Y1), np.nanmax(Y2))
     Mean = DLUtils.ToNpArray(Mean)
     Std = DLUtils.ToNpArray(Std)
-    Color = (Color)
-    Y1 = Mean - Std
-    Y2 = Mean + Std
-
-    YTicks, YTicksStr = SetYTicksFloat(ax, np.nanmin(Y1), np.nanmax(Y2))
-
+    StdHalf = Std / 2.0
+    Y1 = Mean - StdHalf
+    Y2 = Mean + StdHalf
     if DLUtils.math.IsAllNaNOrInf(Y1) and DLUtils.math.IsAllNaNOrInf(Y2) and DLUtils.math.IsAllNaNOrInf(Mean):
         ax.text(
             (XTicks[0] + XTicks[-1]) / 2.0,
@@ -1982,13 +2066,14 @@ def PlotMeanAndStdCurve(
         )
     else:
         PlotLineChart(
-            ax, Xs, Mean, Color=Color, LineWidth=LineWidth,
-            Save=False, **kw
+            ax, Xs, Mean, Color=LineColor, LineWidth=LineWidth,
+            Save=False, SetTicks=False, **Dict
         )
-        ax.fill_between(Xs, Y1, Y2)
-
+        ax.fill_between(Xs, Y1, Y2, color=FillColor)
+    
     SetTitleAndLabelForAx(ax, XLabel, YLabel, Title)
     SaveFigForPlt(Save, SavePath)
+
 
 def SetXAxisLocationForAx(ax, XAXisLocation):
     if XAXisLocation in ["top"]:
