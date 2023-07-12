@@ -1387,22 +1387,24 @@ def PlotBoxPlot(
     SaveFigForPlt(Save, SavePath)
 
 def PlotHistogram(
-        ax=None, data=None,
-        Norm2Sum1=False, Color="Black", 
+        ax=None, Data=None,
+        Norm2Sum1=False, Color="Black", BinNum=10,
         XLabel=None, YLabel=None, Title=None,
         Save=False, SavePath=None,
-        **kw
-    ):
+        **Dict
+    ):    
+    if ax is None:
+        fig, ax = CreateFigurePlt()
 
-    if data is None or data.size == 0:
+    if Data is None or Data.size == 0:
         ax.text(
             0.5, 0.5, "No Plottable Data", 
             ha='center', va='center',
         )
     else:
-        data = DLUtils.EnsureFlat(data)
-        data = DLUtils.math.RemoveNaNOrInf(data)
-        ax.hist(data, density=Norm2Sum1)
+        Data = DLUtils.EnsureFlat(Data)
+        Data = DLUtils.math.RemoveNaNOrInf(Data)
+        ax.hist(Data, density=Norm2Sum1, bins=BinNum)
         if Title is not None:
             ax.set_title(Title)
     

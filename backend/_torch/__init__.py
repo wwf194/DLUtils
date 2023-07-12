@@ -5,6 +5,7 @@ try:
 except Exception:
     pass
 
+import DLUtils
 def GetTensorByteNum(Tensor): # Byte
     return Tensor.nelement() * Tensor.element_size()
 
@@ -33,7 +34,25 @@ def GetTorchModelTensor(model):
         dict(model.named_buffers())
     )
     return Dict
+
+def TensorWithSameShapeAndValue1(Tensor: torch.Tensor):
+    return torch.ones_like(Tensor)
+
+def AddDimension(Tensor, DimIndex: int):
+    # Tensor[None, :, :] # another way.
+    TensorNew = torch.unsqueeze(Tensor, DimIndex)
+    return TensorNew
 GetModelTrainParam = GetTorchModelTrainParam
+
+
+def TorchLinearInitWeightBias(InNum, OutNum):
+    module = torch.nn.Linear(in_features=InNum, out_features=OutNum, bias=True)
+    Dict = dict(module.named_parameters())
+    Weight = Dict["weight"] # (OutNum, InNum)
+    Bias = Dict["bias"] # (OutNum, InNum)
+    Weight = DLUtils.ToNpArray(Weight)
+    Bias = DLUtils.ToNpArray(Bias)
+    return DLUtils.ToTorchTensor(Weight), DLUtils.ToTorchTensor(Bias)
 
 try:
     from .module import TorchModelWithAdditionalParam2File, File2TorchModelWithAdditionalParam
