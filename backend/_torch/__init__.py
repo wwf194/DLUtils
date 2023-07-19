@@ -13,7 +13,7 @@ def GetTensorElementNum(Tensor): # Byte
     return Tensor.nelement()
 
 def SampleFrom01NormalDistributionTorch(Shape):
-    return torch.randn(Shape)
+    return torch.randn(Shape) # sampple from N(0, 1)
 
 def ListTorchModelTrainParam(model):
     Dict = dict(model.named_parameters())
@@ -53,6 +53,15 @@ def TorchLinearInitWeightBias(InNum, OutNum):
     Weight = DLUtils.ToNpArray(Weight)
     Bias = DLUtils.ToNpArray(Bias)
     return DLUtils.ToTorchTensor(Weight), DLUtils.ToTorchTensor(Bias)
+
+def TorchTensorElementNum(Tensor:torch.Tensor):
+    return Tensor.numel()
+
+def TorchTensorSize(Tensor:torch.Tensor):
+    if Tensor.data.is_floating_point():
+        return Tensor.numel() * torch.finfo(Tensor.data.dtype).bits
+    else:
+        return Tensor.numel() * torch.iinfo(Tensor.data.dtype).bits
 
 try:
     from .module import TorchModelWithAdditionalParam2File, File2TorchModelWithAdditionalParam

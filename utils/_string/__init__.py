@@ -143,22 +143,24 @@ Write2StdOut = None
 def SetStdOut(_StdOut):
     global StdOut
     StdOut = _StdOut
-    global Write2StdOut
-    if StdOut == sys.stdout or isinstance(StdOut, TextIOWrapper):
-        Write2StdOut = lambda StdOut, x: StdOut.buffer.write(x)
+    global Write2StdOut, WriteBytes2StdOut, WriteStr2StdOut
+    if hasattr(StdOut, "buffer"):
+        WriteBytes2StdOut = lambda StdOut, Bytes: StdOut.buffer.write(Bytes)
+        WriteStr2StdOut = lambda StdOut, Str: StdOut.buffer.write(Str.encode("utf-8"))
     else:
-        Write2StdOut = lambda StdOut, x: StdOut.write(x)
+        WriteBytes2StdOut = lambda StdOut, Bytes: StdOut.write(Bytes)
+        WriteStr2StdOut = lambda StdOut, Str: StdOut.write(Str.decode("utf-8"))
     
 def ResetStdOut():
     global StdOut
-    StdOut = sys.stdout
+    StdOut = sys.__stdout__
     global Write2StdOut, WriteBytes2StdOut, WriteStr2StdOut
     if hasattr(StdOut, "buffer"):
-        WriteBytes2StdOut = lambda StdOut, x: StdOut.buffer.write(x)
-        WriteStr2StdOut = lambda StdOut, x: StdOut.buffer.write(x.encode("utf-8"))
+        WriteBytes2StdOut = lambda StdOut, Bytes: StdOut.buffer.write(Bytes)
+        WriteStr2StdOut = lambda StdOut, Str: StdOut.buffer.write(Str.encode("utf-8"))
     else:
-        WriteBytes2StdOut = lambda StdOut, x: StdOut.write(x.decode("utf-8"))
-        WriteStr2StdOut = lambda StdOut, x: StdOut.write(x)
+        WriteBytes2StdOut = lambda StdOut, Bytes: StdOut.write(Bytes.decode("utf-8"))
+        WriteStr2StdOut = lambda StdOut, Str: StdOut.write(Str)
         
 ResetStdOut()
 

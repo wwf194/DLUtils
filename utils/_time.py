@@ -59,6 +59,7 @@ def TimeStamp2DateTimeObj(TimeStamp):
     # DateTimeObj = date.fromtimestamp(TimeStamp)
 
 def GetCurrentTimeStampFloat():
+    # return type: float, with millisecond precision.
     return DateTimeObj2TimeStampFloat(
         # datetime.datetime.now()
         datetime.datetime.utcnow() # caution. should use Greenwich Mean Time(GMT) here.
@@ -74,8 +75,6 @@ def GetCurrentTimeStampInt():
         # datetime.datetime.now()
         datetime.datetime.utcnow() # caution. should use Greenwich Mean Time(GMT) here.
     ))
-
-
 
 def TimeStamp2Type(TimeStamp, Type):
     if Type in ["UnixTimeStamp", "TimeStamp"]:
