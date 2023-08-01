@@ -70,3 +70,5 @@ def ClassPathStr(Obj):
         return Module.__qualname__ # avoid outputs like 'builtins.str'
     _ClassPathStr = Module + '.' + Class.__qualname__
     return _ClassPathStr
+
+from .system import RunPythonFile, RunPythonScript

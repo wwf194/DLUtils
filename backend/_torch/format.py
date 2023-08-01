@@ -2,6 +2,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 import DLUtils
+
+
 def NullParameter(Shape=(1)):
     return nn.Parameter(torch.empty(Shape))
 def ToTorchTensor(Data, Device=None):

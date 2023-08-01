@@ -140,6 +140,22 @@ from io import StringIO, BytesIO, TextIOWrapper
 StdOut = sys.stdout
 PrintBuf = StringIO()
 Write2StdOut = None
+def SetFileStrOut(FilePath):
+    DLUtils.file.StandardizeFilePath(FilePath)
+    global FileStrOut
+    FileStrOut = open(FilePath, "w")
+    SetStdOut(FileStrOut)
+    
+def CloseFileStrOut(FileStrOut=None):
+    ResetStdOut()
+    if FileStrOut is None:
+        try:
+            FileStrOut.close()
+        except Exception:
+            pass
+    else:
+        FileStrOut.close()
+
 def SetStdOut(_StdOut):
     global StdOut
     StdOut = _StdOut

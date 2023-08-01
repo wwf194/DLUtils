@@ -12,20 +12,12 @@ def NpArrayStatistics(data, verbose=False):
     return DataStat
 NpArrayStat = NpStatistics = NpArrayStatistics
 
-def TorchTrainParamStat(tensor, verbose=False, ReturnType="PyObj"):
-    statistics = {
-        "Min": torch.min(tensor).item(),
-        "Max": torch.max(tensor).item(),
-        "Mean": torch.mean(tensor).item(),
-        "Std": torch.std(tensor).item(),
-        "Var": torch.var(tensor).item()
-    }
-    if ReturnType in ["Dict"]:
-        return statistics
-    elif ReturnType in ["PyObj"]:
-        return DLUtils.PyObj(statistics)
-    else:
-        raise Exception()
+def IsNaN(Num):
+    return math.isnan(Num)
+
+def NanArrayNp(Shape):
+    return np.full(Shape, np.nan)
+NanArray = NanArrayNp
 
 def ShuffleList(List, InPlace=False):
     if InPlace:
@@ -52,6 +44,8 @@ def RandomSelect(List, Num, Repeat=False):
         return list(List)
 RandomSelectFromList = RandomSelect
 
+
+
 def RandomSelectOne(List):
     return RandomSelect(List, 1)[0]
 
@@ -68,6 +62,11 @@ def RandomIntInRange(Left, Right, IncludeRight=False):
     #assert Left <= Right 
     return random.randint(Left, Right)
 
+def SelectSpecificRowsAndColsNp(Data, RowIndexList, ColIndexList):
+    DataRow = Data[RowIndexList, :]
+    DataRowCol = DataRow[ColIndexList]
+    return DataRowCol
+SelectSpecificRowsAndCols = SelectSpecificRowsAndColsNp
 
 def GaussianProbDensity(data, Mean, Std):
     Exponent = - 0.5 * ((data - Mean) / Std) ** 2
@@ -167,7 +166,10 @@ try:
         def RemoveNaNOrInf(data):
             # data: 1D np.ndarray.
             return data[np.isfinite(data)]
-
+    
+        def CalculateZScore(Data):
+            return scipy.stats.zscore(Data)
+    
         def TorchTrainParamtat(tensor, verbose=False, ReturnType="PyObj"):
             statistics = {
                 "Min": torch.min(tensor).item(),

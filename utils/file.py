@@ -150,6 +150,12 @@ def DeleteFileWithFileNamePattern(DirSource, FileNamePattern=None):
                 Num += 1
     return Num
 
+def DeleteFileIfExists(FilePath):
+    FilePath = StandardizeFilePath(FilePath)
+    if _ExistsFile(FilePath):
+        return DeleteFile(FilePath)
+    else:
+        return False
 def MoveFileWithFileNamePattern(DirSource, DirDest, FileNamePattern=None):
     Num = 0
     DirSource = CheckDirExists(DirSource)

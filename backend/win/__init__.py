@@ -24,3 +24,7 @@ else:
                     win32gui.PostMessage(handleWindow, win32con.WM_CLOSE, 0, 0)
                     DLUtils.print("closed window with title %s"%TitleStr)
         win32gui.EnumWindows(winEnumHandler, None)
+
+    def GetStartupFolder(): # startup folder
+        import winshell
+        startup = winshell.startup()

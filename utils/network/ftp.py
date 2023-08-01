@@ -9,15 +9,14 @@ def FTPConnect(Host=None, Port=21):
     FTPSession = FTP()
     # Host: IP Address, or domain.
     if Host is None:
-        Host = "192.168.128.4"
-
-
+        # Host = "192.168.128.4"
+        Host = "wwf-mobile-oneplus"
     # ftp.login() # anonymous login
     FTPSession.dir() # print all folders under current dir.
     FileNmaeList = FTPSession.nlst()
     return
 import DLUtils
-from ...module import AbstractModule
+from DLUtils.module import AbstractModule
 class FTPSession(AbstractModule):
     def Connect(self, Host=None, Port=21):
         Param = self.Param
@@ -46,16 +45,10 @@ class FTPSession(AbstractModule):
             self.Session.login(UserName, PassWord)
         except Exception:
             print("Error during FTP login.")
-        return self
+            return False
+        return True
     def SetPath(self, Path):
         self.PathCurrent = Path
     def ListFiles(self):
         return self.Session.nlst()
     
-    
-def Test():
-    FTPSession().Connect("192.168.128.4").Login("wwf194", "wwf5218340").ListFiles()
-    
-    
-if __name__ == "__main__":
-    Test()

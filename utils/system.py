@@ -54,7 +54,7 @@ def ReportPyTorchInfo():
 import platform
 def IsWindowsSystem():
     return platform.system() in ["Windows"]
-IsWindows = IsWindowsSystem
+IsWin = IsWindows = IsWindowsSystem
 
 def GetSystemType():
     if "win" in sys.platform is not None:
@@ -102,12 +102,18 @@ def Test():
     print(TimeFloat) # 2147451300.0
     DateTimeObj = TimeStamp2DateTimeObj(TimeFloat)
 import locale
+import _thread
 try:
     import chardet
-    def RunPythonScript(FilePath, ArgList=[], PassPID=True):
+    def RunPythonScript(FilePath, ArgList=[], PassPID=True,
+            Async=True, # blocking / synchronous
+            KillChildOnParentExit=False, GetResult=True,
+            Method="os.popen"
+        ):
         FilePath = DLUtils.file.StandardizeFilePath(FilePath)
         # os.system('chcp 65001')
         StrList = ["python -u"]
+            # win: pythonw does not start the process.
         StrList.append("\"" + FilePath + "\"")
         StrList += ArgList
         if PassPID:
@@ -115,37 +121,84 @@ try:
             StrList.append("%d"%DLUtils.system.CurrentProcessID())
         Command = " ".join(StrList)
         ExitCode = 0
-        try:
             # # unrecognized encoding problem
             # OutBytes = subprocess.check_output(
             #     Command, shell=True, stderr=subprocess.STDOUT
             # )
-            Result = subprocess.Popen(Command, stdout=subprocess.PIPE, shell=True)
-            # (OutBytes, ErrBytes) = Result.communicate()
-            OutBytes = Result.stdout.read()
-            # OutBytes = OutStr.encode("utf-8")
-            
-            # ExitCode = os.system(Command)
-            # OutBytes = "None".encode("utf-8")     
-        except subprocess.CalledProcessError as grepexc:                                                                                                   
-            ExitCode = grepexc.returncode
-            # grepexc.output
-        # print(OutBytes.hex())
-        try:
-            # print("try decoding with utf-8")
-            OutStr = OutBytes.decode("utf-8", errors="replace")
-            # Encoding = chardet.detect(OutBytes)['encoding']
-            # print("Encoding:", Encoding)
-            # OutStr = OutBytes.decode(Encoding)
-        except Exception:
-            print("error in decoding OutBytes with %s."%Encode)
-            try:
-                Encode = locale.getdefaultlocale()[1]
-                print("decoding with %s"%Encode)
-                OutStr = OutBytes.decode(Encode)
-            except Exception:
-                OutStr = OutBytes.hex()
-        return OutStr
+        if KillChildOnParentExit:
+            if Async:
+                if Method in ["os.popen", "os"]:
+                    Result = os.popen("start /b cmd /c %s"%Command) # this is async.
+                    print("after os.popen")
+                    return True
+                else:
+                    try:
+                        Result = subprocess.Popen(Command, stdout=subprocess.PIPE,
+                            shell=True,
+                            # preexec_fn=os.setpgrp # not supported on Windows
+                        ) # run aynchronously
+                        # (OutBytes, ErrBytes) = Result.communicate()
+
+                    except subprocess.CalledProcessError as grepexc:                                                                                                   
+                        ExitCode = grepexc.returncode
+                        # grepexc.output
+                    OutBytes = Result.stdout.read()
+                    # OutBytes = OutStr.encode("utf-8")
+                    # ExitCode = os.system(Command)
+                    # OutBytes = "None".encode("utf-8")
+                    
+                    if GetResult:
+                        
+                        # if parent exit, child will also exit.
+                        try:
+                            # print("try decoding with utf-8")
+                            OutStr = OutBytes.decode("utf-8", errors="replace")
+                            # Encoding = chardet.detect(OutBytes)['encoding']
+                            # print("Encoding:", Encoding)
+                            # OutStr = OutBytes.decode(Encoding)
+                        except Exception:
+                            print("error in decoding OutBytes with %s."%Encode)
+                            try:
+                                Encode = locale.getdefaultlocale()[1]
+                                print("decoding with %s"%Encode)
+                                OutStr = OutBytes.decode(Encode)
+                            except Exception:
+                                DLUtils.print("error ")
+                                OutStr = OutBytes.hex()
+                        return OutStr
+            else: # blocking / synchronous
+                # no window created
+                    # win. parent .py script from .bat.
+                    # win. parent .py script from cmd.
+                Result = os.popen("start /b cmd /c %s"%Command) # this is async.
+                # Result = os.popen(Command)
+                # OutStr = Result.read()
+                OutBytes = Result.buffer.read() # blocking. return after child process exit.
+                OutStr = OutBytes.decode("utf-8")
+                a = 1
+        else:
+            if Async: 
+                # def ExecuteCommand(_Command):
+                #     Result = subprocess.run(_Command, stdout=subprocess.PIPE) # subprocess.run is blocking.
+                # try:
+                #     _thread.start_new_thread(ExecuteCommand, 
+                #         (Command,) # ArgList. must be tuple. (xxx) is not a tuple. (xxx,) is a tuple.
+                #     )
+                # except:
+                #     return False
+                # os.system("start /min %s"%Command)
+                try:
+                    Command = "".join(["start /b cmd /c"] + StrList)
+                    DLUtils.print(Command)
+                    Result = os.system(Command)
+                        # call from console. no window.
+                        # call from .bat. window created.
+                except Exception:
+                    DLUtils.print("error.")
+                    DLUtils.system.PrintErrorStack()
+            else:
+                raise NotImplementedError()
+
 
     RunPythonFile = RunPythonScript
 except Exception:
@@ -232,3 +285,5 @@ def ParseCmdArg(*CmdArgItem):
         )
     CmdArg = parser.parse_args()
     return CmdArg
+
+

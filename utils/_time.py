@@ -83,7 +83,14 @@ def TimeStamp2Type(TimeStamp, Type):
         return DLUtils.time.TimeStamp2Str(TimeStamp)
     else:
         raise Exception()
-    
+
+def FileCreateTime(FilePath):
+    FilePath = DLUtils.file.CheckFileExists(FilePath)
+    if DLUtils.system.IsWin():
+        return os.path.getctime(FilePath)
+    else:
+        raise NotImplementedError()
+
 def FolderLastModifiedTime(DirPath, ReturnType="LocalTimeStr"):
     # following operation will update a folder's last modified time:
         # delete child file or folder.

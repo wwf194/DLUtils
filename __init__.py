@@ -7,8 +7,8 @@ from .utils.json import \
     IsListLikePyObj, CheckIsLegalPyName
 import DLUtils.utils.json as json
 
-#from .utils import _1DTo2D
 import DLUtils.utils._param as param
+#from .utils import _1DTo2D
 from .utils._param import \
     Param, param, \
     new_param, NewParam, ToParam, Param2JsonFile, Param2JsonStr
@@ -136,12 +136,11 @@ except Exception:
 PackageFolderPath = DLUtils.file.FolderPathOfFile(__file__)
 
 from DLUtils.utils._string import _print as print
-from DLUtils.utils._string import PrintWithTimeStr
+from DLUtils.utils._string import PrintWithTimeStr, SetStdOut, ResetStdOut, SetFileStrOut, CloseFileStrOut
 try:
     import DLUtils.utils._time as time
 except Exception:
     pass
-from DLUtils.utils._string import PrintWithTimeStr, SetStdOut, ResetStdOut
 from DLUtils.utils.system import NewCmdArg, ParseCmdArg
 
 from DLUtils.backend._torch import NullParameter, ToTorchTensor

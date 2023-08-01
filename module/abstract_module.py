@@ -8,7 +8,7 @@ class AbstractModule(LogComponent):
         self.SubModules = DLUtils.param()
         self.BindModules = DLUtils.param()
         Param = self.Param = DLUtils.Param()
-        Param._CLASS = DLUtils.system.ClassPathStr(self)
+        Param._CLASS = DLUtils.python.ClassPathStr(self)
         Param._PATH = "Root"
         if Log is not None:
             self._Log = Log

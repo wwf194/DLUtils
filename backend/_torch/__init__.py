@@ -63,6 +63,22 @@ def TorchTensorSize(Tensor:torch.Tensor):
     else:
         return Tensor.numel() * torch.iinfo(Tensor.data.dtype).bits
 
+
+def TorchTrainParamStat(tensor, verbose=False, ReturnType="PyObj"):
+    statistics = {
+        "Min": torch.min(tensor).item(),
+        "Max": torch.max(tensor).item(),
+        "Mean": torch.mean(tensor).item(),
+        "Std": torch.std(tensor).item(),
+        "Var": torch.var(tensor).item()
+    }
+    if ReturnType in ["Dict"]:
+        return statistics
+    elif ReturnType in ["PyObj"]:
+        return DLUtils.PyObj(statistics)
+    else:
+        raise Exception()
+
 try:
     from .module import TorchModelWithAdditionalParam2File, File2TorchModelWithAdditionalParam
     from .module import TorchModel2File, File2TorchModel, TorchModelWrapper
