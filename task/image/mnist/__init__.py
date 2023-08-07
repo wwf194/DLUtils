@@ -5,6 +5,18 @@ import numpy as np
 import struct
 from .. import ImageClassificationTask
 
+def CalculateStatistics(DataPath="~/Data/mnist"):
+    Data = MNIST().SetDataPath(DataPath)
+    Stat = {
+        "train": DLUtils.math.NpArrayStat(
+            DLUtils.ToNpArray(Data.Data.Train)
+        ),
+        "test": DLUtils.math.NpArrayStat(
+            DLUtils.ToNpArray(Data.Data.Test)
+        ),
+    }
+    DLUtils.file.JsonDict2JsonFile(Stat, DLUtils.CurrentDirPath(__file__) + "mnist-statistics.jsonc")
+    
 class MNIST(ImageClassificationTask):
     def __init__(self):
         super().__init__()

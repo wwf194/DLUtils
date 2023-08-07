@@ -44,7 +44,6 @@ def AddDimension(Tensor, DimIndex: int):
     return TensorNew
 GetModelTrainParam = GetTorchModelTrainParam
 
-
 def TorchLinearInitWeightBias(InNum, OutNum):
     module = torch.nn.Linear(in_features=InNum, out_features=OutNum, bias=True)
     Dict = dict(module.named_parameters())
