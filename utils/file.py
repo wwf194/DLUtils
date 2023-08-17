@@ -1,11 +1,12 @@
 from ast import Is
 import os
 import re
-import shutil # sh_utils
-import DLUtils
-#from DLUtils.attr import *
 import warnings
-
+import shutil
+import gzip
+#from DLUtils.attr import *
+from pathlib import Path
+import DLUtils
 from DLUtils.utils._param import JsonFile2Param
 
 from ._time import LastModifiedTime
@@ -56,6 +57,23 @@ def FileNameFromPath(FilePath, StripSuffix=False):
         return Name
     else:
         return FileName
+
+def CurrentFileName(__File__, StripSuffix=False):
+    """
+    __File__: __file__ variable of caller script.
+    """
+    return FileNameFromPath(__File__, StripSuffix=StripSuffix)
+
+def CurrentFilePath(__File__, StripSuffix=False):
+    """
+    __File__: __file__ variable of caller script.
+    """
+    FilePath = StandardizeFilePath(__File__)
+    if StripSuffix:
+        Name, Suffix = SeparateFileNameSuffix(FilePath)
+        return Name
+    else:
+        return FilePath
 
 def ToStandardPathStr(PathStr, Type=None):
     if PathStr is None:
@@ -126,12 +144,13 @@ def ListFilePathWithPattern(DirPath, FileNamePattern):
     return FilePathList
 AllFilePathsWithFileNamePattern = ListFileNameWithPattern
 
-def MoveAllFile(DirSource, DirDest):
+def MoveAllFiles(DirSource, DirDest):
     DirSource = DLUtils.file.StandardizeDirPath(DirSource)
     DirDest = DLUtils.file.StandardizeDirPath(DirDest)
     assert DLUtils.file.ExistsDir(DirSource)
     for FileName in ListAllFileNames(DirSource):
         MoveFile(DirSource + FileName, DirDest + FileName)
+MoveAllFile = MoveAllFiles
 
 def DeleteFileWithFileNamePattern(DirSource, FileNamePattern=None):
     DirSource = DLUtils.CheckDirExists(DirSource)
@@ -149,6 +168,7 @@ def DeleteFileWithFileNamePattern(DirSource, FileNamePattern=None):
                 DLUtils.print(f"Deleted file: ({FilePathSource})")
                 Num += 1
     return Num
+DeleteFileWithFilePattern = DeleteFileWithFileNamePattern
 
 def DeleteFileIfExists(FilePath):
     FilePath = StandardizeFilePath(FilePath)
@@ -288,18 +308,16 @@ def DeleteTree(FolderPath, RaiseIfNonExist=False):
     return
 DeleteFolder = DeleteDir = DeleteTree
 
-#from distutils.dir_util import copy_tree
+# from distutils.dir_util import copy_tree
 def CopyFolder(SourceDir, DestDir):
-    assert IsDir(SourceDir)
-    if not DestDir.endswith("/"):
-        DestDir += "/"
+    SourceDir = CheckDirExists(SourceDir)
     CopyTree(SourceDir, DestDir)
-    #shutil.copytree(SourceDir, DestDir) # Requires that DestDir not exists.
+    # shutil.copytree(SourceDir, DestDir) # Requires that DestDir not exists.
 CopyDir2DestDir = CopyFolder2DestDir = CopyFolder
 
 def FolderPathOfFile(FilePath):
-    DirPath = os.path.dirname(os.path.realpath(FilePath)) + "/"
-    return DLUtils.file.StandardizePath(DirPath)
+    DirPath = os.path.dirname(os.path.realpath(FilePath))
+    return DLUtils.file.StandardizeDirPath(DirPath)
 DirPathOfFile = ParentFolderPath = FolderPathOfFile
 CurrentDirPath = DirPathOfCurrentFile = FolderPathOfFile
 
@@ -310,14 +328,7 @@ def DirPathFromFilePath(FilePath):
     return StandardizeDirPath(Name)
 DirPathFromFileName = DirPathFromFilePath
 
-def CurrentFilePath(FilePath):
-    # FilePath: __file__ variable of caller .py file.
-    return DLUtils.StandardizePath(FilePath)
 
-def CurrentFileName(FilePath):
-    return FileNameFromPath(FilePath)
-
-from pathlib import Path
 
 def FolderPathOfFolder(FilePath):
     Path = Path(FilePath)
@@ -489,9 +500,7 @@ CheckDirExists = CheckFolderExists
 def Path2AbsolutePath(Path):
     return os.path.abspath(Path)
 
-def EnsureDirectory(DirPath):
-    #DirPathAbs = Path2AbsolutePath(DirPath)
-    DirPath = StandardizeDirPath(DirPath)
+def _EnsureDirectory(DirPath):
     if os.path.exists(DirPath):
         if not os.path.isdir(DirPath):
             raise Exception("%s already exists but is NOT a directory."%DirPath)
@@ -500,8 +509,13 @@ def EnsureDirectory(DirPath):
             DirPath += "/"
         os.makedirs(DirPath)
     return DirPath
-EnsureDir = EnsureDirectory
-EnsureFolder = EnsureDirectory
+_EnsureDir = _EnsureFolder = _EnsureDirectory
+
+def EnsureDirectory(DirPath):
+    #DirPathAbs = Path2AbsolutePath(DirPath)
+    DirPath = StandardizeDirPath(DirPath)
+    return _EnsureDirectory(DirPath)
+EnsureDir = EnsureFolder = EnsureDirectory
 
 def EnsureFileDirectory(FilePath):
     assert not FilePath.endswith("/"), FilePath
@@ -510,6 +524,12 @@ def EnsureFileDirectory(FilePath):
     EnsureDir(DirPath)
     return FilePath
 EnsureFileDir = EnsureFileDirectory
+
+def _EnsureFileDirectory(FilePath):
+    DirPath = DirPathOfFile(FilePath)
+    _EnsureDir(DirPath)
+    return FilePath
+_EnsureFileDir = _EnsureFileDirectory
 
 def GetFileDir(FilePath):
     assert DLUtils.file.IsFile(FilePath)
@@ -648,14 +668,19 @@ def AppendSuffix2FileName(FileName, Suffix):
         return Name + Suffix
     else:
         return Name + Suffix + "." + _Suffix
-
 AppendSuffixOnFileName = AppendSuffix2FileName
 
 def AppendSuffixOnCurrentFileName(__File__, Suffix):
-    FilePath = CurrentFilePath(__File__)
+    FilePath = StandardizeFilePath(__File__)
     return AppendSuffixOnFileName(FilePath, Suffix)
-
 AppendOnCurrentFileName = AppendSuffixOnCurrentFileName
+
+def AppendOnFileNameAndChangeSuffix(FilePath, Append, Suffix):
+    FilePath = StandardizeFilePath(FilePath)
+    Name, _Suffix = SeparateFileNameSuffix(FilePath)
+    Suffix = Suffix.lstrip(".")
+    return Name + Append + "." + Suffix
+AppendOnCurrentFileNameAndChangeSuffix = AppendOnFileNameAndChangeSuffix
 
 def SeparateFileNameSuffix(FilePath):
     if FilePath.endswith("/"):
@@ -668,23 +693,18 @@ def SeparateFileNameSuffix(FilePath):
     # to be checked
     # for filename with multiple '.', such as a.b.c, (a.b, c) should be returned
 
-def AppendOnCurrentFileNameAndChangeSuffix(__File__, Append, Suffix):
-    FilePath = CurrentFilePath(__File__)
-    Name, _Suffix = SeparateFileNameSuffix(FilePath)
-    Suffix = Suffix.lstrip(".")
-    return Name + Append + "." + Suffix
-
 def ChangeFileNameSuffix(FileName, Suffix):
     Name, _Suffix = SeparateFileNameSuffix(FileName)
     Suffix = Suffix.lstrip(".")
     return Name + "." + Suffix
+ParseFileNameSuffix = SeparateFileNameSuffix
 
 def ChangeFileDirPath(FilePath, DirPath):
     DirPath = StandardizeDirPath(DirPath)
     return DirPath + FileNameFromPath(FilePath)
 
 ChangeCurrentFileNameSuffix = ChangeNameSuffix = ChangeFileNameSuffix
-ParseFileNameSuffix = SeparateFileNameSuffix
+
 
 def AddSuffixToFileWithFormat(FilePath, Suffix):
     _FilePath, Format = ParseFileNameSuffix(FilePath)
@@ -1150,8 +1170,7 @@ def CheckIntegrity(FolderPath, Config, RaiseException=True):
             FolderNodeList.append(SubFolderPath)
     return True
 
-import gzip
-import shutil
+
 def ExtractGzFile(FilePath, ExtractFilePath=None):
     # file -> file
     if ExtractFilePath is None:

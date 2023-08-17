@@ -38,6 +38,7 @@ import DLUtils.utils.parse as parse
 import DLUtils.utils.file as file
 import DLUtils.utils.func as function
 import DLUtils.utils.math as math
+
 try:
     import DLUtils.utils.plot as plot
 except Exception:
@@ -45,7 +46,9 @@ except Exception:
 
 import DLUtils.utils.__struct__ as struct
 import DLUtils.utils.system as system
+
 import DLUtils.utils.sql as sql
+import DLUtils.utils.sql.sqlite as sqlite
 import DLUtils.utils.python as python
 from .utils.__struct__ import FixedSizeQueuePassiveOutInt, FixedSizeQueuePassiveOutFloat
 try:
@@ -112,7 +115,7 @@ try:
 except Exception:
     pass
 try:
-    from DLUtils.plot import \
+    from DLUtils.utils.plot import \
         NpArray2ImageFile, \
         Tensor2ImageFile
 except Exception:
@@ -120,7 +123,7 @@ except Exception:
 from DLUtils.utils.func import \
     EmptyFunction
 from DLUtils.utils.file import ParseSavePath
-import DLUtils.utils.system as system
+
 
 try:
     import DLUtils.example as example
@@ -136,11 +139,16 @@ except Exception:
 PackageFolderPath = DLUtils.file.FolderPathOfFile(__file__)
 
 from DLUtils.utils._string import _print as print
-from DLUtils.utils._string import PrintWithTimeStr, SetStdOut, ResetStdOut, SetFileStrOut, CloseFileStrOut
+from DLUtils.utils._string import \
+    SetStdOut, OutputTo, Output2, ResetStdOut, \
+    SetFileStrOut, CloseFileStrOut, \
+    Print2StdErr, PrintHeartBeatTo, \
+    PrintTo, PrintUTF8To, \
+    PrintTimeStrTo, PrintTimeStr2, PrintCurrentTimeTo, PrintPIDTo, PrintWithTimeStr
 try:
     import DLUtils.utils._time as time
 except Exception:
     pass
-from DLUtils.utils.system import NewCmdArg, ParseCmdArg
+from DLUtils.utils.system import NewCmdArg, ParseCmdArg, ErrorStackStr, PrintErrorStackTo
 
 from DLUtils.backend._torch import NullParameter, ToTorchTensor

@@ -108,3 +108,36 @@ def NpArray2TextFile(Data, SavePath, **Dict):
         NpArray2D2TextFile(Data, SavePath=SavePath, **Dict)
     else:
         raise Exception()
+
+def Int201String(Int, _0bPrefix=False, LeadingZero=False, Length=None):
+    Pattern = []
+    if _0bPrefix:
+        Pattern.append("#")
+    if LeadingZero:
+        Pattern.append("0")
+    if Length is not None:
+        Pattern.append(str(Length))
+    Pattern = "".join(Pattern)
+    if Length is None:
+        return format(Int, Pattern)
+    
+    # return "{0:b}".format(Int)
+IntTo01String = Int201String
+
+def String012Int(String, MostSignificantBit="Right", BigEndian=False):
+    Int = 0
+    DLUtils.RemovePrefix(String, "0b", MustMatch=False)
+    if MostSignificantBit in ["big", "Big"] or BigEndian:
+        Base = 1
+        for Index in len(String):
+            if String[Index] == "0":
+                pass
+            elif String["Index"] == "1":
+                Int += Base
+            else:
+                raise Exception()
+            Base *= 2
+    else:
+        raise NotImplementedError()
+
+String01ToInt = String012Int

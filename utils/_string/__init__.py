@@ -16,10 +16,13 @@ def RStrip(Str, Suffix):
     else:
         return str(Str)
 
-def HasSuffix(Str, Suffix):
+def HasSuffix(Str, Suffix: str):
+    if Suffix.startswith("."):
+        Suffix = Suffix.lstrip(".")
     MatchPattern = re.compile(r'(.*)%s'%Suffix)
     MatchResult = MatchPattern.match(Str)
-    return MatchResult is None
+    _HasSuffix = MatchResult is not None
+    return _HasSuffix
 
 def RemoveSuffixIfExist(Str, Suffix):
     MatchPattern = re.compile(rf'(.*)%s'%Suffix)
@@ -31,13 +34,25 @@ def RemoveSuffixIfExist(Str, Suffix):
     
 RemoveStrSuffixIfExist = RemoveSuffixIfExist    
 
+def RemovePrefix(Str, Prefix:str, MustMatch=False):
+    MatchPattern = re.compile(rf'%s(.*)'%Prefix)
+    MatchResult = MatchPattern.match(Str)
+    if MatchResult is None:
+        if MustMatch:
+            raise Exception('%s does not have suffix %s'%(Str, Prefix))
+            # return None
+        else:
+            return Str
+    else:
+        return MatchResult.group(1)
+
 def RemoveSuffix(Str, Suffix, MustMatch=True):
     MatchPattern = re.compile(rf'(.*)%s'%Suffix)
     MatchResult = MatchPattern.match(Str)
     if MatchResult is None:
         if MustMatch:
-            #raise Exception('%s does not have suffix %s'%(Str, Suffix))
-            return None
+            raise Exception('%s does not have suffix %s'%(Str, Suffix))
+            # return None
         else:
             return Str
     else:
@@ -156,9 +171,11 @@ def CloseFileStrOut(FileStrOut=None):
     else:
         FileStrOut.close()
 
-def SetStdOut(_StdOut):
+def SetStdOut(Pipe):
+    sys.stdout = Pipe
     global StdOut
-    StdOut = _StdOut
+    StdOut = Pipe
+
     global Write2StdOut, WriteBytes2StdOut, WriteStr2StdOut
     if hasattr(StdOut, "buffer"):
         WriteBytes2StdOut = lambda StdOut, Bytes: StdOut.buffer.write(Bytes)
@@ -166,7 +183,15 @@ def SetStdOut(_StdOut):
     else:
         WriteBytes2StdOut = lambda StdOut, Bytes: StdOut.write(Bytes)
         WriteStr2StdOut = lambda StdOut, Str: StdOut.write(Str.decode("utf-8"))
-    
+Output2 = OutputTo = SetStdOut
+
+def SetStdErrOut(Pipe):
+    SetStdOut(Pipe)
+    sys.stderr = Pipe
+
+def Print2StdErr(*List, **Dict):
+    print(*List, file=sys.stderr, **Dict)
+
 def ResetStdOut():
     global StdOut
     StdOut = sys.__stdout__
@@ -179,6 +204,66 @@ def ResetStdOut():
         WriteStr2StdOut = lambda StdOut, Str: StdOut.write(Str)
         
 ResetStdOut()
+
+def PrintStr2Pipe(Pipe, Str, Indent=None, Flush=True):
+    if Indent is not None:
+        if Str.endswith("\n"):
+            IsEndWithNewLine = True
+            Str = Str.rstrip("\n")
+        else:
+            IsEndWithNewLine = False
+        StrList = Str.split("\n")
+        for Index, Line in enumerate(StrList):
+            StrList[Index] = "".join(["\t" for _ in range(Indent)] + [Line])
+        Str = "\n".join(StrList)
+        if IsEndWithNewLine:
+            Str = Str + "\n"
+    if hasattr(Pipe, "buffer"):
+        Pipe.buffer.write(Str.encode("utf-8"))
+    else:
+        Pipe.write(Str)
+    if Flush and hasattr(Pipe, "flush"):
+        Pipe.flush()
+
+
+
+def PrintPIDTo(Pipe, Indent=None):
+    Str = "PID: " + str(DLUtils.system.CurrentPID()) + "\n"
+    PrintStr2Pipe(Pipe, Str, Indent=Indent)
+
+def PrintCurrentTimeTo(Pipe, Indent=None, Format=None, Prefix="Time: "):
+    TimeStr = DLUtils.time.CurrentTimeStr(Format=Format) + "\n"
+    if Prefix is not None:
+        TimeStr = Prefix + TimeStr
+    PrintStr2Pipe(Pipe, TimeStr, Indent=Indent)
+
+PrintTimeStrTo = PrintTimeStr2 = PrintCurrentTimeTo
+PrintCurrentTimeStrTo = PrintCurrentTimeTo = PrintCurrentTime2 = PrintCurrentTimeTo
+
+import time
+def PrintHeartBeatTo(Pipe, Indent=None):
+    Count = 0
+    _Indent = Indent
+    while True:
+        if Count % 10 == 9:
+            End = "\n"
+            PrintUTF8To(Pipe, str(Count), end=End, Indent=_Indent)
+            _Indent = Indent
+        elif Count:
+            End = " "
+            PrintUTF8To(Pipe, str(Count), end=End, Indent=_Indent)
+            _Indent = None
+        Count += 1
+        time.sleep(1.0)
+
+def PrintUTF8To(Pipe, *List, Indent=None, **Dict):
+    PrintBuf.seek(0)
+    PrintBuf.truncate(0)
+    print(*List, **Dict, file=PrintBuf)
+    Str = PrintBuf.getvalue()
+    PrintBuf.flush()
+    PrintStr2Pipe(Pipe, Str, Indent=Indent)
+PrintTo = PrintUTF8To
 
 def _print(*List, Encoding="utf-8", Indent=None, **Dict):
     PrintBuf.seek(0)

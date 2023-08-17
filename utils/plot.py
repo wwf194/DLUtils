@@ -3,6 +3,7 @@ import scipy
 import cv2 as cv
 import math
 import matplotlib as mpl
+mpl.use('TkAgg',force=True)
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from matplotlib.patches import Rectangle

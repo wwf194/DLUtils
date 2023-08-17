@@ -3,20 +3,31 @@ from PIL import Image as Im
 
 import DLUtils
 
-def ImageFile2Jpg(FilePath, SavePath):
+def ImageFile2Jpg(FilePath, SavePath=None):
     FilePath = DLUtils.CheckFileExists(FilePath)
-    im = Im.open(s).convert("RGB")
-    im.save(str(format(i, "04"))+".jpg", "jpeg", quality=1)
+    Image = Im.open(FilePath).convert("RGB")
+    if SavePath is None:
+        SavePath = DLUtils.file.ChangeFileNameSuffix(FilePath, ".jpg")
+    SavePath = DLUtils.EnsureFileDir(SavePath)
+    Image.save(SavePath, "jpeg",
+        # subsampling=0,
+        quality=50
+    )
+    return SavePath
  
+ToJPGFile = ToJpgFile = ToJpg = ToJPG = ImageFile2Jpg
+
 def ImageFile2PNG(FilePath, SavePath=None):
     FilePath = DLUtils.CheckFileExists(FilePath)
     Image = Im.open(FilePath).convert("RGB")
     
     if SavePath is None:
-        SavePath = DLUtils.file.ChangeFileNameSuffix(".png")
-    SavePath = DLUtils.EnsureFIleDir(SavePath)
-    Image.save(str(format(SavePath, "04"))+".png", "png")
+        SavePath = DLUtils.file.ChangeFileNameSuffix(FilePath, ".png")
+    SavePath = DLUtils.EnsureFileDir(SavePath)
+    Image.save(SavePath, "png")
  
+ToPNGFile = ToPNG = ImageFile2PNG
+
 def ImageFile2Webp(FilePath, SavePath):
     FilePath = DLUtils.CheckFileExists(FilePath)
     Image = Im.open(FilePath).convert("RGB")

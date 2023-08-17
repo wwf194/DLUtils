@@ -16,7 +16,6 @@ def GenerateBlackImageInt16(Height=512, Width=512, ChannelNum=3):
 def GenerateSingleColorImage(Height, Width, Color, ChannelNum, DataType):
     DataType = DLUtils.ParseDataTypeNp(DataType)
 
-
 def TextOnImageCenter(Image, Text="Text", Color=(0, 0, 0)):
     Height, Width = Image.shape[0], Image.shape[1]
     TextWidthMax = round(Width * 0.5)
@@ -95,6 +94,9 @@ def ImageFile2NpArray(FilePath):
 def ImageUInt2Float(Image):
     return Image / 255.0
 
-from .transform import ImageFile2Jpg, ImageFile2PNG, ImageFile2Webp
+from .transform import \
+    ImageFile2Jpg, ToJPGFile, ToJpgFile, ToJpg, ToJPG, \
+    ImageFile2PNG, ToPNG, ToPNGFile, \
+    ImageFile2Webp \
 
 JPG2NpArray = Jpeg2NpArray = Jpg2NpArray = ImageFile2NpArray

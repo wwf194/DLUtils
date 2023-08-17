@@ -2,6 +2,7 @@ import math
 import cmath
 import numpy as np
 import matplotlib as mpl
+mpl.use('TkAgg',force=True)
 from matplotlib import pyplot as plt
 
 T = np.array([[0, -1], [1, 0]])

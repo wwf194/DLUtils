@@ -1,5 +1,6 @@
 import DLUtils
 import random
+import os
 
 def NpArrayStatistics(data, verbose=False):
     DataStat = DLUtils.param({
@@ -27,6 +28,9 @@ def ShuffleList(List, InPlace=False):
 
     random.shuffle(_List)
     return _List
+
+def RandomByteArray(Num):
+    return bytearray(os.urandom(Num))
 
 def RandomSelect(List, Num, Repeat=False):
     if Repeat:
