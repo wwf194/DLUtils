@@ -1222,6 +1222,20 @@ def GetAxRowColNum(axes):
     else:
         return 1, 1
         # raise Exception()
+
+def GetAxNum(axes):    
+    RolNum, ColNum = GetAxRowColNum(axes)
+    return RolNum * ColNum
+
+def ClearUnusedAx(axes, PlotNum):
+    AxNum = GetAxNum(axes)
+    for AxIndex in range(PlotNum, AxNum):
+        Ax = GetAx(axes, AxIndex)
+        Ax.axis("off")
+
+def ClearAllAx(axes):
+    ClearUnusedAx(axes, PlotNum=0)
+
 def GetAx(axes, Index=None, RowIndex=None, ColIndex=None):
     RowNum, ColNum = GetAxRowColNum(axes)
 
@@ -1292,7 +1306,7 @@ def PlotMultiLineChart(
     ):
     if ax is None:
         fig, ax = CreateFigurePlt()
-
+    assert XsList is not None and YsList is not None
     Index = 0
     LineNum = len(XsList)
     if ColorList is None:

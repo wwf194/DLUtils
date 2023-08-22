@@ -267,6 +267,7 @@ def PrintErrorStack():
 
 def ErrorStackStr():
     return traceback.format_exc()
+ErrorStack = ErrorStackStr
 
 def ExcStack2File(File):
     traceback.format_exc()

@@ -51,6 +51,7 @@ def AfterTrainModelFile(SaveDir):
     return MostRecentlyModified([SaveDir + FileName for FileName in List])
 
 def FileNameFromPath(FilePath, StripSuffix=False):
+    assert not FilePath.endswith("/")
     FileName = os.path.basename(FilePath)
     if StripSuffix:
         Name, Suffix = SeparateFileNameSuffix(FilePath)
@@ -74,6 +75,12 @@ def CurrentFilePath(__File__, StripSuffix=False):
         return Name
     else:
         return FilePath
+def DirNameFromDirPath(DirPath: str):
+    if DirPath.endswith("/"):
+        DirPath = DirPath.rstrip("/")
+    return FileNameFromPath(DirPath)
+
+DirNameFromPath = DirNameFromDirPath
 
 def ToStandardPathStr(PathStr, Type=None):
     if PathStr is None:
@@ -351,9 +358,17 @@ def RemoveFileIfExists(FilePath):
         os.remove(FilePath)
 
 def RemoveDir(DirPath):
-    assert ExistsDir(DirPath)
+    DirPath = StandardizeDirPath(DirPath)
+    assert _ExistsDir(DirPath)
     shutil.rmtree(DirPath)
     return
+DeleteDir = RemoveDir
+
+def RemoveDirIfExists(DirPath):
+    DirPath = StandardizeDirPath(DirPath)
+    if _ExistsDir(DirPath):
+        shutil.rmtree(DirPath)
+DeleteDirIfExists = RemoveDirIfExists
 
 def ClearDir(DirPath):
     if ExistsDir(DirPath):
@@ -759,31 +774,19 @@ def RenameDir(FolderPath, FolderNameNew):
 RennameFolder = RenameDir
 
 def RenameDirIfExists(DirPath):
-    DirPath = DirPath.rstrip("/")
-    MatchResult = re.match(r"^(.*)-(\d+)$", DirPath)
-    Sig = True
-    if MatchResult is None:
-        if ExistsPath(DirPath):
-            #os.rename(DirPath, DirPath + "-0") # os.rename can apply to both folders and files.
-            shutil.move(DirPath, DirPath + "-0")
-            DirPathOrigin = DirPath
-            Index = 1
-        elif ExistsPath(DirPath + "-0"):
-            DirPathOrigin = DirPath
-            Index = 1
-        else:
-            Sig = False
-    else:
-        DirPathOrigin = MatchResult.group(1)
-        Index = int(MatchResult.group(2)) + 1
-    if Sig:
+    DirPath = StandardizeDirPath(DirPath)
+    _DirPath = DirPath.rstrip("/")
+    if _ExistsDir(_DirPath + "-0/"):
+        Index = 1
         while True:
-            DirPath = DirPathOrigin + "-%d"%Index
-            if not ExistsPath(DirPath):
-                break
-            Index += 1
-    DirPath += "/"
-    return DirPath
+            DirPathTry = _DirPath + "-%d/"%Index
+            if _ExistsDir(DirPathTry):
+                Index += 1
+                continue
+            else:
+                return DirPathTry
+    else:
+        return DirPath
 
 def Str2File(Str, FilePath):
     DLUtils.EnsureFileDir(FilePath)
@@ -875,7 +878,7 @@ def Size2Str(SizeB, Base=1024):
         SizeGB = "%.2f GB"%(SizeB * 1.0 / GB)
     else:
         return "%.2f MB"%(SizeMB)
-    return "%.2f MB"%(SizeGB)
+    return SizeGB
 
 def FileSizeStr(FilePath):
     Bytes = FileSizeInBytes(FilePath)

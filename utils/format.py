@@ -141,3 +141,12 @@ def String012Int(String, MostSignificantBit="Right", BigEndian=False):
         raise NotImplementedError()
 
 String01ToInt = String012Int
+def Curve2TextFile(Dict, SavePath):
+    Index = 0
+    ColName = []
+    ValueList = []
+    for Key, Value in Dict.items():
+        ValueList.append(Value)
+        ColName.append(Key)    
+    Data = np.array(ValueList).transpose(1, 0)
+    NpArray2D2TextFile(Data, ColName, SavePath=SavePath)

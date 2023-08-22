@@ -112,7 +112,9 @@ GetDataSetPath = GetDatasetPath = GetDataPath
 import DLUtils.task.image.mnist as mnist
 import DLUtils.task.image.cifar10 as cifar10
 import DLUtils.task.image.imagenet as imagenet
+import DLUtils.task.image.mscoco as mscoco
 
 from .mnist import MNIST
 from .cifar10 import CIFAR10
 from .imagenet import ImageNet1k
+# from .mscoco import MSCOCO

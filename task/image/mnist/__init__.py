@@ -5,17 +5,20 @@ import numpy as np
 import struct
 from .. import ImageClassificationTask
 
-def CalculateStatistics(DataPath="~/Data/mnist"):
-    Data = MNIST().SetDataPath(DataPath)
+def CalculateStatistics(DataPath="~/Data/mnist", SavePath=None):
+    Dataset = MNIST().SetDataPath(DataPath).Init()
     Stat = {
-        "train": DLUtils.math.NpArrayStat(
-            DLUtils.ToNpArray(Data.Data.Train)
+        "Train": DLUtils.math.NpArrayStat(
+            DLUtils.ToNpArray(Dataset.Data.Train.Image) / 255.0
         ),
-        "test": DLUtils.math.NpArrayStat(
-            DLUtils.ToNpArray(Data.Data.Test)
+        "Validation": DLUtils.math.NpArrayStat(
+            DLUtils.ToNpArray(Dataset.Data.Validation.Image) / 255.0
         ),
     }
-    DLUtils.file.JsonDict2JsonFile(Stat, DLUtils.CurrentDirPath(__file__) + "mnist-statistics.jsonc")
+    
+    if SavePath is None:
+        SavePath = DLUtils.CurrentDirPath(__file__) + "mnist-statistics.jsonc"
+    DLUtils.file.JsonDict2JsonFile(Stat, SavePath)
     
 class MNIST(ImageClassificationTask):
     def __init__(self):
@@ -91,6 +94,10 @@ class MNIST(ImageClassificationTask):
         return self
     def AllTrainData(self):
         return DLUtils.param(self.Data.Train)
+    def Init(self, IsSuper=False, IsRoot=True):
+        if not hasattr(self, "Data"):
+            self.Data = LoadDataSet(self.DataPath)
+        return super().Init(IsSuper=True, IsRoot=IsRoot)
 
 def LoadImage(file_name):
     # 在读取或写入一个文件之前，你必须使用 Python 内置open()函数来打开它.
@@ -136,7 +143,8 @@ def LoadLabel(file_name):
     labels = labels.astype(np.uint8)
     return labels
 
-def ExtractImage(Data, IndexList=None, PlotNum=10, SavePath="./"):
+def DatasetImage2File(Data, IndexList=None, PlotNum=10, SavePath="./"):
+    SavePath = DLUtils.StandardizeDirPath(SavePath)
     if IndexList is None:
         IndexList = DLUtils.MultipleRandomIntInRange(0, 70000, PlotNum)
     for Index in IndexList:
@@ -166,7 +174,7 @@ class DataFetcher(torch.utils.data.Dataset, AbstractModule):
         self.Log(f"change device to {Device}")
         return self
     def __getitem__(self, Index):
-        #Image = torch.from_numpy(self.Image[Index]).to(self.Device)
+        #Image = torch.from_numpy(seexamplelf.Image[Index]).to(self.Device)
         #Label = torch.from_numpy(self.Label[Index]).to(self.Device)
         Image = self.Image[Index]
         Label = self.Label[Index]
@@ -225,7 +233,7 @@ def ExtractDataSet(Path, MoveCompressedFile2ExtractFolder=True):
                 assert DLUtils.FolderExists(FolderPath)
             else:
                 raise Exception()
-
+    FolderPath = DLUtils.StandardizeFolderPath(FolderPath)
     for FileName in DLUtils.ListAllFiles(FolderPath):
         # if files in folder is gz file.
         # uncompress them to files with same name, without gz suffix.
@@ -258,5 +266,5 @@ def LoadDataSet(FolderPath, PlotExampleImage=True):
         DLUtils.file.EnsureDir(ExampleDir)
         if DLUtils.file.ExistsDir(ExampleDir) \
             and len(DLUtils.file.ListAllFiles(ExampleDir)) < 10:
-                ExtractImage(Data=Data, SavePath=ExampleDir)
+                DatasetImage2File(Data=Data, SavePath=ExampleDir)
     return Data

@@ -686,7 +686,7 @@ except Exception:
     pass
 
 def MultipleRandomIntInRange(Left, Right, Num, IncludeRight=False):
-    if not IncludeRight:
+    if IncludeRight:
         Right += 1
     return RandomSelect(range(Left, Right), Num)
 

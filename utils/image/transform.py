@@ -41,3 +41,8 @@ ImageFile2webp = ImageFile2Webp
 # for file in files:
 #     cnvt2png(file, i)
 #     i += 1
+
+try:
+    import torchvision
+except Exception:
+    pass

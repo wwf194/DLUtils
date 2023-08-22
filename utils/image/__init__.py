@@ -2,7 +2,8 @@ import DLUtils
 import cv2
 import numpy as np
 import DLUtils.utils.image.compress as compress
-from .compress import File2Image, Image2File, ImageNp2File, ResizeImage
+from .compress import File2Image, Image2File, ImageNp2File, ResizeImage, \
+    ImageFloat012NpFile, ImageFloat01ToNpFile
 
 def GenerateBlackImage(Height=512, Width=512, ChannelNum=3):
     assert 1<= ChannelNum <= 4
@@ -54,7 +55,6 @@ def TextOnImageCenter(Image, Text="Text", Color=(0, 0, 0)):
 def TextOnImageCv(Image, Text="Text", XYLeftBottom=None, Color=(0, 0, 0), Scale=1.0):
     if XYLeftBottom is None:
         XYLeftBottom = (0, Image.shape[0])
-
     cv2.putText(
         img=Image,
         text=Text,
@@ -80,16 +80,21 @@ def ImageFile2JpgImageFile(FilePath, Verbose=True):
 File2JpgFile = ImageFile2JpgFile = ImageFile2JpgImageFile
 
 from matplotlib import pyplot as plt
-def ImageFile2NpArray(FilePath):
+from PIL import Image as Im
+def ImageFile2NpArrayFloat01(FilePath):
     FilePath = DLUtils.StandardizeFilePath(FilePath)
     assert DLUtils.file.FileExists(FilePath)
-    Image = plt.imread(FilePath)
+    # Image = plt.imread(FilePath)
+
     # data type: float. value range: [0.0, 1.0]
     # Image = cv2.cv.LoadImage(FilePath)
+    ImagePIL = Im.open(FilePath)
+    Image = np.asarray(ImagePIL) / 255.0
     if Image is not None: # some error occurs:
         return Image
-    Image = cv2.imread(FilePath)
+    # Image = cv2.imread(FilePath)
     return Image
+ImageFile2NpArray = ImageFile2NpArrayFloat01
 
 def ImageUInt2Float(Image):
     return Image / 255.0
@@ -97,6 +102,16 @@ def ImageUInt2Float(Image):
 from .transform import \
     ImageFile2Jpg, ToJPGFile, ToJpgFile, ToJpg, ToJPG, \
     ImageFile2PNG, ToPNG, ToPNGFile, \
-    ImageFile2Webp \
+    ImageFile2Webp
+def LoadTestImage(Name="lenna"):
+    if Name in ["lenna"]:
+        Image = ImageFile2NpArrayFloat01(
+            DLUtils.CurrentDirPath(__file__) + "test-image-lenna.png"
+        )
+        return Image
+    else:
+        raise Exception()
+
+from .transform import ImageFile2Jpg, ImageFile2PNG, ImageFile2Webp
 
 JPG2NpArray = Jpeg2NpArray = Jpg2NpArray = ImageFile2NpArray

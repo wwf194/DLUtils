@@ -37,10 +37,7 @@ def RandomSelect(List, Num, Repeat=False):
         return RandomSelectFromListWithReplacement(List, Num)
     
     if isinstance(List, int):
-        Num = List
-        List = range(Num)
-    else:
-        Num = DLUtils.GetLength(List)
+        List = range(List)
 
     if len(List) > Num:
         return random.sample(List, Num)

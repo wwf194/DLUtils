@@ -58,9 +58,9 @@ def File2Image(FilePath):
         return None
     return ImageCv
 
-def ImageNp2File(Image, FilePath, Format=None):
+def ImageNp2FileCv(Image, FilePath, Format=None):
     # ImageData: np.ndarray
-    FilePath = DLUtils.StandardizePath(FilePath)
+    FilePath = DLUtils.EnsureFileDir(FilePath)
     # Result = cv2.imwrite(FilePath, Image)
     # cv2.imwrite might have problem when FilePath contains unicode characters.
     
@@ -77,12 +77,21 @@ def ImageNp2File(Image, FilePath, Format=None):
 
     # convert to jpeg and save in variable
     ImageBytes = cv2.imencode("." + Format, Image)[1].tobytes()
-
+        # note cv2 uses bgr not rgb.
     with open(FilePath, 'wb') as f:
         f.write(ImageBytes)
     return True
 
-Image2File = ImageNp2File
+from PIL import Image as Im
+def ImageUnit82FilePIL(Image, FilePath):
+    FilePath = DLUtils.EnsureFileDir(FilePath)
+    ImagePIL = Im.fromarray(Image)
+    ImagePIL.save(FilePath)
+Image2File = ImageNp2File = ImageNp2FilePIL = ImageUnit8ToFilePIL = ImageUnit82FilePIL
+
+def ImageFloat012NpFile(Image, FilePath):
+    return ImageNp2File((Image * 255.0).astype(np.uint8), FilePath)
+ImageFloat01ToNpFile = ImageFloat012NpFile
 
 def Test():
     ImageFilePath = DLUtils.file.DirPathOfFile(__file__) + "test-image-lenna.png"

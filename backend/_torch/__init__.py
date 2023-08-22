@@ -51,6 +51,7 @@ def TorchLinearInitWeightBias(InNum, OutNum):
     Bias = Dict["bias"] # (OutNum, InNum)
     Weight = DLUtils.ToNpArray(Weight)
     Bias = DLUtils.ToNpArray(Bias)
+    Weight = Weight.transpose(1, 0)
     return DLUtils.ToTorchTensor(Weight), DLUtils.ToTorchTensor(Bias)
 
 def TorchTensorElementNum(Tensor:torch.Tensor):
