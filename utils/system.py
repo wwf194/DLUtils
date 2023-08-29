@@ -99,189 +99,192 @@ def Stack2File(FilePath):
     traceback.print_exc(file=open(FilePath, "w"))
 
 import locale
-try:
-    import chardet
-except Exception:
-    warnings.warn("lib chardet not found")
-else:
-    def RunPythonScript(FilePath, ArgList=[], PassPID=True,
-            Async=False, # blocking / synchronous
-            KillChildOnParentExit=True, GetResult=False,
-            Method="subprocess", StandardizeFilePath=False
-        ):
-        if StandardizeFilePath:
-            FilePath = DLUtils.file.StandardizeFilePath(FilePath)
-        # os.system('chcp 65001')
-        StrList = ["python.exe", "-u"]
-            # win: pythonw does not start the process.
-        StrList.append("\"" + FilePath + "\"")
-        StrList += ArgList
-        if PassPID:
-            PIDList = ["--parent-pid", "%d"%DLUtils.system.CurrentProcessID()]
-            StrList += PIDList
-        else:
-            PIDList = []
-        Command = " ".join(StrList)
-        CommandList = ["python.exe", "-u", FilePath] + PIDList
-        ExitCode = 0
-            # # unrecognized encoding problem
-            # OutBytes = subprocess.check_output(
-            #     Command, shell=True, stderr=subprocess.STDOUT
-            # )
-        if KillChildOnParentExit:
-            if Async: # non-blocking / asynchronous. kill child when parent exit.
-                if Method in ["os.popen", "os"]:
-                    Result = os.popen("start /b cmd /c %s"%Command) # this is async.
-                    print("after os.popen")
-                    return True
-                else:
-                    try:
-                        Result = subprocess.Popen(
-                            Command,
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE,
-                            shell=True,
-                            # preexec_fn=os.setpgrp # Linxu only.
-                        ) # run aynchronously
-                        # (OutBytes, ErrBytes) = Result.communicate()
 
-                    except subprocess.CalledProcessError as grepexc:                                                                                                   
-                        ExitCode = grepexc.returncode
-                        # grepexc.output
-                    # OutBytes = Result.stdout.read()
-                    # OutBytes = OutStr.encode("utf-8")
-                    # ExitCode = os.system(Command)
-                    # OutBytes = "None".encode("utf-8")
-                    
-                    if GetResult:
-                        Encode = "utf-8"
-                        # if parent exit, child will also exit.
+
+def RunPythonScript(FilePath, ArgList=[], PassPID=True,
+        Async=False, # blocking / synchronous
+        KillChildOnParentExit=True, GetResult=False,
+        Method="subprocess", StandardizeFilePath=False
+    ):
+    if StandardizeFilePath:
+        FilePath = DLUtils.file.StandardizeFilePath(FilePath)
+    # os.system('chcp 65001')
+    StrList = ["python.exe", "-u"]
+        # win: pythonw does not start the process.
+    StrList.append("\"" + FilePath + "\"")
+    StrList += ArgList
+    if PassPID:
+        PIDList = ["--parent-pid", "%d"%DLUtils.system.CurrentProcessID()]
+        StrList += PIDList
+    else:
+        PIDList = []
+    Command = " ".join(StrList)
+    CommandList = ["python.exe", "-u", FilePath] + PIDList
+    ExitCode = 0
+        # # unrecognized encoding problem
+        # OutBytes = subprocess.check_output(
+        #     Command, shell=True, stderr=subprocess.STDOUT
+        # )
+    if KillChildOnParentExit:
+        if Async: # non-blocking / asynchronous. kill child when parent exit.
+            if Method in ["os.popen", "os"]:
+                Result = os.popen("start /b cmd /c %s"%Command) # this is async.
+                print("after os.popen")
+                return True
+            else:
+                try:
+                    Result = subprocess.Popen(
+                        Command,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        shell=True,
+                        # preexec_fn=os.setpgrp # Linxu only.
+                    ) # run aynchronously
+                    # (OutBytes, ErrBytes) = Result.communicate()
+
+                except subprocess.CalledProcessError as grepexc:                                                                                                   
+                    ExitCode = grepexc.returncode
+                    # grepexc.output
+                # OutBytes = Result.stdout.read()
+                # OutBytes = OutStr.encode("utf-8")
+                # ExitCode = os.system(Command)
+                # OutBytes = "None".encode("utf-8")
+                
+                if GetResult:
+                    Encode = "utf-8"
+                    # if parent exit, child will also exit.
+                    try:
+                        # print("try decoding with utf-8")
+                        OutStr = OutBytes.decode(Encode, errors="replace")
                         try:
-                            # print("try decoding with utf-8")
-                            OutStr = OutBytes.decode(Encode, errors="replace")
+                            import chardet
+                        except Exception:
+                            warnings.warn("lib chardet not found")
+                        else:
                             # Encoding = chardet.detect(OutBytes)['encoding']
                             # print("Encoding:", Encoding)
                             # OutStr = OutBytes.decode(Encoding)
+                            pass
+                    except Exception:
+                        print("error in decoding OutBytes with %s."%Encode)
+                        try:
+                            Encode = locale.getdefaultlocale()[1]
+                            print("decoding with %s"%Encode)
+                            OutStr = OutBytes.decode(Encode)
                         except Exception:
-                            print("error in decoding OutBytes with %s."%Encode)
-                            try:
-                                Encode = locale.getdefaultlocale()[1]
-                                print("decoding with %s"%Encode)
-                                OutStr = OutBytes.decode(Encode)
-                            except Exception:
-                                DLUtils.print("error ")
-                                OutStr = OutBytes.hex()
-                        return OutStr
-            else: # blocking / synchronous. kill child when parent exit.
-                # no window created
-                    # win. parent .py script from .bat.
-                    # win. parent .py script from cmd.
-                # from io import StringIO
-                # f = StringIO()
-                # e = StringIO()
-                Process = subprocess.Popen(
-                    Command,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    # stdout=f, stderr=e,
-                    shell=True,
-                    # preexec_fn=os.setpgrp # Linxu only.
-                ) # non-blocking
-                StdOutBytes, StdErrBytes = Process.communicate() # blocking. return when child process return.
-                ReturnCode = Process.returncode
-                Out = {
-                    "ReturnCode": ReturnCode,
-                    "StdOutBytes": StdOutBytes,
-                    "StdErrBytes": StdErrBytes
-                }
-                try:
-                    StdOut = StdOutBytes.decode("utf-8")
-                    Out["StdOut"] = StdOut
-                except Exception:
-                    pass
-                try:
-                    StdErr = StdErrBytes.decode("utf-8")
-                    Out["StdErr"] = StdErr
-                except Exception:
-                    pass
-                return Out
-                # Result = subprocess.run(
-                #     Command,
-                #     stdout=subprocess.PIPE,
-                #     stderr=subprocess.PIPE,
-                #     shell=True,
-                #     # preexec_fn=os.setpgrp # Linxu only.
-                # ) # run synchronously
+                            DLUtils.print("error ")
+                            OutStr = OutBytes.hex()
+                    return OutStr
+        else: # blocking / synchronous. kill child when parent exit.
+            # no window created
+                # win. parent .py script from .bat.
+                # win. parent .py script from cmd.
+            # from io import StringIO
+            # f = StringIO()
+            # e = StringIO()
+            Process = subprocess.Popen(
+                Command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                # stdout=f, stderr=e,
+                shell=True,
+                # preexec_fn=os.setpgrp # Linxu only.
+            ) # non-blocking
+            StdOutBytes, StdErrBytes = Process.communicate() # blocking. return when child process return.
+            ReturnCode = Process.returncode
+            Out = {
+                "ReturnCode": ReturnCode,
+                "StdOutBytes": StdOutBytes,
+                "StdErrBytes": StdErrBytes
+            }
+            try:
+                StdOut = StdOutBytes.decode("utf-8")
+                Out["StdOut"] = StdOut
+            except Exception:
+                pass
+            try:
+                StdErr = StdErrBytes.decode("utf-8")
+                Out["StdErr"] = StdErr
+            except Exception:
+                pass
+            return Out
+            # Result = subprocess.run(
+            #     Command,
+            #     stdout=subprocess.PIPE,
+            #     stderr=subprocess.PIPE,
+            #     shell=True,
+            #     # preexec_fn=os.setpgrp # Linxu only.
+            # ) # run synchronously
+            
+            # Result = os.popen("start /b cmd /c %s"%Command) # this is async.
+            # OutStr = Result.read()
+            # OutBytes = Result.buffer.read() # blocking. return after child process exit.
+            # OutStr = OutBytes.decode("utf-8")
+            a = 1
+    else: # KillChildOnParentExit=False. child continues to run when parent exit. 
+        if Async: 
+            # def ExecuteCommand(_Command):
+            #     Result = subprocess.run(_Command, stdout=subprocess.PIPE) # subprocess.run is blocking.
+            # try:
+            #     _thread.start_new_thread(ExecuteCommand, 
+            #         (Command,) # ArgList. must be tuple. (xxx) is not a tuple. (xxx,) is a tuple.
+            #     )
+            # except:
+            #     return False
+            # os.system("start /min %s"%Command)
+            try:
+                CommandList = [
+                    # "cmd", "/c"
+                    # "start", "/b",
+                ] + CommandList
+                CommandStr = " ".join(
+                    [
+                        "start", "/b",
+                        "cmd", "/c"
+                    ] + StrList
+                )
                 
-                # Result = os.popen("start /b cmd /c %s"%Command) # this is async.
-                # OutStr = Result.read()
-                # OutBytes = Result.buffer.read() # blocking. return after child process exit.
-                # OutStr = OutBytes.decode("utf-8")
+                # os.spawnl(os.P_NOWAIT, *CommandList)
+                # print("after os.spawnl")
+                # DLUtils.print(CommandStr)
+                # Result = os.system(CommandStr)
+                # print("after os.system(...)")
+                    # call from console. no window.
+                    # call from .bat. window created.
+                    # call from .bat
+                        # child std out --> parent std out.
+                        # child killed if parent exit.
+
+                # p = subprocess.Popen(CommandList,
+                #     # start_new_session=True,
+                #     stdout=subprocess.PIPE, # child stdout to another p.stdout.
+                #     stderr=subprocess.PIPE, # child stderr to another p.stderr.
+                #     # creationflags= subprocess.CREATE_NEW_CONSOLE
+                #     creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
+                #     # shell=True
+                # )
+                # p = subprocess.run(CommandList, # blocking
+                #     # start_new_session=True,
+                #     stdout=subprocess.PIPE, # child stdout to another p.stdout.
+                #     stderr=subprocess.PIPE, # child stderr to another p.stderr.
+                #     # creationflags= subprocess.CREATE_NEW_CONSOLE
+                #     creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
+                #     # shell=True
+                # )
+                # p = subprocess.call(
+                #     CommandList, shell=True
+                # )
+                # Popen("start ...") fails.
+                    # start is cmd built-in command.
+                # print("after subprocess.Popen")
+
+            except Exception:
+                DLUtils.print("error.")
+                DLUtils.system.PrintErrorStack()
                 a = 1
-        else: # KillChildOnParentExit=False. child continues to run when parent exit. 
-            if Async: 
-                # def ExecuteCommand(_Command):
-                #     Result = subprocess.run(_Command, stdout=subprocess.PIPE) # subprocess.run is blocking.
-                # try:
-                #     _thread.start_new_thread(ExecuteCommand, 
-                #         (Command,) # ArgList. must be tuple. (xxx) is not a tuple. (xxx,) is a tuple.
-                #     )
-                # except:
-                #     return False
-                # os.system("start /min %s"%Command)
-                try:
-                    CommandList = [
-                        # "cmd", "/c"
-                        # "start", "/b",
-                    ] + CommandList
-                    CommandStr = " ".join(
-                        [
-                            "start", "/b",
-                            "cmd", "/c"
-                        ] + StrList
-                    )
-                    
-                    # os.spawnl(os.P_NOWAIT, *CommandList)
-                    # print("after os.spawnl")
-                    # DLUtils.print(CommandStr)
-                    # Result = os.system(CommandStr)
-                    # print("after os.system(...)")
-                        # call from console. no window.
-                        # call from .bat. window created.
-                        # call from .bat
-                            # child std out --> parent std out.
-                            # child killed if parent exit.
-
-                    # p = subprocess.Popen(CommandList,
-                    #     # start_new_session=True,
-                    #     stdout=subprocess.PIPE, # child stdout to another p.stdout.
-                    #     stderr=subprocess.PIPE, # child stderr to another p.stderr.
-                    #     # creationflags= subprocess.CREATE_NEW_CONSOLE
-                    #     creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
-                    #     # shell=True
-                    # )
-                    # p = subprocess.run(CommandList, # blocking
-                    #     # start_new_session=True,
-                    #     stdout=subprocess.PIPE, # child stdout to another p.stdout.
-                    #     stderr=subprocess.PIPE, # child stderr to another p.stderr.
-                    #     # creationflags= subprocess.CREATE_NEW_CONSOLE
-                    #     creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
-                    #     # shell=True
-                    # )
-                    # p = subprocess.call(
-                    #     CommandList, shell=True
-                    # )
-                    # Popen("start ...") fails.
-                        # start is cmd built-in command.
-                    # print("after subprocess.Popen")
-
-                except Exception:
-                    DLUtils.print("error.")
-                    DLUtils.system.PrintErrorStack()
-                    a = 1
-            else:
-                raise NotImplementedError()
-    RunPythonFile = RunPythonScript
+        else:
+            raise NotImplementedError()
+RunPythonFile = RunPythonScript
 
 def PrintErrorStackTo(Pipe, Indent=None):
     DLUtils.PrintUTF8To(Pipe, traceback.format_exc(), Indent=Indent)

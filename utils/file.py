@@ -285,7 +285,8 @@ def IsSameFile(FilePath1, FilePath2):
 try:
     from send2trash import send2trash
 except Exception:
-    warnings.warn("lib send2trash not found.")
+    if DLUtils.Verbose:
+        warnings.warn("lib send2trash not found.")
 import traceback
 def DeleteFile(FilePath, RaiseIfNonExist=False, Move2TrashBin=False, DeleteIfMove2TrashBinFail=True, Verbose=True):
     FilePath = StandardizeFilePath(FilePath)

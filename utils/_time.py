@@ -26,7 +26,7 @@ def TimeStr2Second(TimeStr):
 try:
     import tzlocal # pip install tzlocal
 except Exception:
-    warnings.warn("package tzlocal not found.")
+    warnings.warn("lib tzlocal not found.")
 
 def GMTTime2LocalTime(DateTimeObj, TimeZone=None):
     if TimeZone is None:        

@@ -1,6 +1,6 @@
 import re
 import string
-import random
+import warnings
 import DLUtils
 import sys
 from io import StringIO, BytesIO, TextIOWrapper
@@ -322,16 +322,21 @@ def PrintWithTimeStr(*List, Encoding="utf-8", Indent=None, **Dict):
     Result = WriteBytes2StdOut(OutPipe, Str.encode(Encoding))
     OutPipe.flush()
     return Result
-
-from bitarray import bitarray
-def Bytes201Str(Bytes: bytes, MostSignificantBit="Right"):
-    if MostSignificantBit in ["Right", "right", "R", "r"]:
-        bits = bitarray(endian='big')
-    else:
-        bits = bitarray(endian="small")
-    bits.frombytes(Bytes)
-    return bits.to01()
-ByteArrayTo01Str = Bytes201Str
+try:
+    from bitarray import bitarray
+except Exception:
+    if DLUtils.Verbose:
+        warnings.warn("lib bitarray not found")
+    pass
+else:
+    def Bytes201Str(Bytes: bytes, MostSignificantBit="Right"):
+        if MostSignificantBit in ["Right", "right", "R", "r"]:
+            bits = bitarray(endian='big')
+        else:
+            bits = bitarray(endian="small")
+        bits.frombytes(Bytes)
+        return bits.to01()
+    ByteArrayTo01Str = Bytes201Str
 
 def Int201Str(Int, _0bPrefix=False, LeadingZero=False, Length=None):
     Pattern = []

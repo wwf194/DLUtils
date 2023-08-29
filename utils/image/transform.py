@@ -2,13 +2,13 @@ import glob
 from PIL import Image as Im
 import DLUtils
 
-try: # pip install pillow-avif-plugin Pillow
+try: # pip install pillow-avif-plugin
     import pillow_avif # Pillow avif support
 except Exception:
-    DLUtils.Write("pillow_avif failed to import.")
+    DLUtils.Write("lib pillow_avif not found.")
 
 try: # pip3 install pillow-heif
-    import pillow_heif # Pillow avif support
+    import pillow_heif # Pillow heif support
     pillow_heif.register_heif_opener()
 except Exception:
     DLUtils.Write("pillow_heif failed to import.")

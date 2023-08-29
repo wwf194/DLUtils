@@ -86,4 +86,7 @@ try:
     from .module import TorchModel2File, File2TorchModel, TorchModelWrapper
 except Exception:
     pass
-from .format import NullParameter, ToTorchTensor
+try:
+    from .format import NullParameter, ToTorchTensor
+except Exception:
+    pass

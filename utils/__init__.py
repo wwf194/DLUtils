@@ -860,7 +860,8 @@ import DLUtils.utils.network as network
 try:
     import DLUtils.utils.image as image
 except Exception:
-    warnings.warn("failed to import DLUtils.utils.image")
+    if DLUtils.Verbose:
+        warnings.warn("failed to import DLUtils.utils.image")
     pass
 try:
     import DLUtils.utils.timer as timer

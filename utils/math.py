@@ -1,4 +1,5 @@
 import DLUtils
+import warnings
 import random
 import os
 
@@ -47,8 +48,6 @@ def RandomSelect(List, Num, Repeat=False):
         return list(List)
 RandomSelectFromList = RandomSelect
 
-
-
 def RandomSelectOne(List):
     return RandomSelect(List, 1)[0]
 
@@ -88,26 +87,30 @@ def Float2BaseAndExponent(Float, Base=10.0):
     return Coefficient, Exponent
 
 Float2BaseExp = Float2BaseAndExponent
+try:
+    import sklearn
+    from sklearn.decomposition import PCA as PCAsklearn # sklearn.decomposition.PCA not supported
+except Exception:
+    if DLUtils.Verbose:
+        warnings.warn("lib sklearn not found.")
+else:
+    def PCA(data, ReturnType="PyObj"):
+        FeatureNum = data.shape[1]
+        PCATransform = PCAsklearn(n_components=FeatureNum)
+        PCATransform.fit(data) # Learn PC directions
+        dataPCA = PCATransform.transform(data) #[SampleNum, FeatureNum]
 
-import sklearn
-from sklearn.decomposition import PCA as PCAsklearn # sklearn.decomposition.PCA not supported
-def PCA(data, ReturnType="PyObj"):
-    FeatureNum = data.shape[1]
-    PCATransform = PCAsklearn(n_components=FeatureNum)
-    PCATransform.fit(data) # Learn PC directions
-    dataPCA = PCATransform.transform(data) #[SampleNum, FeatureNum]
-
-    if ReturnType in ["Transform"]:
-        return PCATransform
-    # elif ReturnType in ["TransformAndData"]:
-    #     return 
-    elif ReturnType in ["PyObj"]:
-        return DLUtils.PyObj({
-            "dataPCA": DLUtils.ToNpArray(dataPCA),
-            "Axis": DLUtils.ToNpArray(PCATransform.components_),
-            "VarianceExplained": DLUtils.ToNpArray(PCATransform.explained_variance_),
-            "VarianceExplainedRatio": DLUtils.ToNpArray(PCATransform.explained_variance_ratio_)
-        })
+        if ReturnType in ["Transform"]:
+            return PCATransform
+        # elif ReturnType in ["TransformAndData"]:
+        #     return 
+        elif ReturnType in ["PyObj"]:
+            return DLUtils.PyObj({
+                "dataPCA": DLUtils.ToNpArray(dataPCA),
+                "Axis": DLUtils.ToNpArray(PCATransform.components_),
+                "VarianceExplained": DLUtils.ToNpArray(PCATransform.explained_variance_),
+                "VarianceExplainedRatio": DLUtils.ToNpArray(PCATransform.explained_variance_ratio_)
+            })
 
 try:
     import numpy as np
