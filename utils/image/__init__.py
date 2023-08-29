@@ -101,7 +101,7 @@ def ImageUInt2Float(Image):
 
 from .transform import \
     ImageFile2Jpg, ToJPGFile, ToJpgFile, ToJpg, ToJPG, \
-    ImageFile2PNG, ToPNG, ToPNGFile, \
+    ImageFile2PNG, ToPNG, ToPNGFile, HEIC2PNG, HEIF2PNG, \
     ImageFile2Webp
 def LoadTestImage(Name="lenna"):
     if Name in ["lenna"]:
@@ -111,7 +111,5 @@ def LoadTestImage(Name="lenna"):
         return Image
     else:
         raise Exception()
-
-from .transform import ImageFile2Jpg, ImageFile2PNG, ImageFile2Webp
 
 JPG2NpArray = Jpeg2NpArray = Jpg2NpArray = ImageFile2NpArray

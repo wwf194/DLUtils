@@ -124,7 +124,6 @@ from DLUtils.utils.func import \
     EmptyFunction
 from DLUtils.utils.file import ParseSavePath
 
-
 try:
     import DLUtils.example as example
 except Exception:
@@ -138,17 +137,23 @@ except Exception:
 
 PackageFolderPath = DLUtils.file.FolderPathOfFile(__file__)
 
-from DLUtils.utils._string import _print as print
+from DLUtils.utils._string import Print2OutPipe as print
 from DLUtils.utils._string import \
     SetStdOut, OutputTo, Output2, ResetStdOut, \
     SetFileStrOut, CloseFileStrOut, \
     Print2StdErr, PrintHeartBeatTo, \
     PrintTo, PrintUTF8To, \
-    PrintTimeStrTo, PrintTimeStr2, PrintCurrentTimeTo, PrintPIDTo, PrintWithTimeStr
+    PrintTimeStrTo, PrintTimeStr2, PrintCurrentTimeTo, PrintPIDTo, PrintWithTimeStr, \
+    PrintTimeStr, \
+    AddIndent, AddIndentLevel, IncreaseIndent, IncreaseIndentLevel, \
+    DecreaseIndent, DecreaseIndentLevel, \
+    SetIndentLevel, Write, \
+    GetOutPipe, GetStdOut
 try:
     import DLUtils.utils._time as time
 except Exception:
     pass
-from DLUtils.utils.system import NewCmdArg, ParseCmdArg, ErrorStackStr, PrintErrorStackTo
+from DLUtils.utils.system import NewCmdArg, ParseCmdArg, ErrorStackStr, PrintErrorStackTo, \
+    PrintErrorStackWithInfoTo, PrintErrorStackWithInfo2
 
 from DLUtils.backend._torch import NullParameter, ToTorchTensor

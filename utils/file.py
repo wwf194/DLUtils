@@ -52,12 +52,15 @@ def AfterTrainModelFile(SaveDir):
 
 def FileNameFromPath(FilePath, StripSuffix=False):
     assert not FilePath.endswith("/")
+
+def FileNameFromFilePath(FilePath, StripSuffix=False):
     FileName = os.path.basename(FilePath)
     if StripSuffix:
         Name, Suffix = SeparateFileNameSuffix(FilePath)
         return Name
     else:
         return FileName
+FileNameFromPath = FileNameFromFilePath
 
 def CurrentFileName(__File__, StripSuffix=False):
     """
@@ -108,18 +111,20 @@ def ToStandardDirPath(PathStr):
     return ToStandardPathStr(PathStr, Type="Dir")
 StandardizeFolderPath = StandardizeDirPath = ToStandardDirPath
 
-def MoveFile(FilePath, FilePathDest, RaiseIfNonExist=False, Overwrite=True, RaiseIfOverwrite=True):
+def MoveFile(FilePath, PathDest=None, RaiseIfNonExist=False, Overwrite=True, RaiseIfOverwrite=True):
     if not FileExists(FilePath):
         Msg = f"DLUtils.MoveFile: FilePath {FilePath} does not exist."
         if RaiseIfNonExist:
             raise Exception(Msg)
         else:
             warnings.warn(Msg)
-    if DirExists(FilePathDest):
+    if DirExists(PathDest) or PathDest.endswith("/") or PathDest.endswith("\\"): # PathDest is a directory
+        DirDest = StandardizeDirPath(PathDest)
         FileName = FileNameFromPath(FilePath)
-        _FilePathDest = FilePathDest
-        FilePathDest =FilePathDest + FileName
-    EnsureFileDir(FilePathDest)
+        FilePathDest = DirDest + FileName
+    else:
+        FilePathDest = PathDest
+        EnsureFileDir(FilePathDest)
 
     if FileExists(FilePathDest):
         if not Overwrite:
@@ -128,6 +133,7 @@ def MoveFile(FilePath, FilePathDest, RaiseIfNonExist=False, Overwrite=True, Rais
                 raise Exception(Msg)
             else:
                 warnings.warn(Msg)
+    DLUtils.print("FilePath: %s\nFilePathDest: %s"%(FilePath, FilePathDest))
     shutil.move(FilePath, FilePathDest)
     # DeleteFile(FilePath) # shutil.move will delete file upon successful move.
     return True
@@ -140,7 +146,17 @@ def ListFileNameWithPattern(DirPath, FileNamePattern):
             FileNameList.append(FileName)
     return FileNameList
 
-def ListFilePathWithPattern(DirPath, FileNamePattern):
+def FileNameMatchPattern(FilePath, Pattern):
+    FileName = FileNameFromPath(FilePath)
+    FileNamePatternCompiled = re.compile(Pattern)
+    Result = FileNamePatternCompiled.match(FileName)
+    if Result is not None:
+        return Result
+    else:
+        return False
+IsFileNameMatchPattern = FileNameMatchPattern
+
+def ListFilePathsWithPattern(DirPath, FileNamePattern):
     if not DirPath.endswith("/"):
         DirPath += "/"
     FilePathList = []
@@ -149,11 +165,11 @@ def ListFilePathWithPattern(DirPath, FileNamePattern):
         if FileNamePatternCompiled.match(FileName) is not None:
             FilePathList.append(DirPath + FileName)
     return FilePathList
-AllFilePathsWithFileNamePattern = ListFileNameWithPattern
+AllFilePathsWithNamePattern = AllFilePathsWithFileNamePattern = ListFilePathWithPattern = ListFilePathsWithPattern
 
 def MoveAllFiles(DirSource, DirDest):
     DirSource = DLUtils.file.StandardizeDirPath(DirSource)
-    DirDest = DLUtils.file.StandardizeDirPath(DirDest)
+    DirDest = DLUtils.file.EnsureDir(DirDest)
     assert DLUtils.file.ExistsDir(DirSource)
     for FileName in ListAllFileNames(DirSource):
         MoveFile(DirSource + FileName, DirDest + FileName)
@@ -183,19 +199,32 @@ def DeleteFileIfExists(FilePath):
         return DeleteFile(FilePath)
     else:
         return False
-def MoveFileWithFileNamePattern(DirSource, DirDest, FileNamePattern=None):
+def MoveFileWithFileNamePattern(
+        DirSource,
+        DirDest,
+        FileNamePattern=None,
+        FileSizeMax=None
+    ):
     Num = 0
     DirSource = CheckDirExists(DirSource)
     DirDest = EnsureDir(DirDest)
-    DLUtils.EnsureDir(DirDest)
+    
+    if FileSizeMax is not None:
+        FileSizeMax = ParseFileSize(FileSizeMax)
+    else:
+        FileSizeMax = -1
+    
     if FileNamePattern is None:
         for FileName in DLUtils.ListFileNames(DirSource):
             FilePathSource = DirSource + FileName
             FilePathDest = DirDest + FileName
+            if FileSizeMax > 0:
+                if FileSizeInBytes(FilePathSource) > FileSizeMax:
+                    continue
             Result = DLUtils.file.MoveFile(
                 FilePathSource, FilePathDest
             )
-            DLUtils.print(f"Moved File. ({FilePathSource})-->({FilePathDest})")
+            DLUtils.print(f"Moved file: ({FilePathSource})-->({FilePathDest})")
             Num += 1
     else:
         FileNamePatternCompiled = re.compile(FileNamePattern)
@@ -268,7 +297,7 @@ def DeleteFile(FilePath, RaiseIfNonExist=False, Move2TrashBin=False, DeleteIfMov
                 send2trash(FilePath)
             except Exception:
                 if Verbose:
-                    DLUtils.print("failed to delete file to trashbin (%s)"%FilePath)
+                    DLUtils.print("Failed to delete file to trashbin (%s)"%FilePath)
                     DLUtils.print(traceback.format_exc())
                     if DeleteIfMove2TrashBinFail:
                         DLUtils.print("trying delete only.")
@@ -297,6 +326,7 @@ def DeleteFile2TrashBin(FilePath, Verbose=True, DeleteIfMove2TrashBinFail=True):
         Verbose=Verbose,
         DeleteIfMove2TrashBinFail=DeleteIfMove2TrashBinFail
     )
+DeleteFileToTrashBin = FileToTrashBin = File2TrashBin = FileToTrash = File2Trash = DeleteFile2TrashBin
 
 def DeleteAllFilesAndSubFolders(DirPath):
     for FilePath in ListFilesPath(DirPath):
@@ -328,20 +358,26 @@ def FolderPathOfFile(FilePath):
 DirPathOfFile = ParentFolderPath = FolderPathOfFile
 CurrentDirPath = DirPathOfCurrentFile = FolderPathOfFile
 
-def DirPathFromFilePath(FilePath):
+def SeperateFileNameAndDirPath(FilePath):
+    FilePath = DLUtils.StandardizeFilePath(FilePath)
+    DirPath = DirPathFromFilePath(FilePath)
+    FileName = FileNameFromFilePath(FilePath)
+    return DirPath, FileName
+
+def DirPathFromFileName(FilePath):
     FilePath = StandardizeFilePath(FilePath)
     Name, Suffix = SeparateFileNameSuffix(FilePath)
     assert Suffix is not None and Suffix not in [""]
     return StandardizeDirPath(Name)
-DirPathFromFileName = DirPathFromFilePath
+DirPathFromFileName = DirPathFromFileName
 
-
-
-def FolderPathOfFolder(FilePath):
-    Path = Path(FilePath)
-    ParentFolderPath = Path.parent.absolute()
-
-    return ParentFolderPath
+def DirPathFromFilePath(FilePath):
+    FilePathObj = Path(FilePath)
+    ParentDirPath = FilePathObj.parent.absolute()
+    ParentDirPath = str(ParentDirPath)
+    ParentDirPath = StandardizeDirPath(ParentDirPath)
+    return ParentDirPath
+FolderPathOfFolder = DirPathFromFilePath
 
 def RemoveFiles(FilesPath):
     for FilePath in FilesPath:
@@ -479,6 +515,7 @@ def ListDirsPath(DirPath):
         DirPath += "/"
     DirNameList = ListDirs(DirPath)
     return [DirPath + DirName for DirName in DirNameList]
+ListAllDirPaths = ListAllDirsPath = ListDirsPath
 
 def FileExists(FilePath):
     return os.path.isfile(FilePath)
@@ -720,17 +757,21 @@ def ChangeFileDirPath(FilePath, DirPath):
 
 ChangeCurrentFileNameSuffix = ChangeNameSuffix = ChangeFileNameSuffix
 
-
 def AddSuffixToFileWithFormat(FilePath, Suffix):
     _FilePath, Format = ParseFileNameSuffix(FilePath)
     return _FilePath + Suffix + "." + Format
 
-def RenameFile(DirPath, FileName, FileNameNew):
+def RenameFileInDir(DirPath, FileName, FileNameNew):
     DirPath = CheckDir(DirPath)
     assert ExistsFile(DirPath + FileName)
     os.rename(DirPath + FileName, DirPath + FileNameNew)
 
-def RenameFileIfExists(FilePath):
+def RenameFile(FilePath, FilePathNew):
+    FilePath = CheckFileExists(FilePath)
+    FilePathNew = StandardizeFilePath(FilePathNew)
+    os.rename(FilePath, FilePathNew)
+
+def RenameFileIfExists(FilePath, RenameExistingFile=False):
     if FilePath.endswith("/"):
         raise Exception()
     FileName, Suffix = ParseFileNameSuffix(FilePath)
@@ -738,7 +779,8 @@ def RenameFileIfExists(FilePath):
     MatchResult = re.match(r"^(.*)-(\d+)$", FileName)
     if MatchResult is None:
         if ExistsPath(FilePath):
-            os.rename(FilePath, FileName + "-0" + "." + Suffix)
+            if RenameExistingFile:
+                os.rename(FilePath, FileName + "-0" + "." + Suffix)
             FileNameOrigin = FileName
             Index = 1
         elif ExistsPath(FileName + "-0" + "." + Suffix):
@@ -857,11 +899,28 @@ def File2Str(FilePath):
 
 def FileSizeInBytes(FilePath): 
     return os.path.getsize(FilePath)
-FileSize = FileSizeInBytes
+FileSize = FileSizeByte = FileSizeInBytes
 
 KB = 1024.0
+KBInt = 1024
 MB = 1024.0 * 1024.0
+MBInt = 1024 * 1024
 GB = 1024.0 * 1024.0 * 1024.0
+GBInt = 1024 * 1024 * 1024
+
+def ParseFileSize(FileSize):
+    if isinstance(FileSize, int):
+        return FileSize
+    elif isinstance(FileSize, str):
+        Result = re.match(r"(.*)GB|(.*)G|(.*)gb|(.*)g", FileSize)
+        if Result is not None:
+            return round(float(Result.group(1))) * GBInt
+        Result = re.match(r"(.*)MB|(.*)M|(.*)MiB|(.*)mb", FileSize)
+        if Result is not None:
+            return round(float(Result.group(1))) * MBInt
+        raise Exception()
+    else:
+        raise Exception()
 
 def Size2Str(SizeB, Base=1024):
     if Base == 1024 or Base == 1024.0:

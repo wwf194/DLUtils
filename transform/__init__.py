@@ -1,6 +1,7 @@
 
 try:
     import torch
+    import torch.nn.functional as F
 except Exception:
     pass
 else:

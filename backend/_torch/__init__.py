@@ -4,7 +4,15 @@ try:
     from .module import TorchModule, TorchModuleWrapper
 except Exception:
     pass
+else:
+    def TorchTensorElementNum(Tensor:torch.Tensor):
+        return Tensor.numel()
 
+    def TorchTensorSize(Tensor:torch.Tensor):
+        if Tensor.data.is_floating_point():
+            return Tensor.numel() * torch.finfo(Tensor.data.dtype).bits
+        else:
+            return Tensor.numel() * torch.iinfo(Tensor.data.dtype).bits
 import DLUtils
 def GetTensorByteNum(Tensor): # Byte
     return Tensor.nelement() * Tensor.element_size()
@@ -35,7 +43,8 @@ def GetTorchModelTensor(model):
     )
     return Dict
 
-def TensorWithSameShapeAndValue1(Tensor: torch.Tensor):
+def TensorWithSameShapeAndValue1(Tensor):
+    # assert isinstance(Tensor, torch.Tensor)
     return torch.ones_like(Tensor)
 
 def AddDimension(Tensor, DimIndex: int):
@@ -54,14 +63,7 @@ def TorchLinearInitWeightBias(InNum, OutNum):
     Weight = Weight.transpose(1, 0)
     return DLUtils.ToTorchTensor(Weight), DLUtils.ToTorchTensor(Bias)
 
-def TorchTensorElementNum(Tensor:torch.Tensor):
-    return Tensor.numel()
 
-def TorchTensorSize(Tensor:torch.Tensor):
-    if Tensor.data.is_floating_point():
-        return Tensor.numel() * torch.finfo(Tensor.data.dtype).bits
-    else:
-        return Tensor.numel() * torch.iinfo(Tensor.data.dtype).bits
 
 
 def TorchTrainParamStat(tensor, verbose=False, ReturnType="PyObj"):

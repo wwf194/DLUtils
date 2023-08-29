@@ -150,3 +150,5 @@ def Curve2TextFile(Dict, SavePath):
         ColName.append(Key)    
     Data = np.array(ValueList).transpose(1, 0)
     NpArray2D2TextFile(Data, ColName, SavePath=SavePath)
+
+from ._numpy import NpArray2D2Str, NpArray2D2TextFile, NpArray2TextFile

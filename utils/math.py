@@ -21,6 +21,8 @@ def NanArrayNp(Shape):
 NanArray = NanArrayNp
 
 def ShuffleList(List, InPlace=False):
+    if len(List) == 0:
+        return List
     if InPlace:
         _List = List
     else:

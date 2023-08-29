@@ -9,10 +9,6 @@ import traceback
 from inspect import Traceback
 import DLUtils
 
-def KillProcessbyPID(PID):
-    os.kill(PID, signal.SIGTERM) #or signal.SIGKILL 
-    # p = psutil.Process(pid)
-    # p.terminate()  #or p.kill()
 try:
     import psutil
     def ProcessExists(PID):
@@ -21,9 +17,16 @@ try:
         else:
             return False
     ExistsProcess = ProcessExists
+    def ListNetworkInterface():
+        psutil.net_if_stats()
+        raise NotImplementedError()
 except Exception:
     warnings.warn("lib psutil not found.")
-
+    
+def KillProcessbyPID(PID):
+    os.kill(PID, signal.SIGTERM) #or signal.SIGKILL 
+    # p = psutil.Process(pid)
+    # p.terminate()  #or p.kill()
 KillProcess = KillProcessbyID = KillProcessbyPID
 
 def TeminateProcess(ExitCode):
@@ -34,11 +37,13 @@ def TeminateProcess(ExitCode):
         # With that you have a proper cleanup. 
         os.kill(os.getpid(), signal.SIGINT)
 
-
-def GetCurrentProcessID():
+def SelfPID():
     return os.getpid()
+CurrentPID = CurrentProcessID = CurrentProcessPID = GetCurrentProcessPID = GetCurrentProcessID = SelfPID
 
-CurrentPID = CurrentProcessID = CurrentProcessPID = GetCurrentProcessPID = GetCurrentProcessID
+def ParentPID():
+    return os.getppid()
+GetParentPID = ParentPID()
 
 def ReportPyTorchInfo():
     import torch
@@ -86,25 +91,19 @@ def ReportMemoryOccupancy(Obj):
     ByteNum = GetBytesInMemory(Obj)
     return DLUtils.ByteNum2Str(Obj)
 
-
-try:
-    from ._time import TimeStamp2DateTimeObj, TimeStr2Second, DateTimeObj2TimeStampFloat
-    from ._time import CurrentTimeStampInt, CurrentTimeStr
-except Exception:
-    pass
+from ._time import TimeStamp2DateTimeObj, TimeStr2Second, DateTimeObj2TimeStampFloat
+from ._time import CurrentTimeStampInt, GetCurrentTimeStampInt, CurrentTimeStr
 
 def Stack2File(FilePath):
     DLUtils.EnsureFileDir(FilePath)
     traceback.print_exc(file=open(FilePath, "w"))
 
-def Test():
-    TimeFloat = DateTimeObj2TimeStampFloat(datetime(1800, 1, 19, 3, 15, 14, 200))
-    print(TimeFloat) # 2147451300.0
-    DateTimeObj = TimeStamp2DateTimeObj(TimeFloat)
 import locale
-import _thread
 try:
     import chardet
+except Exception:
+    warnings.warn("lib chardet not found")
+else:
     def RunPythonScript(FilePath, ArgList=[], PassPID=True,
             Async=False, # blocking / synchronous
             KillChildOnParentExit=True, GetResult=False,
@@ -130,7 +129,7 @@ try:
             #     Command, shell=True, stderr=subprocess.STDOUT
             # )
         if KillChildOnParentExit:
-            if Async:
+            if Async: # non-blocking / asynchronous. kill child when parent exit.
                 if Method in ["os.popen", "os"]:
                     Result = os.popen("start /b cmd /c %s"%Command) # this is async.
                     print("after os.popen")
@@ -173,17 +172,47 @@ try:
                                 DLUtils.print("error ")
                                 OutStr = OutBytes.hex()
                         return OutStr
-            else: # blocking / synchronous
+            else: # blocking / synchronous. kill child when parent exit.
                 # no window created
                     # win. parent .py script from .bat.
                     # win. parent .py script from cmd.
-                Result = subprocess.run(
+                # from io import StringIO
+                # f = StringIO()
+                # e = StringIO()
+                Process = subprocess.Popen(
                     Command,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
+                    # stdout=f, stderr=e,
                     shell=True,
                     # preexec_fn=os.setpgrp # Linxu only.
-                ) # run synchronously
+                ) # non-blocking
+                StdOutBytes, StdErrBytes = Process.communicate() # blocking. return when child process return.
+                ReturnCode = Process.returncode
+                Out = {
+                    "ReturnCode": ReturnCode,
+                    "StdOutBytes": StdOutBytes,
+                    "StdErrBytes": StdErrBytes
+                }
+                try:
+                    StdOut = StdOutBytes.decode("utf-8")
+                    Out["StdOut"] = StdOut
+                except Exception:
+                    pass
+                try:
+                    StdErr = StdErrBytes.decode("utf-8")
+                    Out["StdErr"] = StdErr
+                except Exception:
+                    pass
+                return Out
+                # Result = subprocess.run(
+                #     Command,
+                #     stdout=subprocess.PIPE,
+                #     stderr=subprocess.PIPE,
+                #     shell=True,
+                #     # preexec_fn=os.setpgrp # Linxu only.
+                # ) # run synchronously
+                
                 # Result = os.popen("start /b cmd /c %s"%Command) # this is async.
                 # OutStr = Result.read()
                 # OutBytes = Result.buffer.read() # blocking. return after child process exit.
@@ -253,14 +282,20 @@ try:
             else:
                 raise NotImplementedError()
     RunPythonFile = RunPythonScript
-except Exception:
-    warnings.warn("lib chardet not found")
 
-import traceback
 def PrintErrorStackTo(Pipe, Indent=None):
     DLUtils.PrintUTF8To(Pipe, traceback.format_exc(), Indent=Indent)
-
 PrintErrorStack2 = PrintErrorStackTo
+
+def PrintErrorStackWithInfoTo(Pipe, Indent=None):
+    if Pipe is None:
+        Pipe = DLUtils.GetOutPipe()
+    if Indent is None:
+        Indent = 0
+    DLUtils.PrintTimeStrTo(Pipe, Indent=Indent)
+    DLUtils.PrintPIDTo(Pipe, Indent=Indent + 1)
+    DLUtils.PrintErrorStackTo(Pipe, Indent=Indent + 1)
+PrintErrorStackWithInfo2 = PrintErrorStackWithInfoTo
 
 def PrintErrorStack():
     print(traceback.format_exc())
@@ -347,8 +382,8 @@ def ParseCmdArg(*CmdArgItem):
     CmdArg = parser.parse_args()
     return CmdArg
 
-
-def ListNetworkInterface():
-    psutil.net_if_stats()
-    raise NotImplementedError()
-
+import datetime
+def Test():
+    TimeFloat = DateTimeObj2TimeStampFloat(datetime.datetime(1800, 1, 19, 3, 15, 14, 200))
+    print(TimeFloat) # 2147451300.0
+    DateTimeObj = TimeStamp2DateTimeObj(TimeFloat)

@@ -7,7 +7,8 @@ def ChangeTorchModuleParameter(module:torch.nn.Module):
     ParamDict
 
 def ReportTorchInfo(): # print info about training environment, global variables, etc.
-    return torch.pytorch_info()
+    print("Torch version: ",torch.__version__)
+    print("Is CUDA enabled: ",torch.cuda.is_available())
 
 def PrintOptimizerStateDict(Optimizer, Out="Std"):
     StateDict = Optimizer.state_dict()
