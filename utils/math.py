@@ -219,6 +219,35 @@ try:
             Shape = DLUtils.parse.ParseShape(Shape)
             return np.random.rayleigh(Mean / 1.253, Shape)
 
+        def UniformAfterSoftmax(Shape):
+            if isinstance(Shape, int):
+                Shape = (Shape,)
+            X = DLUtils.SampleFromUniformDistribution(Shape, Min=1.0e-9, Max=1.0)
+            X = X / X.sum() # X sums to one.
+            print(X.sum())
+            Y = np.log(X) # np.log is ln
+            Y = Y - Y.mean()
+            return Y
+        SampleFromSofmaxUniform = UniformAfterSoftmax
+
+        def EvenlyDistributedAfterSoftmax(Shape):
+            if isinstance(Shape, int):
+                Shape = (Shape,)
+            if len(Shape) == 1:
+                Num = Shape[0]
+            elif len(Shape) > 1:
+                Num = 1
+                for Index in len(range(Shape)):
+                    Num *= Shape[Index]
+            else:
+                raise Exception()
+            X = np.linspace(1.0 / Num, 1.0, Num)
+            X = X / X.sum() # X sums to one.
+            print(X.sum())
+            Y = np.log(X) # np.log is ln
+            Y = Y - Y.mean()
+            return Y
+
         def CosineSimilarityNp(vecA, vecB):
             normA = np.linalg.norm(vecA)
             normB = np.linalg.norm(vecB)
@@ -319,16 +348,12 @@ try:
             Exponent = - 0.5 * ((data - Mean) / Std) ** 2
             return Amp * np.exp(Exponent)
 
-
-
-        Float2BaseExp = Float2BaseAndExponent
-
         def Floats2BaseAndExponent(Floats, Base=10.0):
             Floats = DLUtils.ToNpArray(Floats)
             Exponent = np.ceil(np.log10(Floats, Base))
             Coefficient = Floats / 10.0 ** Exponent
             return Coefficient, Exponent
-
+        Floats2BaseExp = Floats2BaseAndExponent
 
         def CalculatePearsonCoefficient(dataA, dataB):
             # dataA: 1d array

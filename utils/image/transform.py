@@ -1,3 +1,4 @@
+import warnings
 import glob
 from PIL import Image as Im
 import DLUtils
@@ -80,3 +81,28 @@ try:
     import torchvision
 except Exception:
     pass
+
+try:
+    import cairosvg
+except Exception:
+    warnings.warn("lib cairosvg not found.")
+else:
+    def SVGStr2PNG(Str, SavePath):
+        SavePath = DLUtils.EnsureFileDir(SavePath)
+        cairosvg.svg2png(bytestring=Str,write_to=SavePath)
+        return SavePath
+    def SVG2PNG(FilePath, SavePath=None):
+        if SavePath is None:
+            SavePath = DLUtils.ChangeFileNameSuffix(FilePath, ".svg")
+        SvgStr = DLUtils.TextFile2Str(FilePath)
+        SavePath = SVGStr2PNG(SvgStr, SavePath)
+        return SavePath
+    def SVG2NpArray(FilePath):
+        SvgStr = DLUtils.TextFile2Str(FilePath)        
+        TempFilePath = "output.png"
+        TempFilePath = DLUtils.RenameFileIfExists(TempFilePath)
+        SavePath = SVG2PNG(FilePath, SavePath=TempFilePath)
+        Image = DLUtils.image.ImageFile2NpArray(SavePath)
+        DLUtils.DeleteFile(SavePath)
+        return Image
+    

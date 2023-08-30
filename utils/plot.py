@@ -1105,10 +1105,20 @@ def ColorWheel(Index): #生成横跨0-255个位置的彩虹颜色.
         Index -= 170
         return (0, Index * 3, 255 - Index * 3)
 
-def PlotImages(ImageList, ColNum):
-    ImageNum = len(ImageList)
-    RowNum, ColNum = ParseRowColNum(ImageNum)
-    fig, axes = plt.subplots(RowNum, ColNum)
+def PlotImages(ImageList, Save=True, SavePath=None):
+    PlotNum = len(ImageList)
+    fig, axes = CreateFigurePlt(PlotNum)
+    assert PlotNum > 0
+    for PlotIndex in range(PlotNum):
+        ax = GetAx(axes, PlotIndex)
+        Image = ImageList[PlotIndex]
+        ax.imshow(Image, interpolation="antialiased")
+        # interpolation="nearst"
+    ClearAllAx(axes)
+    SaveFigForPlt(Save, SavePath)
+    
+ConcatImages = PlotImageArray = PlotImages
+
 
 def cat_imgs_h(imgs, ColNum=10, space_Width=4):
     ''' Concat image horizontally with spacer '''
@@ -1235,6 +1245,7 @@ def ClearUnusedAx(axes, PlotNum):
 
 def ClearAllAx(axes):
     ClearUnusedAx(axes, PlotNum=0)
+AllAxisOff = ClearAllAx
 
 def GetAx(axes, Index=None, RowIndex=None, ColIndex=None):
     RowNum, ColNum = GetAxRowColNum(axes)
@@ -1828,8 +1839,43 @@ def create_gif_2():
     writeGif(outfilename, frames, duration=0.1, subRectangles=False) # 生成GIF，其中durantion是延迟，这里是1ms
 '''
 
-def PlotDistribution1D(data, ):
-    data, shape = DLUtils.FlattenData(data)
+def PlotMultipleDistribution1D(
+        DataList, ax=None, Labels=None,
+        Save=True, SavePath=None
+    ):
+    if ax is None:
+        fig, ax = CreateFigurePlt()
+    if Labels is None:
+        LabelList = [None for _ in range(len(DataList))]
+    else:
+        LabelList = Labels
+    for Index, Data in enumerate(DataList):
+        PlotDistribution1D(
+            Data, ax=ax, Label=LabelList[Index],
+            Save=False
+        )
+    if Labels is not None:
+        ax.legend()
+    SaveFigForPlt(Save, SavePath)
+
+def PlotDistribution1D(Data, ax=None, Label=None,
+    Save=True, SavePath=None
+):
+    Data = DLUtils.ToNpArray(Data).flatten()
+    if ax is None:
+        fig, ax = CreateFigurePlt()
+    # sns.displot(Data, kde=True, bins=BinNum)
+    sns.kdeplot(Data, label=Label)
+    SaveFigForPlt(Save, SavePath)
+
+def PlotDistAndHist1D(Data, ax=None, BinNum=15, Label=None,
+    Save=True, SavePath=None
+):
+    Data = DLUtils.ToNpArray(Data).flatten()
+    if ax is None:
+        fig, ax = CreateFigurePlt()
+    sns.displot(Data, kde=True, bins=BinNum)
+    SaveFigForPlt(Save, SavePath)
 
 from scipy.stats import gaussian_kde
 def PlotGaussianDensityCurve(

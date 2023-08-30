@@ -60,15 +60,20 @@ except Exception:
 import DLUtils.utils.__struct__ as struct
 import DLUtils.utils.system as system
 
-import DLUtils.utils.sql as sql
 try:
-    import DLUtils.utils.sql.sqlite as sqlite
+    import DLUtils.utils.sql as sql
 except Exception:
     pass
-try:
-    import DLUtils.utils.sql.mysql as mysql
-except Exception:
-    pass
+else:
+    try:
+        import DLUtils.utils.sql.sqlite as sqlite
+    except Exception:
+        pass
+    try:
+        import DLUtils.utils.sql.mysql as mysql
+    except Exception:
+        pass
+
 import DLUtils.utils.python as python
 from .utils.__struct__ import FixedSizeQueuePassiveOutInt, FixedSizeQueuePassiveOutFloat
 try:

@@ -104,15 +104,15 @@ def _Obj2JsonFile(Obj):
         return List
     elif isinstance(Obj, bool):
         if Obj:
-            return "True"
+            return True
         else:
-            return "False"
+            return False
     elif isinstance(Obj, int) or isinstance(Obj, np.integer):
         return Obj
     elif isinstance(Obj, float) or isinstance(Obj, np.floating):
         return Obj
     elif Obj is None:
-        return "None"
+        return None
     elif isinstance(Obj, object) and hasattr(Obj, "__dict__"):
         JsonDict = {}
         for Attr, Value in Obj.__dict__.items():

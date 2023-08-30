@@ -121,4 +121,7 @@ def LoadTestImage(Name="lenna"):
     else:
         raise Exception()
 
+from .transform import ImageFile2Jpg, ImageFile2PNG, ImageFile2Webp
+from .transform import SVG2NpArray, SVG2PNG, SVGStr2PNG
+
 JPG2NpArray = Jpeg2NpArray = Jpg2NpArray = ImageFile2NpArray

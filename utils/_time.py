@@ -108,6 +108,10 @@ def FileLastModifiedTime(FilePath, ReturnType="LocalTimeStr"):
     LastModifiedTimeStamp = os.path.getmtime(FilePath)
     return TimeStamp2Type(LastModifiedTimeStamp, ReturnType)
 
+def FileCreatedTime(FilePath):
+    FilePath = DLUtils.CheckFileExists(FilePath)
+    
+
 def LastModifiedTime(Path, ReturnType="TimeStamp"):
     if DLUtils.file._ExistsFile(Path):
         # Path = DLUtils.file.StandardizeFilePath(Path)

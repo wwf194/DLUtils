@@ -353,11 +353,30 @@ def CopyFolder(SourceDir, DestDir):
     # shutil.copytree(SourceDir, DestDir) # Requires that DestDir not exists.
 CopyDir2DestDir = CopyFolder2DestDir = CopyFolder
 
-def FolderPathOfFile(FilePath):
+def FolderPathFromFilePath(FilePath):
     DirPath = os.path.dirname(os.path.realpath(FilePath))
     return DLUtils.file.StandardizeDirPath(DirPath)
-DirPathOfFile = ParentFolderPath = FolderPathOfFile
-CurrentDirPath = DirPathOfCurrentFile = FolderPathOfFile
+# def FolderPathFromFilePath(FilePath):
+#     FilePathObj = Path(FilePath)
+#     ParentFolderPath = str(FilePathObj.parent.absolute())
+#     return ParentFolderPath
+FolderPathOfFile = FolderPathFromFilePath
+DirPathOfFile = ParentFolderPath = ParentDirPath = FolderPathFromFilePath
+CurrentDirPath = DirPathOfCurrentFile = FolderPathFromFilePath
+
+def ParentFolderName(Path):
+    return os.path.basename(Path)
+
+def ParentDirPathFromDirPath(DirPath):
+    DirPath = StandardizeDirPath(DirPath)
+    DirPathObj = Path(DirPath)
+    return str(DirPathObj.parent.absolute()) + "/"
+
+def DirNameFromDirPath(DirPath):
+    DirPath = StandardizeDirPath(DirPath)
+    DirPathObj = Path(DirPath)
+    return DirPathObj.name
+FolderNameOfDirPath = DirNameFromDirPath
 
 def SeperateFileNameAndDirPath(FilePath):
     FilePath = DLUtils.StandardizeFilePath(FilePath)
@@ -378,7 +397,7 @@ def DirPathFromFilePath(FilePath):
     ParentDirPath = str(ParentDirPath)
     ParentDirPath = StandardizeDirPath(ParentDirPath)
     return ParentDirPath
-FolderPathOfFolder = DirPathFromFilePath
+FolderPathOfFolder = DirPathFromFileName = DirPathFromFilePath
 
 def RemoveFiles(FilesPath):
     for FilePath in FilesPath:
@@ -745,17 +764,17 @@ def SeparateFileNameSuffix(FilePath):
         return MatchResult.group(1), MatchResult.group(2)
     # to be checked
     # for filename with multiple '.', such as a.b.c, (a.b, c) should be returned
+ParseFileNameSuffix = SeparateFileNameSuffix
 
-def ChangeFileNameSuffix(FileName, Suffix):
+def ChangeFilePathSuffix(FileName, Suffix):
     Name, _Suffix = SeparateFileNameSuffix(FileName)
     Suffix = Suffix.lstrip(".")
     return Name + "." + Suffix
-ParseFileNameSuffix = SeparateFileNameSuffix
+ChangeFileNameSuffix = ChangeFilePathSuffix
 
 def ChangeFileDirPath(FilePath, DirPath):
     DirPath = StandardizeDirPath(DirPath)
     return DirPath + FileNameFromPath(FilePath)
-
 ChangeCurrentFileNameSuffix = ChangeNameSuffix = ChangeFileNameSuffix
 
 def AddSuffixToFileWithFormat(FilePath, Suffix):
@@ -963,8 +982,15 @@ def Append2TextFile(Str, FilePath):
         f.write(Str)
 
 def Str2TextFile(Str, FilePath):
+    FilePath = StandardizeFilePath(FilePath)
     with open(FilePath, 'w') as f:
         f.write(Str)
+
+def TextFile2Str(FilePath):
+    FilePath = StandardizeFilePath(FilePath)
+    with open(FilePath, "r") as f:
+        Str = f.read()
+    return Str
 import hashlib
 def Str2MD5(Str):
     Bytes = Str.encode('utf-8')
