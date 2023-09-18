@@ -31,6 +31,9 @@ def EmptyFunction(*List, **Dict):
     return
 NullFunction = EmptyFunction
 
+def GetEmptyFunction(*List, **Dict):
+    return EmptyFunction
+
 def ParseFunctionParamsStatic(paramList):
     for index, param in enumerate(paramList):
         paramList[index] = ParseFunctionParamStatic(param)

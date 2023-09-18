@@ -478,19 +478,26 @@ def import_file(file_from_sys_path):
     module_path = module_path.replace("/", ".")
     return importlib.ImportModule(module_path)
 
-
-
 def CopyDict(Dict):
     return dict(Dict)
 
-def GetItemsfrom_dict(dict_, keys):
-    items = []
-    for name in keys:
-        items.append(dict_[name])
-    if len(items) == 1:
-        return items[0]
-    else:
-        return tuple(items)   
+def GetMultipleValues(Dict, KeyList):
+    ValueList = []
+    for Key in KeyList:
+        ValueList.append(Dict[Key])
+    return ValueList
+
+def GetFirstNotNoneValue(*List):
+    for Value in List:
+        if Value is not None:
+            return Value
+    return None
+
+def GetFirstValue(Dict, KeyList):
+    for Key in KeyList:
+        if Key in Dict:
+            return Dict[Key]
+    raise Exception()
 
 def write_dict_info(dict_, save_path='./', save_name='dict info.txt'): # write readable dict info into file.
     values_remained = []

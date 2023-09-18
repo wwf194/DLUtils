@@ -251,6 +251,38 @@ def MoveFolder(FolderPath, FolderPathNew, RaiseIfNonExist=False, Overwrite=True)
     return True
 MoveDir = MoveFolder
 
+def _MoveDirIntoDirMethod(DirDest, DirSource, FileName, FilePath, FilePathRel, **Dict):
+    FilePathDest = DirDest + FilePathRel
+    if DLUtils.ExistsFile(FilePathDest):
+        try:
+            if filecmp.cmp(FilePath, FilePathDest, shallow=False): # byte to byte compare
+                try:
+                    DLUtils.DeleteFile(FilePath)
+                except Exception:
+                    DLUtils.PrintUTF8ToStdOut("Failed to delete: (%s)"%FilePath)
+            else:
+                FilePathDestNew = DLUtils.RenameFileIfExists(FilePathDest)
+                DLUtils.MoveFile(FilePath, FilePathDestNew)
+                DLUtils.PrintUTF8ToStdOut("Moved file. (%s)-->(%s)"%(FilePath, FilePathDestNew))
+        except Exception:
+            pass
+    else:
+        DLUtils.MoveFile(FilePath, FilePathDest)
+        assert not DLUtils.ExistsFile(FilePath)
+        assert DLUtils.ExistsFile(FilePathDest)
+        DLUtils.PrintUTF8ToStdOut("Moved file. (%s)-->(%s)"%(FilePath, FilePathDest))
+
+def MoveDirIntoDir(DirSource, DirDest):
+    DirSource = DLUtils.StandardizeDirPath(DirSource)
+    DirDest = DLUtils.StandardizeDirPath(DirDest)
+    import functools
+    DirSource = DLUtils.CheckDirExists(DirSource)
+    DirDest = DLUtils.StandardizeDirPath(DirDest)
+    Result = DLUtils.DirContains(DirSource, DirDest)
+    DLUtils.VisitDirAndApplyMethodOnFiles(
+        DirPath=DirSource, Recur=True, Method=functools.partial(_MoveDirIntoDirMethod, DirDest=DirDest, DirSource=DirSource)
+    )
+
 def CopyFiles(FileNameList, SourceDir, DestDir):
     for FileName in FileNameList:
         CopyFile2Folder(FileName, SourceDir, DestDir)
@@ -263,21 +295,22 @@ def CopyFile2AllSubDirsUnderDestDir(FileName, SourceDir, DestDir):
         except Exception:
             continue
 
-def CopyFile2Folder(FilePath=None, FileName=None, SourceDir=None, DestDir=None):
+def CopyFile2Dir(FilePath=None, FileName=None, DirSource=None, DirDest=None):
     if FilePath is not None:
-        DestDir = EnsureDir(DestDir)
+        DirDest = EnsureDir(DirDest)
         FilePath = CheckFileExists(FilePath)
-        FileName = FileNameFromPath(FilePath)
-        shutil.copy(FilePath, DestDir + FileName)
+        FileName = FileNameFromFilePath(FilePath)
+        shutil.copy(FilePath, DirDest + FileName)
     else:
-        EnsureFileDir(DestDir + FileName)
-        shutil.copy(SourceDir + FileName, DestDir + FileName)
-CopyFile2Dir = CopyFile2Folder
+        DirSource = CheckDirExists(DirSource)
+        EnsureFileDir(DirDest + FileName)
+        shutil.copy(DirSource + FileName, DirDest + FileName)
+CopyFile2Folder = CopyFileTo = CopyFile2Dir
 
 def CopyFile(FilePath, FilePathDest):
     FilePath = StandardizePath(FilePath)
     FilePathDest = StandardizePath(FilePathDest)
-    shutil.copy(FilePath, FilePathDest)
+    shutil.copy(FilePath, FilePathDest) # overwrite if exists
 
 def IsSameFile(FilePath1, FilePath2):
     return os.path.samefile(FilePath1, FilePath2)
@@ -301,7 +334,7 @@ def DeleteFile(FilePath, RaiseIfNonExist=False, Move2TrashBin=False, DeleteIfMov
                     DLUtils.print("Failed to delete file to trashbin (%s)"%FilePath)
                     DLUtils.print(traceback.format_exc())
                     if DeleteIfMove2TrashBinFail:
-                        DLUtils.print("trying delete only.")
+                        DLUtils.print("Trying delete only.")
                 SigMove2TrashBinFail = True
     if not FileExists(FilePath):
         Msg = f"DLUtils.DeleteFile: FilePath {FilePath} does not exist."
@@ -415,7 +448,7 @@ def RemoveFileIfExists(FilePath):
 
 def RemoveDir(DirPath):
     DirPath = StandardizeDirPath(DirPath)
-    assert _ExistsDir(DirPath)
+    assert _ExistsDir(DirPath), DirPath
     shutil.rmtree(DirPath)
     return
 DeleteDir = RemoveDir
@@ -515,20 +548,22 @@ def ListFilePaths(DirPath):
 
 ListAllFilesPath = ListAllFilePaths = GetAllFilePaths = GetAllFilesPath = ListFilesPath = ListFilesPaths = ListFilePaths
 
-def ListDirs(DirPath):
+def ListDirsName(DirPath):
     if not os.path.exists(DirPath):
         raise Exception()
     if not os.path.isdir(DirPath):
         raise Exception()
     Names = os.listdir(DirPath)
     Dirs = []
-    for Name in Names:
-        if os.path.isdir(DirPath + Name):
-            Dir = Name + "/"
-            Dirs.append(Dir)
+    for DirName in Names:
+        if os.path.isdir(DirPath + DirName):
+            # DirName = DirName + "/"
+            Dirs.append(DirName)
     return Dirs
-ListAllDirs = GetAllDirs = ListDirs
-ListAllFolders = ListDirs
+ListDirs = ListAllDirs = GetAllDirs = ListDirNames = ListDirsName
+ListAllFoldersName = ListAllFolderNames = ListDirsName
+AllDirNames = AllDirsName = ListDirsName
+ListAllDirNames = ListAllDirsName = ListDirsName
 
 def ListDirsPath(DirPath):
     if not DirPath.endswith("/"):
@@ -564,7 +599,7 @@ def CheckFileExists(FilePath):
 
 def CheckFolderExists(DirPath):
     DirPath = ToStandardDirPath(DirPath)
-    assert _ExistsDir(DirPath)
+    assert _ExistsDir(DirPath), DirPath
     return DirPath
 
 CheckDirExists = CheckFolderExists
@@ -790,6 +825,7 @@ def RenameFile(FilePath, FilePathNew):
     FilePath = CheckFileExists(FilePath)
     FilePathNew = StandardizeFilePath(FilePathNew)
     os.rename(FilePath, FilePathNew)
+ChangeFileName = RenameFile
 
 def RenameFileIfExists(FilePath, RenameExistingFile=False):
     if FilePath.endswith("/"):
@@ -999,6 +1035,10 @@ def Str2MD5(Str):
 def ToMD5(Obj):
     return Str2MD5(str(Obj))
 
+import filecmp
+def HasSameContent(FilePath1, FilePath2):
+    return filecmp.cmp(FilePath1, FilePath2, shallow=False)
+
 def File2MD5(FilePath):
     import hashlib
     Md5Calculator = hashlib.md5()
@@ -1073,25 +1113,43 @@ def CheckDir(DirPath):
 
 CheckDirPath = CheckDir
 
-def VisitDirAndApplyMethodOnFiles(DirPath=None, Method=None, Recur=False, **Dict):
+def VisitDirAndApplyMethodOnFiles(DirPath=None, Method=None, Recur=True, DirPathRel="", **Dict):
     DirPath = CheckDirPath(DirPath)
-    
     if Method is None:
-        Method = lambda Context:0
-        DLUtils.AddWarning('Method is None.')
-
-    
-    FileList, DirList = ListAllFilesAndDirs(DirPath)
-
-    for FileName in FileList:
-        Method(DLUtils.PyObj({
-            "DirPath": DirPath,
-            "FileName": FileName
-        }))
-
+        Method = DLUtils.EmptyFunction
+        DLUtils.warn('Method is None.')
+    FileNameList = ListAllFileNames(DirPath)
+    for FileName in FileNameList:
+        Method(FilePath=DirPath + FileName, FileName=FileName, DirPath=DirPath, FilePathRel=DirPathRel + FileName, **Dict)
     if Recur:
-        for DirName in DirList:
-            VisitDirAndApplyMethodOnFiles(DirPath + DirName + "/", Method, Recur, **Dict)
+        DirNameList = DLUtils.ListAllDirNames(DirPath)
+        for DirName in DirNameList:
+            VisitDirAndApplyMethodOnFiles(DirPath + DirName + "/", Method, Recur, DirPathRel = DirPathRel + DirName + "/", **Dict)
+
+def DirContains(DirSource, DirDest, Recur=True, DirPathRel="", **Dict):
+    FileNameList = ListAllFileNames(DirSource)
+    for FileName in FileNameList:
+        FilePath = DirSource + FileName
+        FilePathDest = DirDest + FileName
+        if not HasSameContent(FilePath, FilePathDest):
+            return False
+    if Recur:
+        DirNameList = DLUtils.ListAllDirNames(DirSource)
+        for DirName in DirNameList:
+            Result = DirContains(DirSource + DirName + "/", DirDest + DirName + "/", Recur, DirPathRel = DirPathRel + DirName + "/", **Dict)
+            if Result is False:
+                return False
+    return True
+
+def FileNumInDir(DirPath, Recur=True):
+    FileNameList = ListAllFileNames(DirPath)
+    Num = len(FileNameList)
+    if Recur:
+        DirNameList = DLUtils.ListAllDirNames(DirPath)
+        for DirName in DirNameList:
+            _Num = DirContains(DirPath + DirName + "/", Recur=Recur)
+            Num += _Num
+    return Num
 
 def VisitDirAndApplyMethodOnDirs(DirPath=None, Method=None, Recur=False, **Dict):
     DirPath = CheckDirPath(DirPath)
@@ -1374,3 +1432,23 @@ def ParseSavePath(SaveDir=None, SaveName=None, SaveNameDefault=None):
                 SaveDir += "/"
             assert not SaveName.endswith("/")
             return SaveDir + SaveName
+try:
+    import psutil
+except Exception:
+    warnings.warn("lib psutils not found.")
+else:
+    def IsFileUsedByOtherProcess(FilePath):
+        for proc in psutil.process_iter():
+            try:
+                # this returns the list of opened files by the current process
+                FileList = proc.open_files()
+                if FileList:
+                    print(proc.pid,proc.name)
+                    for FileName in FileList:
+                        print("\t",FileName.path)
+            except psutil.NoSuchProcess as err:
+                # This catches a race condition where a process ends before we can examine its files
+                pass
+            except Exception:
+                traceback.print_exc()
+                pass

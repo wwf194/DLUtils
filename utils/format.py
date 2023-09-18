@@ -110,13 +110,22 @@ def NpArray2TextFile(Data, SavePath, **Dict):
         raise Exception()
 
 def Int201String(Int, _0bPrefix=False, LeadingZero=False, Length=None):
+    """
+        format(14, '#010b') => '0b00001110'
+        format(14, '010b') => '0000001110'
+        '#': '0b' prefix
+    """
     Pattern = []
     if _0bPrefix:
         Pattern.append("#")
     if LeadingZero:
         Pattern.append("0")
-    if Length is not None:
-        Pattern.append(str(Length))
+        assert Length is not None
+        if _0bPrefix:
+            Pattern.append(str(Length + 1))
+        else:
+            Pattern.append(str(Length))
+    Pattern.append("b")
     Pattern = "".join(Pattern)
     if Length is None:
         return format(Int, Pattern)

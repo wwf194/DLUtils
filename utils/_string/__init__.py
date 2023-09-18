@@ -12,7 +12,7 @@ def LStrip(Str, Prefix):
     else:
         return str(Str)
 
-def RStrip(Str, Suffix):
+def RStrip(Str: str, Suffix):
     if Str[- len(Suffix):] == Suffix:
         return Str.rstrip(Suffix)
     else:
@@ -73,7 +73,7 @@ def Str2Bytes(Str:str, Encoding="utf-8"):
     return Str.encode(Encoding)
 
 import re
-def SelectStrWithPatternFromList(List, Pattern):
+def SelectStrWithPatternFromList(List, StrPattern):
     StrPattern = re.compile(StrPattern)
     for Str in List:
         assert isinstance(Str, str)
@@ -98,7 +98,7 @@ def CharListaz():
     return list(string.ascii_lowercase)
 
 def CharListazAZ():
-    return list(Straz() + CharListAZ())
+    return list(StrAZ()() + CharListAZ())
 
 def CharList09():
     return list(string.digits)
@@ -167,11 +167,18 @@ def CloseFileStrOut(FileStrOut=None):
 def RedirectSysStdOutTo(Pipe):
     pass
 
+def HasStdOut():
+    try:
+        print("check", file=sys.__stdout__, flush=True)
+        return True
+    except Exception:
+        return False
+
 def OutputTo(Pipe):
     global OutPipe
     global IndentLevel
     global Write2StdOut, WriteBytes2StdOut, WriteStr2StdOut
-    sys.stdout = Pipe
+    # sys.stdout = Pipe
     OutPipe = Pipe
     if hasattr(OutPipe, "buffer"):
         WriteBytes2StdOut = lambda StdOut, Bytes: StdOut.buffer.write(Bytes)
@@ -224,12 +231,19 @@ def ResetOutPipe():
         WriteStr2StdOut = lambda StdOut, Str: StdOut.write(Str)
 ResetStdOut = ResetOutPipe
 
-def PrintStr2Pipe(Pipe, Str, Indent=None, Flush=True):
+def PrintStr2Pipe(
+        Pipe,
+        Str: str,
+        Indent=None,
+        Flush=True,
+        IndentStr="    " # "\t"
+    ):
     if Pipe is None:
         global OutPipe
         Pipe = OutPipe
     if Indent is None:
-        Indent = 0
+        global IndentLevel
+        Indent = IndentLevel
     if Indent > 0:
         if Str.endswith("\n"):
             IsEndWithNewLine = True
@@ -238,7 +252,7 @@ def PrintStr2Pipe(Pipe, Str, Indent=None, Flush=True):
             IsEndWithNewLine = False
         StrList = Str.split("\n")
         for Index, Line in enumerate(StrList):
-            StrList[Index] = "".join(["\t" for _ in range(Indent)] + [Line])
+            StrList[Index] = "".join([IndentStr for _ in range(Indent)] + [Line])
         Str = "\n".join(StrList)
         if IsEndWithNewLine:
             Str = Str + "\n"
@@ -253,6 +267,10 @@ def PrintPIDTo(Pipe, Indent=None):
     Str = "PID: " + str(DLUtils.system.CurrentPID()) + "\n"
     PrintStr2Pipe(Pipe, Str, Indent=Indent)
 
+def PrintPIDToPipeAndStdOut(Pipe, Indent=None):
+    PrintPIDTo(Pipe, Indent=Indent)
+    PrintPIDTo(sys.__stdout__, Indent=Indent)
+
 def PrintCurrentTimeTo(Pipe, Indent=None, Format=None, Prefix="Time: "):
     if Indent is not None:
         assert isinstance(Indent, int), Indent
@@ -262,6 +280,10 @@ def PrintCurrentTimeTo(Pipe, Indent=None, Format=None, Prefix="Time: "):
     PrintStr2Pipe(Pipe, TimeStr, Indent=Indent)
 PrintTimeStrTo = PrintTimeStr2 = PrintCurrentTimeTo
 PrintCurrentTimeStrTo = PrintCurrentTimeTo = PrintCurrentTime2 = PrintCurrentTimeTo
+
+def PrintCurrentTimeToPipeAndStdOut(Pipe, Indent=None, Format=None, Prefix="Time: "):
+    PrintCurrentTimeTo(Pipe, Indent=Indent, Format=Format, Prefix=Prefix)
+    PrintCurrentTimeTo(sys.__stdout__, Indent=Indent, Format=Format, Prefix=Prefix)
 
 def PrintTimeStr(Indent=None, Format=None, Prefix="Time: "):
     global OutPipe
@@ -294,13 +316,29 @@ def PrintWithParam(*List, **Dict):
     PrintBuf.flush()
     return Str
 
+def PrintUTF8ToStdOut(*List, Indent=None, **Dict):
+    return PrintUTF8To(sys.__stdout__, *List, Indent=Indent)
+
+def PrintUTF8ToStdErr(*List, Indent=None, **Dict):
+    return PrintUTF8To(sys.__stderr__, *List, Indent=Indent)
+
+Print = _print = PrintUTF8ToStdOut
+
 def PrintUTF8To(Pipe, *List, Indent=None, **Dict):
     Str = PrintWithParam(*List, **Dict)
     if Indent is None:
         global IndentLevel
         Indent = IndentLevel
     PrintStr2Pipe(Pipe, Str, Indent=Indent)
-PrintTo = PrintUTF8To
+PrintTo = PrintToPipe = PrintUTF8To
+
+def PrintToPipeAndStdOut(Pipe, *List, Indent=None, **Dict):
+    PrintUTF8ToStdOut(*List, Indent=Indent, **Dict)
+    PrintUTF8To(Pipe, *List, Indent=Indent, **Dict)
+
+def PrintToPipeAndStdErr(Pipe, *List, Indent=None, **Dict):
+    PrintUTF8ToStdErr(*List, Indent=Indent, **Dict)
+    PrintUTF8To(Pipe, *List, Indent=Indent, **Dict)
 
 def Print2OutPipeUTF8(*List, Indent=None, **Dict):
     Str = PrintWithParam(*List, **Dict)

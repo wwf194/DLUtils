@@ -6,13 +6,14 @@ from .utils._string import \
     SetStdOut, OutputTo, Output2, ResetStdOut, \
     SetFileStrOut, CloseFileStrOut, \
     Print2StdErr, PrintHeartBeatTo, \
-    PrintTo, PrintUTF8To, Write, \
+    Print, PrintTo, PrintUTF8To, PrintUTF8ToStdOut, Write, HasStdOut, \
     PrintTimeStrTo, PrintTimeStr2, PrintCurrentTimeTo, PrintPIDTo, PrintWithTimeStr, \
     PrintTimeStr, \
     AddIndent, AddIndentLevel, IncreaseIndent, IncreaseIndentLevel, \
     DecreaseIndent, DecreaseIndentLevel, \
     SetIndentLevel, Write, \
     GetOutPipe, GetStdOut
+from .utils._string import _print as print
 
 from .utils.json import \
     IsJsonObj, PyObj, EmptyPyObj, IsPyObj, IsDictLikePyObj, \
@@ -167,7 +168,6 @@ except Exception:
 
 PackageFolderPath = DLUtils.file.FolderPathOfFile(__file__)
 
-
 try:
     import DLUtils.utils._time as time
 except Exception:
@@ -179,3 +179,61 @@ try:
     from DLUtils.backend._torch import NullParameter, ToTorchTensor
 except Exception:
     pass
+
+def DoTask(Param):
+    TaskName = GetFirstValue(Param, ["Task", "Name"])
+    if TaskName in ["Move", "MoveFile"]:
+        DirSourceList = Param["From"]
+        if isinstance(DirSourceList, str):
+            DirSourceList = [DirSourceList]
+        for DirSource in DirSourceList:
+            DirDest = Param["To"]
+            Pattern = Param.get("WithPattern")
+            if Pattern is not None:                        
+                for FileName in DLUtils.ListFileNameWithPattern(DirSource):
+                    pass
+                DLUtils.MoveFileWithFileNamePattern(
+                    DirSource,
+                    DirDest,
+                    Pattern,
+                    FileSizeMax="5.00GB"
+                )
+            else:
+                assert len(Param) == 3
+                DLUtils.file.MoveAllFile(DirSource, DirDest)
+    elif TaskName in ["DeleteFile"]:
+        Dir = Param["In"]
+        Dir = DLUtils.StandardizeDirPath(Dir)
+        DLUtils.DeleteFileWithFileNamePattern(
+            Dir, Param["WithPattern"]
+        )
+    elif TaskName in ["ReleaseFile"]:
+        FilePathSource = Param["From"]
+        if isinstance(FilePathSource, str):
+            FilePathSourceList = [FilePathSource]
+        else:
+            FilePathSourceList = list(FilePathSource)
+        for Index, FilePathSource in enumerate(FilePathSourceList):
+            FilePathSourceList[Index] = DLUtils.CheckFileExists(FilePathSource)
+        DirPathDestList = Param["To"]
+        if isinstance(DirPathDestList, str):
+            DirPathDestList = [DirPathDestList]
+        for DirPathDest in DirPathDestList:
+            try:
+                for FilePathSource in FilePathSourceList:
+                    DirPathDest = DLUtils.EnsureDir(DirPathDest)
+                    FilePathDest = DirPathDest + DLUtils.FileNameFromFilePath(FilePathSource)
+                    print("Copying file: (%s)-->(%s)"%(FilePathSource, FilePathDest))
+                    DLUtils.CopyFile(
+                        FilePathSource, FilePathDest
+                    )
+            except Exception:
+                print("Failed to release to folder: (%s)"%DirPathDest)
+                print(traceback.format_exc())
+    elif TaskName in ["MoveDirIntoDir"]:
+        DLUtils.MoveDirIntoDir(
+            DirSource=Param["From"],
+            DirDest=Param["To"] 
+        )
+    else:
+        raise Exception("Invalid task name: %s"%TaskName)
