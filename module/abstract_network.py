@@ -122,7 +122,7 @@ else:
                         Tensor = torch.nn.Parameter(Tensor, requires_grad=True)
                         setattr(self, Name, Tensor)
             if Recur:
-                for Name, SubModule in self.SubModules.items():
+                for Name, SubModule in self._SubModules.items():
                     if hasattr(SubModule, "UpdateTensorFromDict"):
                         SubModule.UpdateTensorFromDict(Recur=True)
             self.OnTensorMovement()
@@ -138,7 +138,7 @@ else:
                             TrainParamData = getattr(self, Name)
                             Param.setattr(Path, DLUtils.ToNpArray(TrainParamData))
             if Recur:
-                for Name, SubModule in self.SubModules.items():
+                for Name, SubModule in self._SubModules.items():
                     if hasattr(SubModule, "UpdateDictFromTensor"):
                         SubModule.UpdateDictFromTensor(Recur=True)
             return self
@@ -159,7 +159,7 @@ else:
                 self.ExtractTrainParamRecur(TrainParamDict=TrainParamDict, PathStrPrefix=PathStrPrefix)
             return TrainParamDict
         def ExtractTrainParamRecur(self, TrainParamDict={}, PathStrPrefix=True):
-            for Name, SubModule in self.SubModules.items():
+            for Name, SubModule in self._SubModules.items():
                 if hasattr(SubModule, "ExtractTrainParam"):
                     SubModule.ExtractTrainParam(
                         TrainParamDict=TrainParamDict,
@@ -226,7 +226,7 @@ else:
             self.LoadParamRecur(Param)
             return self
         def PlotWeightRecur(self, SaveDir, SaveName):
-            for Name, SubModule in self.SubModules.items():
+            for Name, SubModule in self._SubModules.items():
                 if hasattr(SubModule, "PlotWeight"):
                     SubModule.PlotWeight(SaveDir, SaveName)
             return self
@@ -290,7 +290,7 @@ else:
             return Dict
         def ReportModelSizeRecur(self, Dict):
             SubModules = Dict["SubModules"]
-            for Name, SubModule in self.SubModules.items():
+            for Name, SubModule in self._SubModules.items():
                 if hasattr(SubModule, "ReportModelSize"):
                     SubModuleDict = SubModule.ReportModelSize(IsRoot=False)
                     SubModules[Name] = SubModuleDict

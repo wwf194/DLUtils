@@ -2,7 +2,8 @@
 
 import warnings
 import DLUtils
-from DLUtils.utils.json.ply import lex
+from DLUtils.utils._json.ply import lex, yacc
+from enum import Enum
 
 tokens = (
     "BRACKET_CURLY_LEFT",
@@ -96,8 +97,7 @@ def LexerTest(Input=None):
             # 返回的token为None，表示到达末尾
             break
 
-from DLUtils.utils.json.ply import yacc
-from enum import Enum
+
 
 class _NODE_TYPE(Enum):
     EMPTY = 0

@@ -1,8 +1,10 @@
-
+import warnings
+import DLUtils
 try:
     import pymysql # for python 3.x
 except Exception:
-    print("lib pymysql not found.")
+    if DLUtils.Verbose:
+        warnings.warn("lib pymysql not found.")
 else:
     def CreateMySQLSession(Host=None, User=None, Password=None):
         session = pymysql.connect(

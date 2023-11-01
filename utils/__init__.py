@@ -125,12 +125,7 @@ def IsListLike(List):
         return True
     return False
 
-def RemoveStartEndEmptySpaceChars(Str):
-    Str = re.match(r"\s*([\S].*)", Str).group(1)
-    Str = re.match(r"(.*[\S])\s*", Str).group(1)
-    return Str
 
-RemoveHeadTailWhiteChars = RemoveStartEndEmptySpaceChars
 
 def RemoveWhiteChars(Str):
     Str = re.sub(r"\s+", "", Str)

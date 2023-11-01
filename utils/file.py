@@ -1,14 +1,17 @@
-from ast import Is
 import os
 import re
 import warnings
 import shutil
 import gzip
-#from DLUtils.attr import *
 from pathlib import Path
 import DLUtils
-from DLUtils.utils._param import JsonFile2Param
 
+from ._json import (
+        PyObj2DataFile, DataFile2PyObj, PyObj2JsonFile,
+        JsonFile2PyObj, JsonFile2JsonDict, JsonObj2JsonFile,
+        DataFile2JsonObj, JsonFile2Dict, Obj2JsonFile
+    )
+from ._param import JsonDict2Str, JsonFile2Param
 from ._time import LastModifiedTime
 def MostRecentlyModified(PathList, Num=None):
     if Num is None:
@@ -137,6 +140,14 @@ def MoveFile(FilePath, PathDest=None, RaiseIfNonExist=False, Overwrite=True, Rai
     shutil.move(FilePath, FilePathDest)
     # DeleteFile(FilePath) # shutil.move will delete file upon successful move.
     return True
+
+def ListDirNameWithPattern(DirPath, DirNamePattern, End=""):
+    DirNameList = []
+    DirNamePatternCompiled = re.compile(DirNamePattern)
+    for DirName in DLUtils.ListDirNames(DirPath, End=""):
+        if DirNamePatternCompiled.match(DirName) is not None:
+            DirNameList.append(DirName + End)
+    return DirNameList
 
 def ListFileNameWithPattern(DirPath, FileNamePattern):
     FileNameList = []
@@ -367,6 +378,7 @@ def DeleteAllFilesAndSubFolders(DirPath):
         DeleteFile(FilePath)
     for DirPath in ListDirsPath(DirPath):
         DeleteTree(DirPath)
+EmptyDir = MakeDirEmpty = DeleteAllFilesAndSubFolders
 
 def DeleteTree(FolderPath, RaiseIfNonExist=False):
     if not FolderExists(FolderPath):
@@ -548,27 +560,24 @@ def ListFilePaths(DirPath):
 
 ListAllFilesPath = ListAllFilePaths = GetAllFilePaths = GetAllFilesPath = ListFilesPath = ListFilesPaths = ListFilePaths
 
-def ListDirsName(DirPath):
-    if not os.path.exists(DirPath):
-        raise Exception()
-    if not os.path.isdir(DirPath):
-        raise Exception()
+def ListDirNames(DirPath, End=""):
+    DirPath = CheckDirExists(DirPath)
     Names = os.listdir(DirPath)
-    Dirs = []
-    for DirName in Names:
-        if os.path.isdir(DirPath + DirName):
-            # DirName = DirName + "/"
-            Dirs.append(DirName)
-    return Dirs
-ListDirs = ListAllDirs = GetAllDirs = ListDirNames = ListDirsName
-ListAllFoldersName = ListAllFolderNames = ListDirsName
-AllDirNames = AllDirsName = ListDirsName
-ListAllDirNames = ListAllDirsName = ListDirsName
+    DirNameList = []
+    for Name in Names:
+        if os.path.isdir(DirPath + Name):
+            DirName = Name + End
+            DirNameList.append(DirName)
+    return DirNameList
+ListAllDirs = GetAllDirs = ListDirs = ListDirsName = ListDirNames
+ListAllDirNames = ListAllDirsName = ListAllFolders = ListDirNames
+ListAllFoldersName = ListAllFolderNames = ListDirNames
+AllDirNames = AllDirsName = ListDirNames
 
 def ListDirsPath(DirPath):
     if not DirPath.endswith("/"):
         DirPath += "/"
-    DirNameList = ListDirs(DirPath)
+    DirNameList = ListDirsName(DirPath)
     return [DirPath + DirName for DirName in DirNameList]
 ListAllDirPaths = ListAllDirsPath = ListDirsPath
 
@@ -622,7 +631,7 @@ def EnsureDirectory(DirPath):
     #DirPathAbs = Path2AbsolutePath(DirPath)
     DirPath = StandardizeDirPath(DirPath)
     return _EnsureDirectory(DirPath)
-EnsureDir = EnsureFolder = EnsureDirectory
+EnsureDirPath = EnsureDirExists = EnsureDir = EnsureFolder = EnsureDirectory
 
 def EnsureFileDirectory(FilePath):
     assert not FilePath.endswith("/"), FilePath
@@ -988,7 +997,7 @@ def Size2Str(SizeB, Base=1024):
     if SizeKB > Base:
         SizeMB = SizeB * 1.0 / MB
     else:
-        return "%.2f MB"%(SizeKB)
+        return "%.2f KB"%(SizeKB)
     if SizeMB > Base:
         SizeGB = "%.2f GB"%(SizeB * 1.0 / GB)
     else:
@@ -1000,6 +1009,7 @@ def FileSizeStr(FilePath):
     return Size2Str(Bytes)
 
 def File2ObjPickle(FilePath):
+    FilePath = DLUtils.CheckFileExists(FilePath)
     with open(FilePath, 'rb') as f:
         Obj = pickle.load(f, encoding='bytes')
     return Obj
@@ -1231,10 +1241,7 @@ def Data2TextFile(data, Name=None, FilePath=None):
         FilePath = DLUtils.GetSavePathFromName(Name, Suffix=".txt")
     DLUtils.Str2File(str(data), FilePath)
 
-from .json import PyObj2DataFile, DataFile2PyObj, PyObj2JsonFile, \
-    JsonFile2PyObj, JsonFile2JsonDict, JsonObj2JsonFile, DataFile2JsonObj, JsonFile2Dict, Obj2JsonFile
 
-from ._param import JsonDict2Str
 
 def FolderConfig(FolderPath):
     FolderPath = ToAbsPath(FolderPath)

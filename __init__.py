@@ -1,33 +1,45 @@
 Verbose = True
 
-from .utils._dict import IterableKeyToElement, IterableKeyToKeys
+from .utils._dict import IterableKeyToElement, IterableKeyToKeys, ToDict
 from .utils._string import Print2OutPipe as print
-from .utils._string import \
-    SetStdOut, OutputTo, Output2, ResetStdOut, \
-    SetFileStrOut, CloseFileStrOut, \
-    Print2StdErr, PrintHeartBeatTo, \
-    Print, PrintTo, PrintUTF8To, PrintUTF8ToStdOut, Write, HasStdOut, \
-    PrintTimeStrTo, PrintTimeStr2, PrintCurrentTimeTo, PrintPIDTo, PrintWithTimeStr, \
-    PrintTimeStr, \
-    AddIndent, AddIndentLevel, IncreaseIndent, IncreaseIndentLevel, \
-    DecreaseIndent, DecreaseIndentLevel, \
-    SetIndentLevel, Write, \
-    GetOutPipe, GetStdOut
-from .utils._string import _print as print
+from .utils._string import (
+        SetStdOut, OutputTo, Output2, ResetStdOut,
+        SetFileStrOut, CloseFileStrOut,
+        Print2StdErr, PrintHeartBeatTo,
+        PrintTo, PrintUTF8To, Write,
+        PrintTimeStrTo, PrintTimeStr2, PrintCurrentTimeTo, 
+        PrintWithTimeStr, PrintTimeStr,
+        PrintPIDTo,
+        AddIndent, AddIndentLevel, IncreaseIndent, IncreaseIndentLevel,
+        DecreaseIndent, DecreaseIndentLevel,
+        SetIndentLevel, Write,
+        GetOutPipe, GetStdOut,
+        RemoveHeadTailWhiteChars
+    )
 
-from .utils.json import \
+import DLUtils.utils._json as json
+from .utils._json import \
     IsJsonObj, PyObj, EmptyPyObj, IsPyObj, IsDictLikePyObj, \
     IsListLikePyObj, CheckIsLegalPyName
 import DLUtils.utils as utils
-import DLUtils.utils.json as json
 
 import DLUtils.utils._param as param
 #from .utils import _1DTo2D
-from .utils._param import \
-    Param, param, \
-    new_param, NewParam, ToParam, Param2JsonFile, Param2JsonStr
+from .utils._param import (
+        Param, param,
+        new_param, NewParam,
+        ToParam,
+        Param2JsonFile, Param2JsonStr
+    )
+import DLUtils.utils._numpy as numpy
+from .utils._numpy import SetSeedForNumpy, NpArray2TextFile
 
-from .utils import *
+# from .utils import *
+from .utils import GetSystemType, ExpandIterableKey, ToList, GetFirstValue
+try:
+    from .utils import ToNpArray
+except Exception:
+    pass
 SystemType = GetSystemType()
 
 import DLUtils.module as module
@@ -92,10 +104,12 @@ try:
     from .train import TrainSession, EpochBatchTrainSession
 except Exception:
     pass
+
+import DLUtils.network as network
 try:
     import DLUtils.network as network
 except Exception:
-    pass
+    print("Failed to import DLUtils.network")
 try:
     import DLUtils.task as task
     from .task import Task, Dataset
@@ -110,27 +124,27 @@ except Exception:
 # from .functions import *
 # from .log import *
 
-
 try:
     import DLUtils.loss as loss
 except Exception:
     pass
 try:
     import DLUtils.data as data
-    from DLUtils.data.generate import \
-        SampleFromKaimingNormal, \
-        SampleFromKaimingUniform, \
-        SampleFromXaiverNormal, \
-        SampleFromXaiverUniform, \
-        SampleFromConstantDistribution, \
-        SampleFromNormalDistribution, \
-        SampleFrom01NormalDistribution, \
-        SampleFromGaussianDistribution, \
-        SampleFromUniformDistribution, \
-        DefaultConv2DKernel, DefaultUpConv2DKernel, ShapeWithSameValue, \
-        DefaultNonLinearLayerWeight, DefaultNonLinearLayerBias, DefaultLinearLayerWeight, \
-        DefaultUpConv2DBias, DefaultConv2DBias, DefaultLinearLayerBias, \
+    from DLUtils.data.generate import (
+        SampleFromKaimingNormal,
+        SampleFromKaimingUniform,
+        SampleFromXaiverNormal,
+        SampleFromXaiverUniform,
+        SampleFromConstantDistribution,
+        SampleFromNormalDistribution,
+        SampleFrom01NormalDistribution,
+        SampleFromGaussianDistribution,
+        SampleFromUniformDistribution,
+        DefaultConv2DKernel, DefaultUpConv2DKernel, ShapeWithSameValue,
+        DefaultNonLinearLayerWeight, DefaultNonLinearLayerBias, DefaultLinearLayerWeight,
+        DefaultUpConv2DBias, DefaultConv2DBias, DefaultLinearLayerBias,
         DefaultVanillaRNNHiddenWeight
+    )
 except Exception:
     pass
 
@@ -151,9 +165,10 @@ try:
         Tensor2ImageFile
 except Exception:
     pass
-from DLUtils.utils.func import \
-    EmptyFunction
-from DLUtils.utils.file import ParseSavePath
+from DLUtils.utils.func import (EmptyFunction)
+
+from .utils.file import *
+from .utils.file import ParseSavePath, ChangeFilePathSuffix, FolderPathOfFile
 
 try:
     import DLUtils.example as example
@@ -165,18 +180,22 @@ try:
     import DLUtils.backend._torch as torch
 except Exception:
     pass
+else:
+    from .backend._torch import SetSeedForTorch
 
-PackageFolderPath = DLUtils.file.FolderPathOfFile(__file__)
+PackageFolderPath = FolderPathOfFile(__file__)
 
 try:
     import DLUtils.utils._time as time
 except Exception:
     pass
+else:
+    from DLUtils.utils._time import CurrentTimeStr, TimeStr
 from DLUtils.utils.system import NewCmdArg, ParseCmdArg, ErrorStackStr, PrintErrorStackTo, \
     PrintErrorStackWithInfoTo, PrintErrorStackWithInfo2
 
 try:
-    from DLUtils.backend._torch import NullParameter, ToTorchTensor
+    from DLUtils.backend._torch import NullParameter, ToTorchTensor, ToTorchTensorOrNum
 except Exception:
     pass
 
@@ -237,3 +256,6 @@ def DoTask(Param):
         )
     else:
         raise Exception("Invalid task name: %s"%TaskName)
+def SetSeedForRandom(Seed: int):
+    import random
+    random.seed(0)

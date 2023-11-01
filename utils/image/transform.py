@@ -6,13 +6,15 @@ import DLUtils
 try: # pip install pillow-avif-plugin
     import pillow_avif # Pillow avif support
 except Exception:
-    DLUtils.Write("lib pillow_avif not found.")
+    if DLUtils.Verbose:
+        warnings.warn("lib pillow_avif not found.")
 
 try: # pip3 install pillow-heif
     import pillow_heif # Pillow heif support
     pillow_heif.register_heif_opener()
 except Exception:
-    DLUtils.Write("pillow_heif failed to import.")
+    if DLUtils.Verbose:
+        warnings.warn("lib pillow_heif not found.")
 
 def ImageFile2Jpg(FilePath, SavePath=None):
     FilePath = DLUtils.CheckFileExists(FilePath)

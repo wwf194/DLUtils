@@ -5,7 +5,7 @@ from ..module import LogComponent
 class AbstractModule(LogComponent):
     def __init__(self, Log=None, **Dict):
         self.Name = "_ABSTRACT_MODULE"
-        self.SubModules = DLUtils.param()
+        self._SubModules = DLUtils.param()
         self.BindModules = DLUtils.param()
         Param = self.Param = DLUtils.Param()
         Param._CLASS = DLUtils.python.ClassPathStr(self)
@@ -13,7 +13,6 @@ class AbstractModule(LogComponent):
         if Log is not None:
             self._Log = Log
         self.SetParam(**Dict)
-    
     def __call__(self, *List, **Dict):
         return self.CallMethod(*List, **Dict)
     def ExtractParam(self, RetainSelf=True):
@@ -25,13 +24,13 @@ class AbstractModule(LogComponent):
         else:
             return "MODULE_WITHOUT_PARAM"
     def ExtractParamRecur(self, Param, RetainSelf):
-        for Name, SubModule in self.SubModules.items():
+        for Name, SubModule in self._SubModules.items():
             setattr(Param.SubModules, Name, SubModule.ExtractParam(RetainSelf))
         return self.Param
     def LoadParam(self, Param):
         self.Param = Param
         self._IsLoad = True
-        self.SubModules = DLUtils.param()
+        self._SubModules = DLUtils.param()
         self.BindModules = DLUtils.param()
         self.SetEventDict()
         self.LoadParamRecur(Param)
@@ -40,12 +39,12 @@ class AbstractModule(LogComponent):
         for Name, SubModule in Param.SubModules.items():
             ModuleClass = DLUtils.python.ParseClass(SubModule._CLASS)
             SubModule._PATH = Param._PATH + "." + Name
-            self.SubModules[Name] = ModuleClass().LoadParam(SubModule)
+            self._SubModules[Name] = ModuleClass().LoadParam(SubModule)
         return self
     def GetParamMap(self, UseParamMapDefault=True):
         if UseParamMapDefault or \
             hasattr(self, "UseParamMapDefault") and self.UseParamMapDefault:
-            ParamMap = GetParamMapDefault()
+            ParamMap = DLUtils.module.GetParamMapDefault()
         else:
             ParamMap = {}
         if hasattr(self, "ParamMap"):
@@ -117,7 +116,7 @@ class AbstractModule(LogComponent):
                     Tensor = torch.nn.Parameter(Tensor, requires_grad=True)
                     setattr(self, Name, Tensor)
         if Recur:
-            for Name, SubModule in self.SubModules.items():
+            for Name, SubModule in self._SubModules.items():
                 if hasattr(SubModule, "UpdateTensorFromDict"):
                     SubModule.UpdateTensorFromDict(Recur=True)
         self.OnTensorMovement()
@@ -133,7 +132,7 @@ class AbstractModule(LogComponent):
                         TrainParamData = getattr(self, Name)
                         Param.setattr(Path, DLUtils.ToNpArray(TrainParamData))
         if Recur:
-            for Name, SubModule in self.SubModules.items():
+            for Name, SubModule in self._SubModules.items():
                 if hasattr(SubModule, "UpdateDictFromTensor"):
                     SubModule.UpdateDictFromTensor(Recur=True)
         return self
@@ -194,13 +193,13 @@ class AbstractModule(LogComponent):
     def _AddSubModule(self, Name, SubModule):
         Param = self.Param
         # detect overwrite module
-        assert not self.SubModules.hasattr(Name)
+        assert not self._SubModules.hasattr(Name)
         if hasattr(SubModule, "Param"):
             Param.SubModules.setattr(Name, SubModule.Param)
             SubModule.Param._PATH = Param._PATH + "." + Name
         else:
             Param.SubModules.setattr(Name, "MODULE_WITHOUT_PARAM")
-        self.SubModules[Name] = SubModule
+        self._SubModules[Name] = SubModule
         setattr(self, Name, SubModule)
         return self
     # 1D dropout
@@ -280,12 +279,12 @@ class AbstractModule(LogComponent):
     _Unbind = _UnBindModule
     _UnbindModule = _UnBindModule
     def GetSubModule(self, Name):
-        return self.SubModules.getattr(Name)
+        return self._SubModules.getattr(Name)
     def RemoveSubModule(self, Name=None, SubModule=None):
         Param = self.Param
         if Name is not None:
-            if Name in self.SubModules.keys():
-                self.SubModules.pop(Name)
+            if Name in self._SubModules.keys():
+                self._SubModules.pop(Name)
                 Param.SubModules.delattr(Name)
                 if hasattr(self, Name):
                     delattr(self, Name)
@@ -293,9 +292,9 @@ class AbstractModule(LogComponent):
                 warnings.warn("{0}.RemoveSubModule: No such SubModule: {1}".format(Param._PATH, Name))
         elif SubModule is not None:
             HasRemoved = False
-            for Name, _SubModule in self.SubModules.items():
+            for Name, _SubModule in self._SubModules.items():
                 if SubModule == _SubModule:
-                    self.SubModules.pop(Name)
+                    self._SubModules.pop(Name)
                     Param.SubModules.delattr(Name)
                     HasRemoved = True
                     break
@@ -340,14 +339,14 @@ class AbstractModule(LogComponent):
         if hasattr(self, "_ClassStr"):    
             return self._ClassStr
         else:
-            return DLUtils.system.ClassPathStr(self)
+            return DLUtils.python.ClassPathStr(self)
     def SetName(self, Name, Recur=True):
         _PATH = self.Param._PATH
         PathList = _PATH.split(".")
         PathList[0] = Name
         self.Param._PATH = ".".join(PathList)
         if Recur:
-            for SubModule in self.SubModules.values():
+            for SubModule in self._SubModules.values():
                 SubModule.SetName(Name)
     def Rename(self, Name):
         self.SetName(Name)
@@ -372,13 +371,13 @@ class AbstractModule(LogComponent):
         if self.InitFinished(): # avoid double init
             return self
         if self.IsLoad():
-            for Name, SubModule in self.SubModules.items():
+            for Name, SubModule in self._SubModules.items():
                 SubModule.Init(IsSuper=False, IsRoot=False)
                 setattr(self, Name, SubModule)
         else:
             if IsRoot:
                 self.Param._PATH = "Root"
-            for Name, SubModule in self.SubModules.items():
+            for Name, SubModule in self._SubModules.items():
                 if hasattr(SubModule, "Param"):
                     if not SubModule.IsFixedRoot():
                         SubModule.Param._PATH = self.Param._PATH + "." + Name
@@ -409,7 +408,7 @@ class AbstractModule(LogComponent):
         if IsRoot:
             self.SetTest()
         self.UpdateTensorFromDict()
-        self._InitFinished = True
+        self._HasInit = True
         return self
     def LogWithSelfInfo(self, Content, Type="Unknown"):
         self.Log(f"{self.PathStr()}({self.ClassStr()}): {Content}", Type=Type)
@@ -450,7 +449,7 @@ class AbstractModule(LogComponent):
         for Name, BindModule in self.BindModules.items():
             if hasattr(BindModule, "SetDevice"):
                 BindModule.SetDevice(Device, IsRoot=False)
-        for Name, SubModule in self.SubModules.items():
+        for Name, SubModule in self._SubModules.items():
             if hasattr(SubModule, "SetDevice"):
                 SubModule.SetDevice(Device, IsRoot=False)
         return self
@@ -473,7 +472,7 @@ class AbstractModule(LogComponent):
     def ParamNumDictRecur(self, Recur=True, Dict=None):
         if Dict is None:
             Dict = {}
-        for Name, SubModule in self.SubModules.items():
+        for Name, SubModule in self._SubModules.items():
             if hasattr(SubModule, "ParamNum"):
                 SubModule.ParamNum(Recur=Recur, Dict=Dict)
         return Dict
@@ -531,19 +530,20 @@ class AbstractModule(LogComponent):
         return not self.IsLoad()
     def IsLoad(self):
         return hasattr(self, "_IsLoad") and self._IsLoad
-    def InitFinished(self):
-        return hasattr(self, "_InitFinished") and self._InitFinished
+    def HasInit(self):
+        return hasattr(self, "_HasInit") and self._HasInit
+    InitFinished = HasInit
     def HandleTensorBySelf(self):
         return hasattr(self, "_HandleTensorBySelf") and self._HandleTensorBySelf
     def SetTrain(self, Recur=True):
         if Recur:
-            for SubModule in self.SubModules.values():
+            for SubModule in self._SubModules.values():
                 if hasattr(SubModule, "SetTrain"):
                     SubModule.SetTrain(Recur=True)
         return self
     def SetTest(self, Recur=True):
         if Recur:
-            for SubModule in self.SubModules.values():
+            for SubModule in self._SubModules.values():
                 if hasattr(SubModule, "SetTrain"):
                     SubModule.SetTest(Recur=True)
         return self
@@ -552,17 +552,3 @@ class AbstractModule(LogComponent):
 
 EmptyModule = AbstractModule
 
-from ..utils._dict import IterableKeyToElement, ExpandIterableKey
-
-def GetParamMapDefault():
-    return ExpandIterableKey({
-        ("InNum", "InputNum"): "In.Num",
-        ("InType", "InputType"): "In.Type",
-        ("OutNum", "OutputNum"): "Out.Num",
-        ("OutType", "OutputType"): "Out.Type",
-        ("EpochNum"): "Epoch.Num",
-        ("BatchNum"): "Batch.Num",
-        ("BatchSize"): "Batch.Size",
-        ("AfterOperation"): "Operation.After"
-    })
-ParamMapDefault = GetParamMapDefault()

@@ -1,6 +1,7 @@
 #from .AbstractModule import AbstractModule
-from ..module import AbstractModule, AbstractNetwork, AbstractOperator, TorchModuleWrapper
+from ..module import AbstractModule, AbstractNetwork, AbstractOperator
 from ..module import ModuleGraph, ModuleList, ModuleSeries, _ModuleSeries, _ModuleList
+from ..backend._torch import TorchModuleWrapper
 
 from .linear import LinearLayer, Linear
 from .nonlinear import NonLinearLayer, NonLinear

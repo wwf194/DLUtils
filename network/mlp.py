@@ -16,17 +16,21 @@ class MLP(_ModuleList):
             for _UnitNum in List:
                 assert isinstance(_UnitNum, int)
             Dict["UnitNum"] = [UnitNum, *List]
+            self._IsUnitNumSpecified = True
         elif UnitNum is not None:
             UnitNum = DLUtils.ToList(UnitNum)
             Dict["UnitNum"] = UnitNum
             assert len(UnitNum) > 1
+            self._IsUnitNumSpecified = True
+        else:
+            self._IsUnitNumSpecified = False
         super().__init__(**Dict)
     def Init(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         if self.IsInit():
             assert Param.Layer.Unit.hasattr("Num")
             LayerNum = Param.Layer.Num = len(Param.Layer.Unit.Num) - 1
-            
+
             # nonlinear setting
             Param.NonLinear.setdefault("Enable", True)
             if Param.NonLinear.Enable:
@@ -54,7 +58,7 @@ class MLP(_ModuleList):
                         Bias=Bias
                     )
                 )
-        self.LayerNum = Param.Layer.Num
+        self._LayerNum = Param.Layer.Num
         return super().Init(IsSuper=True, IsRoot=IsRoot)
     def GetNonLinear(self, LayerIndex, LayerNum):
         Param = self.Param
@@ -70,3 +74,13 @@ class MLP(_ModuleList):
                 return NonLinearType
         else:
             return "None"
+    def LayerNum(self):
+        assert self.Param.HasAttr("Layer.Num")
+        self._LayerNum = self.Param._LayerNum
+        assert isinstance(self._LayerNum, int)
+        return self._LayerNum
+    def Layer(self, Index: int):
+        assert 0 <= Index < self.LayerNum()
+        self.GetSubModule("L%d"%Index)
+    def GenerateRandomInput(self):
+        assert self.HasInit()

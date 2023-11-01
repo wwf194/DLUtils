@@ -333,7 +333,7 @@ class Validate(EventAfterEpoch):
         super().Init(IsSuper=True, IsRoot=IsRoot)
         
         # some module might prepare event function in Init.
-        for ModuleName, Module in self.SubModules.items():
+        for ModuleName, Module in self._SubModules.items():
             self.RegisterEvent(Module)
         for ModuleName, Module in self.BindModules.items():
             self.RegisterEvent(Module)

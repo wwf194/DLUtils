@@ -24,6 +24,9 @@ def UpdateDict(DictSource, DictTarget, KeyPrefix=None):
         for Key, Value in DictSource.keys():
             DictTarget[KeyPrefix + Key] = Value 
 
+def ToDict(**Dict):
+    return Dict
+
 def PrintDict(Dict, Out="Std"):
     StrList = []
     

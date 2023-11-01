@@ -1,4 +1,5 @@
-from .json import *
+# from ._json import *
+import DLUtils
 from collections import defaultdict
 
 def ParseShape(Shape):

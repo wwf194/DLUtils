@@ -17,9 +17,11 @@ else:
             # Param = self.Param
             # self.ModuleList = []
             # for Name, SubModuleParam in Param.SubModules.items():
-            #     self.ModuleList.append(self.SubModules[Name])
+            #     self.ModuleList.append(self._SubModules[Name])
             # Param.Module.Num = self.ModuleNum = len(self.ModuleList)
             return self
+        def SubModuleNameList(self):
+            return self._SubModules.keys()
         def AddSubModule(self, Name=None, SubModule=None, **Dict):
             if Name is not None:
                 assert len(Dict) == 0
@@ -60,15 +62,25 @@ else:
                 OutDict[self.OutNameList[LayerIndex]] = Out
                 In = Out
             return OutDict
-
+        def ForwardTest(self, In):
+            import numpy as np
+            import torch
+            if isinstance(In, np.ndarray):
+                InTorch = DLUtils.ToTorchTensor(In)
+                return self.Receive(InTorch)
+            elif isinstance(In, torch.Tensor):
+                InTorch = In
+                return self.Receive(InTorch)
+            else:
+                raise NotImplementedError()
         def Init(self, IsSuper=False, IsRoot=True):
             if self.IsLoad():
-                self.ModuleList = list(self.SubModules.values())
+                self.ModuleList = list(self._SubModules.values())
             
             Param = self.Param
             self.ModuleList = []
             for Name, SubModuleParam in Param.SubModules.items():
-                self.ModuleList.append(self.SubModules[Name])
+                self.ModuleList.append(self._SubModules[Name])
             Param.Module.Num = self.ModuleNum = len(self.ModuleList)
 
             OutType = Param.Out.setdefault("Type", "Out")
@@ -95,7 +107,9 @@ else:
             return self
 
     class ModuleSeries(_ModuleSeries):
-        # slight different in __init__
+        """
+            slightly different in __init__
+        """
         def __init__(self, **SubModules):
             super().__init__()
             if len(SubModules) > 0:

@@ -45,7 +45,7 @@ class LogComponent:
             _Log = self._Log
         else:
             _Log = Log
-        for Name, SubModule in self.SubModules.items():
+        for Name, SubModule in self._SubModules.items():
             SubModule.SetLog(_Log)
         return self
     def Log(self, Content, Type="Unknown"):
@@ -111,7 +111,7 @@ try:
         def Init(self, IsSuper=False, IsRoot=True):
             Param = self.Param
             if self.IsLoad():
-                self.ModuleList = list(self.SubModules.values())
+                self.ModuleList = list(self._SubModules.values())
             self.ModuleNum = Param.Module.Num = len(self.ModuleList)
             return super().Init(IsSuper=True, IsRoot=IsRoot)
     from .module_graph import ModuleGraph
@@ -128,6 +128,8 @@ except Exception:
     pass
 
 try:
-    from ..backend.torch.module import TorchModuleWrapper, TorchModelWrapper, TorchModule, TorchModuleParallel
+    from ..backend._torch.module import TorchModuleWrapper, TorchModelWrapper, TorchModule, TorchModuleParallel
 except Exception:
     pass
+
+from .param_map import ParamMap, GetParamMapDefault

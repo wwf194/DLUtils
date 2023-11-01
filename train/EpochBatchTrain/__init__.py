@@ -295,7 +295,7 @@ class EpochBatchTrainSession(DLUtils.module.AbstractModule):
         self.AddSubModule("EpochIndexLog", DLUtils.struct.IntRange())
         self.AddSubModule("BatchIndexLog", DLUtils.module.EmptyModule())
         self.BatchNum = self.TrainData.GetBatchNum()
-        Modules = dict(self.SubModules)
+        Modules = dict(self._SubModules)
         Modules.update(self.BindModules)
         for Name, SubModule in Modules.items():
             if hasattr(SubModule, "BindTrainSession"):

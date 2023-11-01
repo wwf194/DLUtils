@@ -3,8 +3,8 @@ import DLUtils
 import warnings
 from enum import Enum
 
-from .json.parse import _JsonStr2Tree
-from .json.parse import NODE_TYPE as NODE_PARSE_TYPE, COMMENT_TYPE
+from ._json.parse import _JsonStr2Tree
+from ._json.parse import NODE_TYPE as NODE_PARSE_TYPE, COMMENT_TYPE
 
 def ToParam(Obj):
     if isinstance(Obj, Param):
@@ -203,7 +203,13 @@ class param:
     def append(self, Item):
         self._LIST.append(Item)
     def keys(self):
-        return self._DICT.keys()
+        return list(self._DICT.keys())
+    def Keys(self):
+        KeyList = self.keys()
+        for Key in ["_CLASS", "_PATH"]:
+            if Key in KeyList:
+                KeyList.remove(Key)
+        return KeyList
     def values(self):
         return self._DICT.values()
     def pop(self, Key):

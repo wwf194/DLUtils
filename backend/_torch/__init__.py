@@ -1,27 +1,35 @@
+import DLUtils
 try:
     import torch
-    from .format import ToTorchTensor, ToTorchTensorOrNum, NpArray2Tensor, NpArray2TorchTensor
-    from .module import TorchModule, TorchModuleWrapper
 except Exception:
     pass
 else:
     def TorchTensorElementNum(Tensor:torch.Tensor):
         return Tensor.numel()
-
     def TorchTensorSize(Tensor:torch.Tensor):
         if Tensor.data.is_floating_point():
             return Tensor.numel() * torch.finfo(Tensor.data.dtype).bits
         else:
             return Tensor.numel() * torch.iinfo(Tensor.data.dtype).bits
-import DLUtils
+    def GPUNum():
+        return torch.cuda.device_count()
+    def SampleFrom01NormalDistributionTorch(Shape):
+        return torch.randn(Shape) # sampple from N(0, 1)
+    def SetSeedForTorch(Seed: int):
+        torch.manual_seed(Seed)
+
+try:
+    from .format import ToTorchTensor, ToTorchTensorOrNum, NpArray2Tensor, NpArray2TorchTensor
+    from .module import TorchModule, TorchModuleWrapper
+except Exception:
+    pass
+
 def GetTensorByteNum(Tensor): # Byte
     return Tensor.nelement() * Tensor.element_size()
 
 def GetTensorElementNum(Tensor): # Byte
     return Tensor.nelement()
 
-def SampleFrom01NormalDistributionTorch(Shape):
-    return torch.randn(Shape) # sampple from N(0, 1)
 
 def ListTorchModelTrainParam(model):
     Dict = dict(model.named_parameters())

@@ -241,8 +241,7 @@ def vision_transformer_imagenet_1k(SaveDir="./example/vit_imagenet/"):
                 DropLast=False,
             )
 
-    # Image, ClassIndex = TrainData.GetNextBatch() # (BatchSize, ChannelNum, Height, Width)
-    
+    # Image, ClassIndex = TrainData.GetNextBatch() # (BatchSize, ChannelNum, Height, Width)    
     # # test input image
     # TestOut = ViT(
     #     Image

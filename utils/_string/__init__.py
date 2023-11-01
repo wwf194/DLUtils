@@ -341,6 +341,7 @@ def PrintToPipeAndStdErr(Pipe, *List, Indent=None, **Dict):
     PrintUTF8To(Pipe, *List, Indent=Indent, **Dict)
 
 def Print2OutPipeUTF8(*List, Indent=None, **Dict):
+    global OutPipe
     Str = PrintWithParam(*List, **Dict)
     Result = PrintStr2Pipe(OutPipe, Str, Indent=Indent)
     return Result
@@ -408,3 +409,9 @@ def Str012Int(String, MostSignificantBit="Right", BigEndian=False):
         raise NotImplementedError()
 
 ZeroOneStrToInt = ZeroOneStr2Int = Str01ToInt = Str01ToInt = String01ToInt = Str012Int
+
+def RemoveStartEndEmptySpaceChars(Str):
+    Str = re.match(r"\s*([\S].*)", Str).group(1)
+    Str = re.match(r"(.*[\S])\s*", Str).group(1)
+    return Str
+RemoveHeadTailWhiteChars = RemoveStartEndEmptySpaceChars

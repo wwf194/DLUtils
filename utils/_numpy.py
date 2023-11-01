@@ -36,3 +36,7 @@ def NpArray2TextFile(Data, SavePath, **Dict):
         NpArray2D2TextFile(Data, SavePath=SavePath, **Dict)
     else:
         raise Exception()
+
+def SetSeedForNumpy(Seed: int):
+    np.random.seed(Seed)
+    return

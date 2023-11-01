@@ -132,11 +132,11 @@ TimeStamp2Str = TimeStamp2LocalTimeStr
 def CurrentTimeStr(Format=None, Verbose=False):
     if Format is None:
         Format = "%Y-%m-%d %H-%M-%S"
-    TimeStr = time.strftime(Format, time.localtime()) # time display style: 2016-03-20 11:45:39
+    _TimeStr = time.strftime(Format, time.localtime()) # time display style: 2016-03-20 11:45:39
     if Verbose:
-        print(TimeStr)
-    return TimeStr
-GetCurrentTime = GetTime = CurrentTimeStr
+        print(_TimeStr)
+    return _TimeStr
+GetCurrentTime = GetTime = TimeStr = CurrentTimeStr
 
 try:
     import dateutil

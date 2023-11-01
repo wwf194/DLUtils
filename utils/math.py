@@ -1,6 +1,7 @@
 import DLUtils
 import warnings
 import random
+import sys
 import os
 
 def NpArrayStatistics(data, verbose=False):
@@ -55,14 +56,43 @@ def RandomSelectFromListRepeat(List, Num):
     # return random.choices(List, Num)
     return np.random.choice(List, size=Num, replace=True)
 RandomSelectWithReplacement = RandomSelectFromListWithReplacement = RandomSelectFromListRepeat
-
-RandomSelectRepeat = RandomSelectFromListRepeat
+RandomSelectWithRepeat = RandomSelectRepeat = RandomSelectFromListWithRepeat = RandomSelectFromListRepeat
 
 def RandomIntInRange(Left, Right, IncludeRight=False):
     if not IncludeRight:
         Right -= 1
     #assert Left <= Right 
     return random.randint(Left, Right)
+
+def MultipleRandomIntInRange(Num, *List, AllowSame=False, **Dict):
+    if AllowSame:
+        return [RandomIntInRange(*List, **Dict) for _ in range(Num)]
+    else:
+        NumCurrent = 0
+        IntSet = set()
+        while(len(IntSet) <= Num):
+            IntSet.add(RandomIntInRange(*List, **Dict))
+        return list(IntSet)
+
+def RandomInt(Positive=True, Max=None): # uniformly sampling from a [0, a large enough integer]
+    if Positive:
+        if Max is None:
+            Max = 2 ** 32 - 1
+        return random.randint(0, Max) # range of 32-bit unsigned integer
+    else:
+        if Max is None:
+            Max = 2 ** 31 - 1
+        return random.randint(- Max - 1, Max) # range of 32-bit signed integer
+
+def MultipleRandomInt(Num=10, *List, AllowSame=False, **Dict):
+    if AllowSame:
+        return [RandomInt(*List, **Dict) for _ in range(Num)]
+    else:
+        NumCurrent = 0
+        IntSet = set()
+        while(len(IntSet) <= Num):
+            IntSet.add(RandomInt(*List, **Dict))
+        return list(IntSet)
 
 def SelectSpecificRowsAndColsNp(Data, RowIndexList, ColIndexList):
     DataRow = Data[RowIndexList, :]
