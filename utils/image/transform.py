@@ -1,5 +1,4 @@
 import warnings
-import glob
 from PIL import Image as Im
 import DLUtils
 

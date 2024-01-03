@@ -105,10 +105,10 @@ def CharListAZ09():
     return CharListAZ() + CharList09()
 
 def Straz():
-    return string.ascii_lowercase
+    return list(string.ascii_lowercase)
 
 def StrAZ():
-    return string.ascii_uppercase
+    return list(string.ascii_uppercase)
 
 def CharListazAZ09():
     return list(Straz() + StrAZ() + Str09())
@@ -136,6 +136,53 @@ def NaturalCmp(StrA, StrB):
 def Bytes2Hex(Bytes:bytes):
     return Bytes.hex()
 
+def ToHex(Var, Prefix="0x", UpperCase=True, LeastSignificantByte="Left", DigitNum=None):
+    if isinstance(Var, bytes):
+        return BytesToHex(Var, Prefix=Prefix, UpperCase=UpperCase, LeastSignificantByte=LeastSignificantByte)
+    elif isinstance(Var, int):
+        return IntToHex(Var, Prefix=Prefix, UpperCase=UpperCase, DigitNum=DigitNum)
+    else:
+        raise Exception()
+ 
+def IntToHex(Int, Prefix="0x", UpperCase=True, DigitNum=None):
+    if UpperCase:
+        if DigitNum is None:
+            return Prefix + "%X"%Int
+        else:
+            assert isinstance(DigitNum, int)
+            return Prefix + ("%X"%Int).zfill(DigitNum)
+    else:
+        if DigitNum is None:
+            return Prefix + "%x"%Int
+        else:
+            assert isinstance(DigitNum, int)
+            return Prefix + ("%X"%Int).zfill(DigitNum)
+
+def Address(Var, DigitNum=16):
+    return IntToHex(id(Var), UpperCase=True, DigitNum=16)
+
+def BytesToHex(Bytes, Prefix="0x", UpperCase=True, LeastSignificantByte="Left", Endian=None):
+    Int = Bytes2Int(Bytes, LeastSignificantByte=LeastSignificantByte, Endian=Endian)
+    return IntToHex(Int, Prefix=Prefix, UpperCase=UpperCase)
+Bytes2Hex = BytesToHex
+
+def ByteToHex(Byte: bytes):
+    
+    return
+
+def Bytes2Int(Bytes, LeastSignificantByte="Left", Endian=None):
+    if Endian is not None:
+        if Endian in ["Little", "little"]:
+            byteorder = "little"
+        else:
+            byteorder = "big"
+    else:
+        if LeastSignificantByte in ["Left", "left"]:
+            byteorder = "little"
+        else:
+            byteorder = "big"
+    return int.from_bytes(Bytes, byteorder=byteorder, signed=False)
+    
 def HexStr2Bytes(HexStr):
     return bytes.fromhex(HexStr)
 
@@ -151,13 +198,8 @@ def SetFileStrOut(FilePath):
     
 def CloseFileStrOut(FileStrOut=None):
     ResetStdOut()
-    if FileStrOut is None:
-        try:
-            FileStrOut.close()
-        except Exception:
-            pass
-    else:
-        FileStrOut.close()
+    assert FileStrOut is not None
+    FileStrOut.close()
 
 def RedirectSysStdOutTo(Pipe):
     pass
@@ -334,14 +376,14 @@ def PrintToPipeAndStdOut(Pipe, *List, Indent=None, **Dict):
 def PrintToPipeAndStdErr(Pipe, *List, Indent=None, **Dict):
     PrintUTF8ToStdErr(*List, Indent=Indent, **Dict)
     PrintUTF8To(Pipe, *List, Indent=Indent, **Dict)
+WriteTo = PrintTo = PrintUTF8To
 
-def Print2OutPipeUTF8(*List, Indent=None, **Dict):
+def PrintToPipeUTF8(*List, Indent=None, **Dict):
     global OutPipe
     Str = PrintWithParam(*List, **Dict)
     Result = PrintStr2Pipe(OutPipe, Str, Indent=Indent)
     return Result
-Print2OutPipe = Print2OutPipeUTF8
-Print = Print2OutPipe
+Print = Print2OutPipe = Print2OutPipeUTF8 = PrintToOutPipeUTF8 = PrintToPipeUTF8
 
 def PrintWithTimeStr(*List, Encoding="utf-8", Indent=None, **Dict):
     Buf = StringIO()
