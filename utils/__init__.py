@@ -15,11 +15,15 @@ import DLUtils.utils._string as string
 from DLUtils.utils._string import *
 
 import argparse
-import traceback
 
 from .system import GetSystemType, GetSysType
 from .file import Str2File
-from ._dict import *
+from ._dict import (
+    ToDict,
+    MultiToOneMap,
+    Dict,
+    IterableKeyToElement, IterableKeyToKeys, ExpandIterableKey
+)
 
 def FromFile(FilePath):
     Param = DLUtils.File2Param(FilePath)
@@ -72,13 +76,53 @@ def _StartEndTime2File():
     DLUtils.file.EmptyFile(DLUtils.GetMainSaveDir() + "AAA-1-Time- End :%s"%GlobalParam.time.StartTime)
     DLUtils.file.EmptyFile(DLUtils.GetMainSaveDir() + "AAA-2-Time-Duration:%s"%GlobalParam.time.DurationTime)
 
-def ParsedArgs2CmdArgs(ParsedArgs, Exceptions=[]):
-    CmdArgsList = []
-    for Name, Value in ListAttrsAndValues(ParsedArgs, Exceptions=Exceptions):
-        CmdArgsList.append("--%s"%Name)
-        CmdArgsList.append(Value)
-    return CmdArgsList
+def ArgDict2CmdStr(ArgDict, Exceptions=[]):
+    StrList = []
+    for Name, Value in ArgDict.items():
+        StrList.append("--%s"%Name)
+        StrList.append(Value)
+    return " ".join(StrList)
 
+def _GetEmptyListFunc(SizeList, Height):
+    if Height == len(SizeList) - 1:
+        return [[] for _ in range(SizeList[Height])]
+    else:
+        return [_GetEmptyListFunc(SizeList, Height + 1) for _ in range(SizeList[Height])]
+
+def EmptyListWithShape(*Shape):
+    """
+        EmptyListWithShape(2) returns [[], []]
+        EmptyListWithShape(2, 3) returns [[[], [], []], [[], [], []]]
+    """
+    if len(Shape) == 0:
+        raise Exception()
+    if len(Shape) == 1 and (isinstance(Shape[0], list) or isinstance(Shape[0], tuple)):
+        Shape = list(Shape[0])
+    return _GetEmptyListFunc(Shape, 0)
+GetListWithShape = EmptyListWithShape
+
+def LeafListToMean(NestedList, Shape):
+    if isinstance(Shape, int):
+        Shape = [Shape]
+    def GetListFunc(List, Height):
+        if Height == 0:
+            return np.mean(List) if len(List) > 0 else 0.0
+        else:
+            return [GetListFunc(Element, Height - 1) for Element in List]
+
+    return GetListFunc(NestedList, len(Shape))
+
+def LeafListToStd(NestedList, Shape):
+    if isinstance(Shape, int):
+        Shape = [Shape]
+    def GetListFunc(List, Height):
+        if Height == 0:
+            return np.std(List) if len(List) > 0 else 0.0
+        else:
+            return [GetListFunc(Element, Height - 1) for Element in List]
+
+    return GetListFunc(NestedList, len(Shape))
+    
 def CopyProjectFolder2Dir(DestDir):
     EnsureDir(DestDir)
     DLUtils.file.CopyFolder2DestDir("./", DestDir)
@@ -124,8 +168,6 @@ def IsListLike(List):
     if isinstance(List, list) or isinstance(List, tuple):
         return True
     return False
-
-
 
 def RemoveWhiteChars(Str):
     Str = re.sub(r"\s+", "", Str)
@@ -174,7 +216,7 @@ else:
         elif isinstance(Data, list) or isinstance(Data, tuple):
             return np.array(Data, dtype=DataType)
         elif isinstance(Data, torch.Tensor):
-            return Tensor2NpArray(Data)
+            return DLUtils.torch.TensorToNpArray(Data)
         elif isinstance(Data, float):
             return np.asarray([Data],dtype=DataType)
         else:
@@ -244,16 +286,6 @@ def _1DTo2D(data):
     data = data.reshape((RowNum, ColNum))
     return data, mask
 
-def FlattenNpArray(data):
-    return data.flatten()
-
-def EnsureFlatNp(data):
-    return data.flatten()
-
-EnsureFlat = EnsureFlatNp
-
-def NpArray2List(data):
-    return data.tolist()
 
 def ToStandardizeTorchDataType(DataType):
     if DataType in ["Float", "float"]:
@@ -293,27 +325,6 @@ def ParseDataTypeNp(DataType):
 def ToGivenDataTypeNp(data, DataType):
     DataType = DLUtils.ParseDataTypeNp(DataType)
     return data.astype(DataType)
-
-def TorchTensor2NpArray(data):
-    data = data.detach().cpu().numpy()
-    return data # data.grad will be lost.
-Tensor2NpArray = TorchTensor2NpArray
-
-def Tensor2Str(data):
-    return NpArray2Str(Tensor2NpArray(data))
-
-def Tensor2File(data, SavePath):
-    EnsureFileDir(SavePath)
-    np.savetxt(SavePath, DLUtils.Tensor2NpArray(data))
-
-def Tensor2NumpyOrFloat(data):
-    try:
-        _data = data.item()
-        return _data
-    except Exception:
-        pass
-    data = data.detach().cpu().numpy()
-    return data
 
 def List2NpArray(data, Type=None):
     if Type is not None:
@@ -853,8 +864,8 @@ NormWithin1Std2Range = NormWithinStd2Range
 
 # import DLUtils.utils.network as network
 try:
-    from ..backend.torch.format import ToTorchTensor, ToTorchTensorOrNum, NpArray2Tensor, NpArray2TorchTensor
-    from ..backend.torch import GetTensorByteNum, GetTensorElementNum
+    from ..backend._torch.format import ToTorchTensor, ToTorchTensorOrNum, NpArray2Tensor, NpArray2TorchTensor
+    from ..backend._torch import GetTensorByteNum, GetTensorElementNum
 except Exception:
     pass
 
@@ -880,3 +891,5 @@ except Exception:
 
 if GetSystemType() in ["Windows", "win"]:
     import DLUtils.backend.win as win
+
+from .parallel import RunProcessPool

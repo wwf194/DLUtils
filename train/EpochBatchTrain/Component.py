@@ -137,7 +137,7 @@ class EvaluationLog(EventAfterEveryBatch):
         BatchIndexListAllEpoch = np.concatenate(BatchIndexListAllEpoch, axis=0)
         LossListAllEpoch = np.concatenate(LossListAllEpoch, axis=0)
         return BatchIndexListAllEpoch, LossListAllEpoch
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         # Param.OnlineMonitor.setdefault("Enable", False)
         # if Param.OnlineMonitor.Enable:
@@ -322,7 +322,7 @@ class Validate(EventAfterEpoch):
             self.RemoveAfterValEvent(SubModule.AfterEpoch)
 
         return super().RemoveSubModule(Name=Name, SubModule=SubModule)
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         self.BeforeValEventList = []
         self.BeforeValEpochEventList = []
         self.BeforeValBatchEventList = []
@@ -368,7 +368,7 @@ class Save(EventAfterEpoch):
         Dict.Optimizer.ResetOptimizer()
         print("Saving Model. Epoch {0:>3} Batch {1:>3}. FilePath:{2}".format(Dict.EpochIndex, Dict.BatchIndex, ModelSaveFilePath))
         return self
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         self.SaveDir = Param.setdefault("SaveDir", "./Val/")
         #assert hasattr(self, "SaveDir")
@@ -426,7 +426,7 @@ class EvaluatorPredAndTarget(EpochBatchTrainComponent):
         return self
     def AddEvaluationItem(self, **Dict):
         self.Param.EvaluateItemList.append(DLUtils.Param(Dict))
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         if not IsSuper: # subclass EvaluatorPredAndTargetSelect1FromN
             Type = Param.setdefault("Type", "1Loss")
@@ -486,7 +486,7 @@ class EvaluatorPredAndTargetSelect1FromN(EvaluatorPredAndTarget):
         EvaluationDict["NumTotal"] = NumTotal
         for Index, K in enumerate(self.Ks):
             EvaluationDict[self.K2NumCorrectStr[K]] = NumCorrectList[Index]
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         if not Param.Evaluate.hasattr("ItemList"):
             Param.Evaluate.ItemList = DLUtils.Param([])
@@ -731,7 +731,7 @@ class DataLoaderForEpochBatchTrain(torch.utils.data.DataLoader, DLUtils.module.A
     def Reset(self):
         self.Iter = iter(self)
         return self
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         Param.Thread.setdefault("Num", 1)
         assert isinstance(Param.Thread.Num, int)

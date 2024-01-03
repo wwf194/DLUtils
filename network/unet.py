@@ -41,7 +41,7 @@ class UNet(DLUtils.module.AbstractNetwork):
     def Receive(self, Image):
         # Image: [BatchSize, ChannelNum, Width, Height]
         return self
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         Param.Block.setdefault("Num", 5)
         BaseNum = Param.Base.setdefault("Num", 64)
@@ -99,7 +99,7 @@ class UNetDownPath(ModuleSeries):
             "SkipOut": SkipOut,
             "Down": Down
         }
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         if not self.IsLoad():
             Param = self.Param
             InNum = Param.In.Num
@@ -124,7 +124,7 @@ class UNetUpPath(ModuleSeries):
             Up = Block(DownIn=DownIn, SkipIn=SkipIn)
             DownIn = Up
         return Up
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         if not self.IsLoad():
             Param = self.Param
             InNum = Param.In.Num
@@ -167,7 +167,7 @@ class UNetDownSampleBlock(DLUtils.module.AbstractNetwork):
             "Skip": Out,
             "Down": Down
         }
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         if not self.IsLoad():
             Param.setdefault("Stride", 1)
@@ -238,7 +238,7 @@ class UNetUpSampleBlock(ModuleSeries):
         YEnd = YStart + Height
         XEnd = XStart + Width
         return FeatureMap[:, :, YStart:YEnd, XStart:XEnd]
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         Param.Kernel.setdefault("Size", 2)
         Param.setdefault("Stride", 2)

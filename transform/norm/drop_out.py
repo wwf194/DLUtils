@@ -16,7 +16,7 @@ class Dropout(DLUtils.module.AbstractNetwork):
     def SetTest(self, Recur=True):
         self.Receive = self.ReceiceTest
         return super().SetTest(Recur)
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         Param.setdefault("Rate", 0.1)
         Param.setdefault()

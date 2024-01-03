@@ -40,3 +40,15 @@ def NpArray2TextFile(Data, SavePath, **Dict):
 def SetSeedForNumpy(Seed: int):
     np.random.seed(Seed)
     return
+
+
+def FlattenNpArray(data):
+    return data.flatten()
+
+def EnsureFlatNp(data):
+    return data.flatten()
+
+EnsureFlat = EnsureFlatNp
+
+def NpArray2List(data):
+    return data.tolist()

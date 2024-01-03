@@ -9,6 +9,6 @@ class ModuleParallel(DLUtils.module.AbstractModuleGroup):
             Out = SubModule(In)
             OutList.append(Out)
         return OutList
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         self.ModuleList = list(self._SubModules.values())
         return super().Init(IsSuper, IsRoot)

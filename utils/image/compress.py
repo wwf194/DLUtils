@@ -1,5 +1,4 @@
 import sys
-sys.path.append("../")
 import DLUtils
 
 try:
@@ -8,7 +7,14 @@ except Exception:
     cv2_imported = False
 else:
     cv2_imported = True
-import PIL
+
+try:
+    import PIL
+except Exception:
+    PIL_imported = False
+else:
+    PIL_imported = True
+
 
 def CompressImageFile(FilePathSource, FilePathDest=None, *List, **Dict):
     if FilePathDest is None:

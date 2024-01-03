@@ -26,7 +26,7 @@ class Reshape(AbstractOperator):
         return self
     def Receive(self, In):
         return torch.reshape(In, self.Shape)
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         self.Shape = tuple(Param.Shape.After)
         super().Init(IsSuper=True, IsRoot=IsRoot)
@@ -42,7 +42,7 @@ class ChangeDimOrder(AbstractOperator):
         super().__init__(**Dict)
     def Receive(self, In):
         return torch.permute(In, self.Order)
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         assert Param.hasattr("Order")
         self.Order = tuple(Param.Order)
@@ -56,7 +56,7 @@ class Index2OneHot(AbstractOperator):
         Param.FeatureNum = FeatureNum
     def Receive(self, In):
         return F.one_hot(In.long(), num_classes=self.FeatureNum)
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         self.FeatureNum = Param.FeatureNum
         return super().Init(IsSuper=True, IsRoot=IsRoot)

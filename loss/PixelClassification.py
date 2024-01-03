@@ -22,7 +22,7 @@ class PixelClassificationLoss(DLUtils.AbstractModule):
             ClassProbTruth = Target[:, i, :, :]
             Loss += 1 - self.IoU(ClassProbPredict, ClassProbTruth)
         return Loss
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         Param.ExcludeBackgroundClass.setdefault("Enable", True)
         if Param.ExcludeBackgroundClass.Enable:
@@ -38,13 +38,13 @@ class PixelClassificationLoss(DLUtils.AbstractModule):
         return super().Init(IsSuper=True, IsRoot=IsRoot)
 
 class JaccardLoss(PixelClassificationLoss):
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         super().Init(IsSuper=True, IsRoot=IsRoot)
         self.EvaluateFunction = IoU
         return self
 
 class DiceLoss(PixelClassificationLoss):
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         super().Init(IsSuper=True, IsRoot=IsRoot)
         Param.FScore.setdefault("Beta", 1.0)
@@ -136,7 +136,7 @@ class FocalLoss(DLUtils.AbstractModule):
 
         focal_loss = self.LossReduction(focal_loss)
         return focal_loss # single num
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         Param.Loss.setdefault("ReductionMethod", "Mean")
         if Param.Loss.ReductionMethod in ["Mean"]:

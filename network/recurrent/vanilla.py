@@ -30,7 +30,7 @@ class VanillaRNN(DLUtils.module.AbstractNetwork):
         return {
             "Out": OutFinal
         }
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         if self.IsInit():
             # input module setting

@@ -39,7 +39,7 @@ class BatchNorm2D(TorchModuleWrapper):
     #     return self.module(In)
     # def ReceiveTest(self, In):
     #     return self.module(In)
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         if self.IsInit():
             Param.Affine.setdefault("Enable", True)

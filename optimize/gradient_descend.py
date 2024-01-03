@@ -80,7 +80,7 @@ else:
             return self
         def ResetOptimizer(self, *List, **Dict):
             raise Exception()
-        def Init(self, IsSuper=False, IsRoot=True):
+        def Build(self, IsSuper=False, IsRoot=True):
             
 
             

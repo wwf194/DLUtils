@@ -108,7 +108,7 @@ try:
                     )
                 self.ModuleList = list(ModuleList.values())
             return self
-        def Init(self, IsSuper=False, IsRoot=True):
+        def Build(self, IsSuper=False, IsRoot=True):
             Param = self.Param
             if self.IsLoad():
                 self.ModuleList = list(self._SubModules.values())

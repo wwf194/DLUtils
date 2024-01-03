@@ -6,7 +6,6 @@ class Dict(dict):
         if Dict is not None:
             self.update(Dict)
         self.update(_Dict)
-        a = 1
     # def update(self, *List):
     #     dict.update(self, *List)
     #     return self
@@ -60,3 +59,13 @@ def GetFromKeyList(Dict, *KeyList, Default=None):
         if Key in Dict:
             return Dict[Key]
     return Default
+
+class MultiToOneMap(dict):
+    def From(self, *KeyList):
+        self.KeyList = KeyList
+        return self
+    def To(self, Value):
+        for Key in self.KeyList:
+            self[Key] = Value
+        delattr(self, "KeyList")
+        return self

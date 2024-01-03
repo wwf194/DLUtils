@@ -367,7 +367,7 @@ class AbstractModule(LogComponent):
                 "TensorMovement":[]
             })
         return self
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         if self.InitFinished(): # avoid double init
             return self
         if self.IsLoad():

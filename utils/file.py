@@ -2,6 +2,7 @@ import os
 import re
 import warnings
 import shutil
+import sys
 import gzip
 from pathlib import Path
 import DLUtils
@@ -378,7 +379,7 @@ def DeleteAllFilesAndSubFolders(DirPath):
         DeleteFile(FilePath)
     for DirPath in ListDirsPath(DirPath):
         DeleteTree(DirPath)
-EmptyDir = MakeDirEmpty = DeleteAllFilesAndSubFolders
+ClearDir = EmptyDir = MakeDirEmpty = DeleteAllFilesAndSubFolders
 
 def DeleteTree(FolderPath, RaiseIfNonExist=False):
     if not FolderExists(FolderPath):
@@ -915,7 +916,7 @@ def Tensor2TextFile2D(Data, SavePath="./test/"):
     Data = DLUtils.ToNpArray(Data)
     DLUtils.NpArray2D2TextFile(Data, SavePath=SavePath)
 
-def cal_path_from_main(path_rel=None, path_start=None, path_main=None):
+def GetRelativePath(path_rel=None, path_start=None, path_main=None):
     # path_rel: file path relevant to path_start
     if path_main is None:
         path_main = sys.path[0]

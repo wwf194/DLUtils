@@ -15,12 +15,21 @@ try:
             return True
         else:
             return False
+    def ProcessStartTime(PID, ReturnType="UnixTimeStamp"):
+        assert ExistsProcess(PID)
+        ProcessObj = psutil.Process(PID)
+        TimeStamp = ProcessObj.create_time()
+        if ReturnType in ["ReturnType"]:
+            return TimeStamp
+        else:
+            return DLUtils.time.TimeStamp2Str(TimeStamp)
+
     ExistsProcess = ProcessExists
     def ListNetworkInterface():
         psutil.net_if_stats()
         raise NotImplementedError()
 except Exception:
-    warnings.warn("lib psutil not found.")
+    warnings.warn("package psutil not found.")
     
 def KillProcessbyPID(PID):
     os.kill(PID, signal.SIGTERM) #or signal.SIGKILL 
@@ -255,17 +264,23 @@ def RunPythonScript(FilePath, ArgList=[], PassPID=True,
     if StandardizeFilePath:
         FilePath = DLUtils.file.StandardizeFilePath(FilePath)
     # os.system('chcp 65001')
-    StrList = ["python.exe", "-u"]
+    if IsWindowsSystem():
+        CommandList = ["python.exe", "-u"]
         # win: pythonw does not start the process.
-    StrList.append("\"" + FilePath + "\"")
-    StrList += ArgList
+    else:
+        CommandList = ["python", "-u"]
+    CommandList.append("\"" + FilePath + "\"")
+    CommandList += ArgList
     if PassPID:
         PIDList = ["--parent-pid", "%d"%DLUtils.system.CurrentProcessID()]
-        StrList += PIDList
+        CommandList += PIDList
     else:
         PIDList = []
-    Command = " ".join(StrList)
-    CommandList = ["python.exe", "-u", FilePath] + PIDList
+    Command = " ".join(CommandList)
+    # if IsWindowsSystem():
+    #     CommandList = ["python.exe", "-u", FilePath] + PIDList
+    # else:
+    #     CommandList = ["python", "-u", FilePath] + PIDList
     ExitCode = 0
         # # unrecognized encoding problem
         # OutBytes = subprocess.check_output(
@@ -282,7 +297,7 @@ def RunPythonScript(FilePath, ArgList=[], PassPID=True,
                 try:
                     ON_POSIX = 'posix' in sys.builtin_module_names
                     Process = subprocess.Popen(
-                        Command,
+                        CommandList, # shell=False requires passing list rather than string.
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
                         shell=False, # if True, Popen.pid will be the shell procee pid.
@@ -542,3 +557,6 @@ def Test():
     TimeFloat = DateTimeObj2TimeStampFloat(datetime.datetime(1800, 1, 19, 3, 15, 14, 200))
     print(TimeFloat) # 2147451300.0
     DateTimeObj = TimeStamp2DateTimeObj(TimeFloat)
+
+def IsPython3():
+    return sys.version_info.major == 3

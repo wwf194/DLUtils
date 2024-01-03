@@ -97,7 +97,7 @@ class OnlineReporterMultiLoss(EventAfterFixedBatch):
         NumCorrect = LogCorrect.Sum()
         NumTotal = LogTotal.Sum()
         return "%.4f(%d/%d)"%(NumCorrect / NumTotal, NumCorrect, NumTotal)
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         self.ReportBatchInterval = Param.setdefault("Batch.Interval", 50)
         # set log item
@@ -200,7 +200,7 @@ class EvaluationLogSelect1FromN(EvaluationLog):
         EpochLog.RateCorrect = 1.0 * sum(EpochLog.NumCorrect) / sum(EpochLog.NumTotal)
         EpochLog.Loss = 1.0 * sum(EpochLog.LossList) / len(EpochLog.LossList)
         return self
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         Param.OnlineMonitor.setdefault("Enable", True)
         Param.OnlineMonitor.Batch.setdefault("Num", 50)

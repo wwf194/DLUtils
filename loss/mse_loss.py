@@ -6,7 +6,7 @@ class MSELoss(DLUtils.module.AbstractNetwork):
     def Receive(self, Out, OutTarget):
         Loss = F.mse_loss(Out, OutTarget, reduction=self.reduce)
         return Loss
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         # pytorch default: mean 
         AfterOperation = Param.Operation.setdefault("After", "Mean")

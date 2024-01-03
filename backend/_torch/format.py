@@ -3,7 +3,6 @@ import torch
 import torch.nn as nn
 import DLUtils
 
-
 def NullParameter(Shape=(1)):
     return nn.Parameter(torch.empty(Shape))
 def ToTorchTensor(Data, Device=None):
@@ -13,6 +12,8 @@ def ToTorchTensor(Data, Device=None):
         _Data = NpArray2Tensor(DLUtils.List2NpArray(Data))
     elif isinstance(Data, torch.Tensor):
         _Data = Data
+    elif isinstance(Data, float):
+        raise NotImplementedError()
     else:
         raise Exception(type(Data))
     if Device is not None:
@@ -42,3 +43,24 @@ def NpArray2TorchTensor(Data, Location="cpu", DataType=torch.float32, RequiresGr
     return Data
 
 NpArray2Tensor = NpArray2TorchTensor
+
+def TorchTensorToNpArray(data):
+    data = data.detach().cpu().numpy()
+    return data # data.grad will be lost.
+Tensor2NpArray = TensorToNpArray = TorchTensor2NpArray = TorchTensorToNpArray
+
+def Tensor2Str(data):
+    return DLUtils.utils.NpArray2Str(Tensor2NpArray(data))
+
+def Tensor2File(data, SavePath):
+    DLUtils.EnsureFileDir(SavePath)
+    np.savetxt(SavePath, DLUtils.Tensor2NpArray(data))
+
+def Tensor2NumpyOrFloat(data):
+    try:
+        _data = data.item()
+        return _data
+    except Exception:
+        pass
+    data = data.detach().cpu().numpy()
+    return data

@@ -92,7 +92,7 @@ class Conv2D(DLUtils.module.AbstractNetwork):
         Param = self.Param
 
         return self
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         if not IsSuper:
             Param = self.Param
             if self.IsInit():
@@ -223,7 +223,7 @@ class UpConv2D(Conv2D):
     #     Param.Out.Num = Param.Kernel.Out.Num * Param.Group.Num
     #     Param.Kernel.Height = Kernel.shape[2] # Height at dim 2
     #     Param.Kernel.Width = Kernel.shape[3] # Width at dim 3
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         if not IsSuper:
             Param = self.Param
             if self.IsInit():

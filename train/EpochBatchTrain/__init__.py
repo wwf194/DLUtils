@@ -44,7 +44,7 @@ class EventAfterEveryEpoch(EpochBatchTrainComponent):
     def AfterEpoch(self, Dict):
         self.Event(Dict)
         return self
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         assert hasattr(self, "Event")
         return super().Init(IsSuper=True, IsRoot=IsRoot)
 
@@ -59,7 +59,7 @@ class EventAfterTrain(EpochBatchTrainComponent):
     def AfterTrain(self, Dict):
         self.Event(Dict)
         return self
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         assert hasattr(self, "Event")
         return super().Init(IsSuper=True, IsRoot=IsRoot)
 
@@ -91,7 +91,7 @@ class EventAfterEpoch(EpochBatchTrainComponent):
     def BindTrainSession(self, TrainSession):
         self.TrainSession = TrainSession
         return super().BindTrainSession(TrainSession)
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         Mode = Param.Validate.setdefault("Mode", "Same Interval")
         if Mode in ["Same Interval"]:
@@ -198,7 +198,7 @@ class EventAfterFixedBatch(EpochBatchTrainComponent):
     def _BeforeEpochFixed(self):
         self.EventIndex = 0
         self.EventBatchNext = self.EventBatchIndexList[0]
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         if Param.Batch.hasattr("Interval"):
             Param.Mode = "TriggerAfterCertainNumOfBatch"
@@ -443,7 +443,7 @@ class EpochBatchTrainSession(DLUtils.module.AbstractModule):
             self.AfterEpoch(Dict)
         self.AfterTrain(Dict)
         return self
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         self.BatchSize = Param.Batch.setdefault("Size", "NotRegistered")
         self.BatchNum = Param.Batch.setdefault("Num", "Auto")

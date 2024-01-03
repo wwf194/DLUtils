@@ -86,7 +86,7 @@ class IntRange(DLUtils.module.AbstractModule):
         return super().ExtractParam(RetainSelf=RetainSelf)
     def LoadParam(self, Param):
         return super().LoadParam(Param)
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         self.Start = Param.Range.Start
         self.Next = Param.Range.End

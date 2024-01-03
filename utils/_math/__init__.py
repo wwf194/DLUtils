@@ -4,17 +4,6 @@ import random
 import sys
 import os
 
-def NpArrayStatistics(data, verbose=False):
-    DataStat = DLUtils.param({
-        "Min": np.nanmin(data),
-        "Max": np.nanmax(data),
-        "Mean": np.nanmean(data),
-        "Std": np.nanstd(data),
-        "Var": np.nanvar(data)
-    })
-    return DataStat
-NpArrayStat = NpStatistics = NpArrayStatistics
-
 def IsNaN(Num):
     return math.isnan(Num)
 
@@ -144,15 +133,70 @@ else:
 
 try:
     import numpy as np
-    GaussianCoefficient = 1.0 / (2 * np.pi) ** 0.5
+except Exception:
+    IsNumpyImported = False
+else:
+    IsNumpyImported = True
+
+try:
+    import scipy
+except Exception:
+    IsScipyImported = False
+else:
+    IsScipyImported = True
+
+if IsNumpyImported:
+    def NpArrayStatistics(data, verbose=False):
+        DataStat = DLUtils.param({
+            "Min": np.nanmin(data),
+            "Max": np.nanmax(data),
+            "Mean": np.nanmean(data),
+            "Std": np.nanstd(data),
+            "Var": np.nanvar(data)
+        })
+        return DataStat
+    NpStat = NpArrayStat = NpStatistics = NpArrayStatistics
+
+    def NpArrayStatisticsStr(data, verbose=False):
+        DataStat = {
+            "Min": np.nanmin(data),
+            "Max": np.nanmax(data),
+            "Mean": np.nanmean(data),
+            "Std": np.nanstd(data),
+            "Var": np.nanvar(data)
+        }
+        StrList = []
+        for Name, Key in DataStat.items():
+            StrList.append(Name)
+            StrList.append(": ")
+            StrList.append(DLUtils.Float2StrDisplay(Key))
+            StrList.append("\n")
+        return "".join(StrList)
+
+    def ReplaceNaNOrInfWithZeroNp(data):
+        data[~np.isfinite(data)] = 0.0
+        return data
+    ReplaceNaNOrInfWithZero = ReplaceNaNOrInfWithZeroNp
+
     def RandomSelectFromListRepeat(List, Num):
         # return random.choices(List, Num)
         # assert isinstance(Num, int)
         return np.random.choice(List, size=Num, replace=True)
     RandomSelectWithReplacement = RandomSelectFromListWithReplacement = RandomSelectFromListRepeat
-
     RandomSelectRepeat = RandomSelectFromListRepeat
 
+if IsNumpyImported and IsScipyImported:
+    from scipy.stats import rankdata
+    def GetElementRank(Data, OnNaN="omit", OnSameValue="min"):
+        Shape = Data.shape
+        
+        DataRank = rankdata(Data, method=OnSameValue, nan_policy=OnNaN)
+        DataRank = DataRank.reshape(Shape)
+        return DataRank
+
+try:
+    import numpy as np
+    GaussianCoefficient = 1.0 / (2 * np.pi) ** 0.5
     try:
         import torch
         import math
@@ -163,38 +207,9 @@ try:
     except Exception:
         pass
     else:
-        def NpArrayStatistics(data, verbose=False):
-            DataStat = DLUtils.param({
-                "Min": np.nanmin(data),
-                "Max": np.nanmax(data),
-                "Mean": np.nanmean(data),
-                "Std": np.nanstd(data),
-                "Var": np.nanvar(data)
-            })
-            return DataStat
 
-        def NpArrayStatisticsStr(data, verbose=False):
-            DataStat = {
-                "Min": np.nanmin(data),
-                "Max": np.nanmax(data),
-                "Mean": np.nanmean(data),
-                "Std": np.nanstd(data),
-                "Var": np.nanvar(data)
-            }
-            StrList = []
-            for Name, Key in DataStat.items():
-                StrList.append(Name)
-                StrList.append(": ")
-                StrList.append(DLUtils.Float2StrDisplay(Key))
-                StrList.append("\n")
-            return "".join(StrList)
 
-        NpArrayStat = NpStatistics = NpArrayStatistics
 
-        def ReplaceNaNOrInfWithZeroNp(data):
-            data[~np.isfinite(data)] = 0.0
-            return data
-        ReplaceNaNOrInfWithZero = ReplaceNaNOrInfWithZeroNp
 
         def IsAllNaNOrInf(data):
             return (np.isnan(data) | np.isinf(data)).all()
@@ -224,30 +239,7 @@ try:
         def CreateNpArray(Shape, Value, DataType):
             return np.full(tuple(Shape), Value, dtype=DataType)
 
-        def SampleFromDistribution(Shape, Type, **Dict):
-            if Type in ["Reyleigh"]:
-                return SamplesFromReyleighDistribution(
-                    Shape = Shape, **Dict
-                )
-            elif Type in ["Gaussian", "Gaussian1D"]:
-                return SampleFromGaussianDistribution(Shape, **Dict)    
-            else:
-                raise Exception()
 
-        def SampleFromGaussianDistribution(Mean=0.0, Std=1.0, Shape=100):
-            return np.random.normal(loc=Mean, scale=Std, size=DLUtils.parse.ParseShape(Shape))
-
-        def SampleFromGaussianDistributionTorch(Mean=0.0, Std=1.0, Shape=100):
-            data = SampleFromGaussianDistribution(Mean, Std, Shape)
-            data = DLUtils.NpArray2Tensor(data)
-            return data
-
-        def SamplesFromReyleighDistribution(Mean=1.0, Shape=100):
-            # p(x) ~ x^2 / sigma^2 * exp( - x^2 / (2 * sigma^2))
-            # E[X] = 1.253 * sigma
-            # D[X] = 0.429 * sigma^2
-            Shape = DLUtils.parse.ParseShape(Shape)
-            return np.random.rayleigh(Mean / 1.253, Shape)
 
         def UniformAfterSoftmax(Shape):
             if isinstance(Shape, int):
@@ -355,9 +347,8 @@ try:
 
         Norm2ProbDistribution = Norm2ProbabilityDistribution = Norm2Sum1
 
-        GaussianCoefficient = 1.0 / (2 * np.pi) ** 0.5
-
         def GetGaussianProbDensityMethod(Mean, Std):
+            GaussianCoefficient = 1.0 / (2 * np.pi) ** 0.5
             # return Gaussian Probability Density Function
             CalculateExponent = lambda data: - 0.5 * ((data - Mean) / Std) ** 2
             Coefficient = GaussianCoefficient / Std
@@ -497,8 +488,10 @@ try:
                 raise Exception(ReturnType)            
     def ManhattanDistance(Point1, Point2):
         return np.linalg.norm(Point1, Point2, ord=1)
-    def Distance(Point1, Point2, Norm=2):
+    def EuclideanDistance(Point1, Point2, Norm=2):
         return np.linalg.norm(Point1, Point2, ord=Norm)
-
+    Distance = EuclideanDistance
 except Exception:
     pass
+
+from .distribution import *

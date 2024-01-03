@@ -1,14 +1,25 @@
+import warnings
 import numpy as np
-import scipy
-import cv2 as cv
+import scipy # pip install scikit-py
+
 import math
+
 import matplotlib as mpl
-mpl.use('TkAgg',force=True)
+# mpl.use('TkAgg',force=True)
+# ImportError: Cannot load backend 'TkAgg' which requires the 'tk' interactive framework, as 'headless' is currently running
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from matplotlib.patches import Rectangle
-import seaborn as sns
-sns.set_style("white")
+try:
+    import seaborn as sns
+    sns.set_style("white")
+except Exception:
+    warnings.warn("lib seaborn not found.")
+
+try:
+    import cv2 as cv
+except Exception:
+    warnings.warn("lib cv2 not found")
 
 default_res=60
 
@@ -67,8 +78,8 @@ def PlotLinesPlt(ax, XYsStart, XYsEnd=None, Width=1.0, Color=NamedColor.Black):
         ax.add_line(Line2D(X, Y, linewidth=Width, color=Color))
 PlotLines = PlotLinesPlt
 
-def SetHeightWidthRatio(ax, ratio):
-    ax.set_aspect(ratio)
+def SetHeightWidthRatio(ax, ratio, XRange, YRange):
+    ax.set_aspect(ratio * XRange / YRange)
 
 def PlotLineAndMarkVerticesXY(ax, PointStart, PointEnd, Width=1.0, Color=NamedColor.Black):
     PlotLinePlt(ax, PointStart, PointEnd, Width, Color)
@@ -184,21 +195,45 @@ def PlotMultiPoints(
     # SetTicksAndRangeForAx(ax, Xs, Ys, XRange, YRange)
     return
 
-def SetXTicksAndRange(*List, **Dict):
+def SetXTicksAndRange(ax, *List, **Dict):
     XTicks = Dict.setdefault("XTicks", "float")
     if XTicks in ["float", "Float"]:
-        SetXTicksAndRangeFloat(*List, **Dict)
+        SetXTicksAndRangeFloat(ax, *List, **Dict)
     elif XTicks in ["int", "Int"]:
-        SetXTicksAndRangeInt(*List, **Dict)
+        SetXTicksAndRangeInt(ax, *List, **Dict)
+    elif XTicks in ["percent", "percentage", "Percent", "Percentage"]:
+        XTicks, XTicksStr = SetXTicksAndRangeFloat(ax, *List, **Dict)
+        _XTicksStr = []
+        for XTick in XTicks:
+            _XTicksStr.append("%d%%"%(round(XTick * 100)))
+        ax.set_xticks(
+            XTicks,
+            labels=_XTicksStr,
+            rotation=0
+        )
+    elif XTicks in ["none", "None", "null", "Null"]:
+        return
     else:
         raise Exception(XTicks)
 
-def SetYTicksAndRange(*List, **Dict):
+def SetYTicksAndRange(ax, *List, **Dict):
     YTicks = Dict.setdefault("YTicks", "float")
     if YTicks in ["float", "Float"]:
-        SetYTicksAndRangeFloat(*List, **Dict)
+        SetYTicksAndRangeFloat(ax, *List, **Dict)
     elif YTicks in ["int", "Int"]:
-        SetYTicksAndRangeInt(*List, **Dict)
+        SetYTicksAndRangeInt(ax, *List, **Dict)
+    elif YTicks in ["percent", "percentage", "Percent", "Percentage"]:
+        YTicks, YTicksStr = SetYTicksAndRangeFloat(ax, *List, **Dict)
+        _YTicksStr = []
+        for YTick in YTicks:
+            _YTicksStr.append("%d%%"%(round(YTick * 100)))
+        ax.set_yticks(
+            YTicks,
+            labels=_YTicksStr,
+            rotation=0
+        )
+    elif YTicks in ["none", "None", "null", "Null"]:
+        return
     else:
         raise Exception(YTicks)
 
@@ -484,17 +519,20 @@ def PlotArrowFromVertexPairsPlt(ax, XYStart, XYEnd, Width=0.001, Color=NamedColo
     XYEnd = DLUtils.ToNpArray(XYEnd)
     PlotArrowPlt(ax, XYStart, XYEnd - XYStart, Width=Width, Color=Color, SizeScale=SizeScale)
 
-def PlotArrowPlt(ax, XYStart, dXY, Width=0.001, HeadWidth=0.05, HeadLength=0.1, Color=NamedColor.Red, SizeScale=None):
+def PlotArrowPlt(ax, XYStart, dXY=None, XYEnd=None, Width=0.001, HeadWidth=0.05, HeadLength=0.1, Color=NamedColor.Red, SizeScale=None):
     Color = ParseColor(Color)
     XYStart = DLUtils.ToList(XYStart)
-    dXY = DLUtils.ToList(dXY)
+    # dXY = DLUtils.ToList(dXY)
+    if XYEnd is not None:
+        dXY = [XYEnd[0] - XYStart[0], XYEnd[1] - XYStart[1]]
     if SizeScale is not None:
         Width = Width * SizeScale
         HeadWidth = HeadWidth * SizeScale
         HeadLength = HeadLength * SizeScale
     else:
         SizeScale = 1.0
-    ax.arrow(*XYStart, *dXY, 
+    ax.arrow(
+        XYStart[0], XYStart[1], dXY[0], dXY[1], 
         width=Width * SizeScale,
         head_width=HeadWidth * SizeScale,
         head_length=HeadLength * SizeScale,
@@ -1080,35 +1118,57 @@ def MaskOutInfOrNaN(data):
 def PlotLineCv(img, points, line_color=(0,0,0), line_Width=2, line_type=4, BoundaryBox=[[0.0,0.0],[1.0,1.0]]):
     ResolutionX, ResolutionY = img.shape[0], img.shape[1]
     point_0 = GetIntCoords(points[0][0], points[0][1], BoundaryBox, ResolutionX, ResolutionY)
-    point_1 = Getint_coords(points[1][0], points[1][1], BoundaryBox, ResolutionX, ResolutionY)
+    point_1 = GetIntCoords(points[1][0], points[1][1], BoundaryBox, ResolutionX, ResolutionY)
     cv.line(img, point_0, point_1, line_color, line_Width, line_type)
 
-def GetRandomColors(Num=5):
-    interval = 256 / Num
-    pos_now = 0.0
-    colors = []
-    for i in range(Num):
-        pos_now += interval
-        colors.append(ColorWheel(int(pos_now)))
-    return colors
+def GetRandomColors(Num=5, DataType="UInt255"):
+    if Num == 1:
+        Position = [0.0] # red
+    elif Num == 2:
+        Position = [0.0, 85.0] # red, blue
+    else:
+        Position = np.linspace(0.0, 255.0, Num + 1)
+    Position = Position[:Num]
+    ColorList = [ColorWheel(Position[Index]) for Index in range(Num)]
+    
+    if DataType in ["UInt255", "Int255", "255"]:
+        pass
+    elif DataType in ["Float01", "01"]:
+        ColorList = [
+            [Num / 255.0 for Num in Color] for Color in ColorList
+        ]
+    else:
+        raise Exception()
+    return ColorList
 
 GetColors = GetTypicalColors = GetRandomColors
 
-def ColorWheel(Index): #生成横跨0-255个位置的彩虹颜色.  
-    Index = Index % 255
-    if Index < 85:
-        return (Index * 3, 255 - Index * 3, 0)
-    elif Index < 170:
-        Index -= 85
-        return (255 - Index * 3, 0, Index * 3)
+def ColorWheel(Index): # Index: int or float within range [0.0, 255.0]  
+    if isinstance(Index, float):
+        Index = Index - math.floor(Index / 255.0) * 255.0
+    elif isinstance(Index, int):
+        Index = Index % 255
+        Index = Index * 1.0
     else:
-        Index -= 170
-        return (0, Index * 3, 255 - Index * 3)
+        raise Exception()
 
-def PlotImages(ImageList, Save=True, SavePath=None):
+    # Index == 0.0 --> (255.0, 0.0, 0.0) # red
+    # Index == 85.0 --> (0.0, 0.0, 255.0) # blue
+    # Index == 170.0 --> (0.0, 255.0, 0.0) # green
+    if Index < 85.0:
+        return (255 - Index * 3, 0, Index * 3)
+    elif Index < 170.0:
+        Index -= 85
+        return (0, Index * 3, 255 - Index * 3)
+    else:
+        Index -= 170.0
+        return (Index * 3, 255 - Index * 3, 0)
+
+def ConcatMultiImage(ImageList, Save=True, SavePath=None, RowNum=None, ColNum=None):
+    # concat using matplotlib
     PlotNum = len(ImageList)
-    fig, axes = CreateFigurePlt(PlotNum)
-    assert PlotNum > 0
+    fig, axes = CreateFigurePlt(PlotNum, RowNum=RowNum, ColNum=ColNum, Size="L")
+    assert PlotNum > 0    
     for PlotIndex in range(PlotNum):
         ax = GetAx(axes, PlotIndex)
         Image = ImageList[PlotIndex]
@@ -1116,11 +1176,62 @@ def PlotImages(ImageList, Save=True, SavePath=None):
         # interpolation="nearst"
     ClearAllAx(axes)
     SaveFigForPlt(Save, SavePath)
-    
-ConcatImages = PlotImageArray = PlotImages
+ConcatImages = PlotImageArray = PlotMultiImage = ConcatMultiImage
 
+def ConcatSvgImage(
+    ImageList,
+    RowNum=None, ColNum=None, SavePath=None
+):
+    _ImageList = [
+        DLUtils.image.SVG2NpArray(FilePath) for FilePath in ImageList
+    ]
+    DLUtils.plot.PlotMultiImage(
+        _ImageList,
+        SavePath=SavePath,
+        RowNum=RowNum, ColNum=ColNum
+    )
+    return SavePath
 
-def cat_imgs_h(imgs, ColNum=10, space_Width=4):
+def ConcatAllSvgImageInDir(DirPath, ColNum=None, RowNum=None, SavePath=None):
+    return ConcatAllImageInDir(
+        DirPath=DirPath,
+        RowNum=RowNum, ColNum=ColNum, 
+        SavePath=SavePath,
+        FileNamePattern=r"(.*)\.(svg)"
+    )
+ConcatAllSvgInDir = ConcatAllSvgImageInDir
+
+def ConcatAllImageInDir(DirPath, RowNum=None, ColNum=None, SavePath=None, FileNamePattern=None):
+    DirPath = DLUtils.CheckDirExists(DirPath)
+    ImageList = []
+
+    if FileNamePattern is None:
+        FileNamePattern = r"(.*)\.((png)|(svg))"
+    for FilePath in DLUtils.ListFilePathWithPattern(
+        DirPath,
+        FileNamePattern
+    ):
+        if FilePath.endswith("svg"):
+            # SvgStr = DLUtils.TextFile2Str(FilePath)
+            Image = DLUtils.image.SVG2NpArray(FilePath)
+        else:
+            Image = DLUtils.image.ImageFile2NpArray(FilePath)
+        ImageList.append(Image)
+    if SavePath is None:
+        if RowNum is not None or ColNum is not None:
+            _RowNum, _ColNum = ParseRowColNum(len(ImageList), RowNum, ColNum)
+            SavePath = DirPath + "concat-%dx%d.png"%(_RowNum, _ColNum)
+        else:
+            SavePath = DirPath + "concat.png"
+    DLUtils.plot.PlotMultiImage(
+        ImageList,
+        SavePath=SavePath,
+        RowNum=RowNum, ColNum=ColNum
+    )
+    return SavePath
+
+def ConcatMultiImagePixelLevel(imgs, ColNum=10, space_Width=4):
+    # concat at pixel level
     ''' Concat image horizontally with spacer '''
     space_col = np.ones([imgs.shape[1], space_Width, imgs.shape[3]], dtype=np.uint8) * 255
     imgs_cols = []
@@ -1160,36 +1271,39 @@ def cat_imgs(imgs, ColNum=10, space_Width=4): # images: [num, Width, Height, cha
     return np.concatenate(imgs_rows, axis=1)
 
 def ParseRowColNum(PlotNum, RowNum=None, ColNum=None):
+    # print(RowNum, ColNum)
     # ColNum: int. Column Number.
     if RowNum in ["Auto", "auto"]:
         RowNum = None
     if ColNum in ["Auto", "auto"]:
         ColNum = None
-    if RowNum is None and ColNum is not None:
-        RowNum = PlotNum // ColNum
-        if PlotNum % ColNum > 0:
-            RowNum += 1
-        return RowNum, ColNum
-    elif RowNum is not None and ColNum is None:
-        ColNum = PlotNum // RowNum
-        if PlotNum % RowNum > 0:
-            ColNum += 1
-        return RowNum, ColNum
-    elif RowNum is None and ColNum is None:
-        if PlotNum <= 3:
-            return 1, PlotNum
-        ColNum = round(PlotNum ** 0.5)
-        if ColNum == 0:
-            ColNum = 1
-        RowNum = PlotNum // ColNum
-        if PlotNum % ColNum > 0:
-            RowNum += 1
-        return RowNum, ColNum
-    else:
-        if PlotNum != RowNum * ColNum:
-            raise Exception('PlotNum: %d != RowNum %d x ColumnNum %d'%(PlotNum, RowNum, ColNum))
-        else:
+    if RowNum is None:
+        if ColNum is None:
+            if PlotNum <= 3:
+                return 1, PlotNum
+            ColNum = round(PlotNum ** 0.5)
+            if ColNum == 0:
+                ColNum = 1
+            RowNum = PlotNum // ColNum
+            if PlotNum % ColNum > 0:
+                RowNum += 1
             return RowNum, ColNum
+        else:
+            RowNum = PlotNum // ColNum
+            if PlotNum % ColNum > 0:
+                RowNum += 1
+            return RowNum, ColNum
+    else:
+        if ColNum is None:
+            ColNum = PlotNum // RowNum
+            if PlotNum % RowNum > 0:
+                ColNum += 1
+            return RowNum, ColNum
+        else:
+            if PlotNum != RowNum * ColNum:
+                raise Exception('PlotNum: %d != RowNum %d x ColumnNum %d'%(PlotNum, RowNum, ColNum))
+            else:
+                return RowNum, ColNum
 
 def CreateFigurePlt(PlotNum=1, RowNum=None, ColNum=None, Width=None, Height=None, Size="Small"):
     RowNum, ColNum = ParseRowColNum(PlotNum, RowNum, ColNum)
@@ -1284,7 +1398,7 @@ def GetAx(axes, Index=None, RowIndex=None, ColIndex=None):
         raise Exception()
 
 def PlotLineChart(ax=None, Xs=None, Ys=None,
-        Title="Undefined", Label=None,
+        Title=None, Label=None,
         XLabel=None, YLabel=None, SetTicks=True,
         LineColor=None, Color=None, LineWidth=1.0,  
         Save=False, SavePath=None, **Dict
@@ -1304,8 +1418,11 @@ def PlotLineChart(ax=None, Xs=None, Ys=None,
         YTicks = Dict.setdefault("YTicks", "Float")
         SetXTicksAndRange(ax, Xs=Xs, **Dict)
         SetYTicksAndRange(ax, Ys=Ys, **Dict)
-    SetXYLabelForAx(ax, XLabel, YLabel)
-    SetTitleForAx(ax, Title)
+    
+    YLabelColor = Dict.setdefault("YLabelColor", None)
+    SetXYLabelForAx(ax, XLabel, YLabel, **Dict)
+    if Title is not None:
+        SetTitleForAx(ax, Title)
     SaveFigForPlt(Save, SavePath)
     return ax
 
@@ -1347,7 +1464,7 @@ def PlotMultiLineChart(
         YTicks = Dict.setdefault("YTicks", "float")
         SetXTicksAndRange(ax, Xs=XsList, DimNum=2, **Dict)
         SetYTicksAndRange(ax, Ys=YsList, DimNum=2, **Dict)
-    SetXYLabelForAx(ax, XLabel, YLabel)
+    SetXYLabelForAx(ax, XLabel, YLabel, **Dict)
     SetTitleForAx(ax, Title)
 
     if Labels is not None:
@@ -1437,11 +1554,15 @@ def PlotHistogram(
     SetTitleAndLabelForAx(ax, XLabel, YLabel, Title)
     SaveFigForPlt(Save, SavePath)
 
-def SetXYLabelForAx(ax, XLabel, YLabel):
+def SetXYLabelForAx(ax, XLabel, YLabel, **Dict):
     if XLabel is not None:
         ax.set_xlabel(XLabel)
     if YLabel is not None:
-        ax.set_ylabel(YLabel)
+        YLabelColor = Dict.setdefault("YLabelColor", None)
+        if YLabelColor is None:
+            ax.set_ylabel(YLabel)
+        else:
+            ax.set_ylabel(YLabel, color=ParseColor(YLabelColor))
 
 def SetTitleForAx(ax, Title):
     if Title is not None:
@@ -1449,6 +1570,11 @@ def SetTitleForAx(ax, Title):
 
 def GetSubAx(ax, Left, Bottom, Width, Height):
     return ax.inset_axes([Left, Bottom, Width, Height]) # left, bottom, width, height. all are ratios to sub-canvas of ax.
+
+def SetYTickAndAxisOnRight(ax):
+    ax.yaxis.set_label_position("right")
+    ax.yaxis.tick_right()
+    return
 
 def ParseColorBarOrientation(Orientation):
     if Orientation is None:
@@ -1984,7 +2110,23 @@ def SetTitleAndLabelForAx(ax, XLabel=None, YLabel=None, Title=None):
     if Title is not None:
         ax.set_title(Title)
 
-def SaveFigForPlt(Save=True, SavePath=None, Fig=None):
+def SetXLabel(ax, XLabel):
+    ax.set_xlabel(XLabel)
+
+def SetYLabel(ax, YLabel, Position=None, Color=None):
+    if Position is not None:
+        if Position in ["r", "R", "right", "Right"]:
+            ax.get_yaxis().set_label_position("right")
+    
+    if Color is not None:
+        ax.get_yaxis().label.set_color(Color)
+
+    ax.set_ylabel(YLabel)
+
+def SetTitle(ax, Title):
+    ax.set_title(Title)
+
+def SaveFigForPlt(Save=True, SavePath=None, Fig=None, TightLayout=True, RemoveMargin=True):
     if SavePath is not None:
         Save = True
     if SavePath is None and Save is True:
@@ -1993,10 +2135,21 @@ def SaveFigForPlt(Save=True, SavePath=None, Fig=None):
         if Fig is not None:
             Fig.savefig(SavePath)
         else:
-            DLUtils.EnsureFileDir(SavePath)
-            plt.tight_layout()
+            SavePath = DLUtils.EnsureFileDir(SavePath)
+            if TightLayout:
+                plt.tight_layout()
             # plt.savefig(SavePath, format="svg")
-            plt.savefig(SavePath)
+            if RemoveMargin:
+                # plt.subplots_adjust(top = 1, bottom = 0, right = 1, left = 0, hspace = 0, wspace = 0)
+                # plt.margins(0, 0)
+
+                plt.savefig(
+                    SavePath, 
+                    bbox_inches = 'tight',
+                    pad_inches = 0.25
+                )
+            else:
+                plt.savefig(SavePath)
             # plt.close() # is closed, plt.show() will not function normally.
 
 def CompareDensityCurve(data1, data2, Name1, Name2, Save=True, SavePath=None):
@@ -2108,6 +2261,12 @@ def PlotMeanAndStdCurve(
     if ax is None:
         fig, ax = CreateFigurePlt()
 
+    Mean = DLUtils.ToNpArray(Mean)
+    Std = DLUtils.ToNpArray(Std)
+    StdHalf = Std / 2.0
+    Y1 = Mean - StdHalf
+    Y2 = Mean + StdHalf
+
     if SetTicks:
         if XTicks in ["Int"]:
             XTicks, XTicksStr = SetXTicksInt(ax, min(Xs), max(Xs))
@@ -2116,11 +2275,7 @@ def PlotMeanAndStdCurve(
         else:
             raise Exception()
         YTicks, YTicksStr = SetYTicksFloat(ax, np.nanmin(Y1), np.nanmax(Y2))
-    Mean = DLUtils.ToNpArray(Mean)
-    Std = DLUtils.ToNpArray(Std)
-    StdHalf = Std / 2.0
-    Y1 = Mean - StdHalf
-    Y2 = Mean + StdHalf
+
     if DLUtils.math.IsAllNaNOrInf(Y1) and DLUtils.math.IsAllNaNOrInf(Y2) and DLUtils.math.IsAllNaNOrInf(Mean):
         ax.text(
             (XTicks[0] + XTicks[-1]) / 2.0,
@@ -2136,7 +2291,6 @@ def PlotMeanAndStdCurve(
     
     SetTitleAndLabelForAx(ax, XLabel, YLabel, Title)
     SaveFigForPlt(Save, SavePath)
-
 
 def SetXAxisLocationForAx(ax, XAXisLocation):
     if XAXisLocation in ["top"]:

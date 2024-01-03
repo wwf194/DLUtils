@@ -73,7 +73,7 @@ else:
                 return self.Receive(InTorch)
             else:
                 raise NotImplementedError()
-        def Init(self, IsSuper=False, IsRoot=True):
+        def Build(self, IsSuper=False, IsRoot=True):
             if self.IsLoad():
                 self.ModuleList = list(self._SubModules.values())
             

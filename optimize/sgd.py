@@ -29,7 +29,7 @@ class SGD(GradientDescend):
         Diff = Cache1 - Cache0
         #TrainParam = Dict.Model.ExtractTrainParam()
         return self
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         # momentum setting
         Param.Momentum.setdefault("Enable", True)

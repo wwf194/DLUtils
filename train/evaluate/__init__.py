@@ -32,3 +32,18 @@ class _Evaluator:
         Param = self.Param
         Param.Log = DLUtils.Param([])
 
+def InitAccuracy():
+    Accuracy = DLUtils.EmptyPyObj()
+    Accuracy.NumTotal = 0
+    Accuracy.NumCorrect = 0
+    return Accuracy
+
+def ResetAccuracy(Accuracy):
+    Accuracy.NumTotal = 0
+    Accuracy.NumCorrect = 0
+    return Accuracy
+
+def CalculateAccuracy(Accuracy):
+    Accuracy.RateCorrect = 1.0 * Accuracy.NumCorrect / Accuracy.Num
+    return Accuracy
+

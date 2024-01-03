@@ -73,12 +73,6 @@ def ImageFile2Webp(FilePath, SavePath):
     Image.save(str(format(SavePath, "04"))+".webp", "webp")
 ImageFile2webp = ImageFile2Webp
 
-# files = glob.glob(".\*.jpg")
-# i = 0
-# for file in files:
-#     cnvt2png(file, i)
-#     i += 1
-
 try:
     import torchvision
 except Exception:
@@ -87,23 +81,27 @@ except Exception:
 try:
     import cairosvg
 except Exception:
-    warnings.warn("lib cairosvg not found.")
+    warnings.warn("package cairosvg not found.")
 else:
-    def SVGStr2PNG(Str, SavePath):
+    def SVGStr2PNG(Str, SavePath, Scale=2.0):
         SavePath = DLUtils.EnsureFileDir(SavePath)
-        cairosvg.svg2png(bytestring=Str,write_to=SavePath)
+        cairosvg.svg2png(bytestring=Str,write_to=SavePath, scale=Scale)
         return SavePath
-    def SVG2PNG(FilePath, SavePath=None):
+    def SVG2PNG(
+            FilePath,
+            SavePath=None,
+            Scale=2.0 # spatial scale
+        ):
         if SavePath is None:
             SavePath = DLUtils.ChangeFileNameSuffix(FilePath, ".svg")
         SvgStr = DLUtils.TextFile2Str(FilePath)
-        SavePath = SVGStr2PNG(SvgStr, SavePath)
+        SavePath = SVGStr2PNG(SvgStr, SavePath, Scale=Scale)
         return SavePath
-    def SVG2NpArray(FilePath):
+    def SVG2NpArray(FilePath, Scale=2.0):
         SvgStr = DLUtils.TextFile2Str(FilePath)        
         TempFilePath = "output.png"
         TempFilePath = DLUtils.RenameFileIfExists(TempFilePath)
-        SavePath = SVG2PNG(FilePath, SavePath=TempFilePath)
+        SavePath = SVG2PNG(FilePath, SavePath=TempFilePath, Scale=Scale)
         Image = DLUtils.image.ImageFile2NpArray(SavePath)
         DLUtils.DeleteFile(SavePath)
         return Image

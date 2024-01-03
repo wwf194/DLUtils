@@ -48,7 +48,7 @@ class ImageNet1k(ImageClassificationTask):
         if hasattr(self, "Device"):
             _DataLoader.SetDevice(self.Device)
         return _DataLoader
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         # dataset folder path setting
         assert Param.hasattr("Data.Path")

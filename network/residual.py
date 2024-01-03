@@ -9,6 +9,6 @@ class ResidualLayer(DLUtils.module.AbstractNetwork):
         Y = self.SubModule(X)
         Output = X + Y
         return Output
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         return super().Init(IsSuper=True, IsRoot=IsRoot)

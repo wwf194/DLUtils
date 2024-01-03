@@ -28,7 +28,7 @@ class MaxPool2D(DLUtils.module.AbstractNetwork):
         if KernelHeight is not None:
             Param.Kernel.Height = KernelHeight
         return super().SetParam(**Dict)
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         self.Padding = Param.setdefault("Padding", 0)
         if Param.Kernel.hasattr("Size"):

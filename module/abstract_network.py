@@ -239,7 +239,7 @@ else:
                 if isinstance(Item, np.ndarray) or isinstance(Item, torch.Tensor):
                     Dict[Key] = DLUtils.ToTorchTensor(Value).to(self.Device)
             return self.Receive(*List, **Dict)
-        def Init(self, IsSuper=False, IsRoot=True):
+        def Build(self, IsSuper=False, IsRoot=True):
             Param = self.Param
             super().Init(IsSuper=True, IsRoot=IsRoot)
 

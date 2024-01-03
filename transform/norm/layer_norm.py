@@ -24,7 +24,7 @@ class LayerNorm(DLUtils.module.AbstractNetwork):
         XMean = torch.mean(X, dim=self.NormDimension, keepdim=True)
         XStd  = torch.std(X, dim=self.NormDimension, keepdim=True)
         return self.Scale * (X - XMean) / (XStd + self.Eps) + self.Bias
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         assert Param.Norm.hasattr("Shape")
         if isinstance(Param.Norm.Shape, int):

@@ -28,7 +28,7 @@ class TransformerEncoder(DLUtils.module.AbstractNetwork):
             OutList.append(Out)
             In = Out
         return Out
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         assert Param.Layer.hasattr("Num")
         self.LayerNum = Param.Layer.Num
@@ -91,7 +91,7 @@ class MultiheadSelfAttentionLayer(DLUtils.module.AbstractNetwork):
         Z = Y + Z # residual
         Z = self.LayerNorm2(Z)
         return Z
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         self.InSize = Param.In
         self.OutSize = Param.Out.Size
@@ -206,7 +206,7 @@ class MultiHeadAttention(DLUtils.module.AbstractNetwork):
         Out = torch.matmul(V2, self.Value2Out) # (BatchSize, TokenNumQ, OutSize)
         return Out
 
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         assert Param.hasattr("In.Token.Size", "Out.Token.Size")
         assert Param.Attention.hasattr("QK.Size", "V.Size", "Head.Num")
@@ -272,7 +272,7 @@ AttentionMultiHead = MultiHeadAttention
 class MultiHeadSelfAttention(MultiHeadAttention):
     def Receive(self, In):
         return self._Receive(In, In, In)
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         return super().Init(IsSuper=True, IsRoot=IsRoot)
 MSA = MHSA = MultiHeadSelfAttention
 

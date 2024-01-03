@@ -21,7 +21,7 @@ class InsertDim(DLUtils.module.AbstractNetwork):
         Param.InsertIndex = InsertIndex
     def Receive(self, X):
         return torch.unsqueeze(X, self.InsertIndex)
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         assert Param.hasattr("InsertIndex")
         assert isinstance(Param.InsertIndex, int)

@@ -36,7 +36,7 @@ else:
             for Index in self.IndexList:
                 Result += self.CoeffList[Index] * List[Index]
             return Result
-        def Init(self, IsSuper=False, IsRoot=True):
+        def Build(self, IsSuper=False, IsRoot=True):
             Param = self.Param
             assert Param.Coeff.hasattr("List")
             self.CoeffList = list(Param.Coeff.List)
@@ -46,7 +46,7 @@ else:
     class NpArray2TorchTensor(DLUtils.module.AbstractOperator):
         def Receive(self, In):
             return torch.from_numpy(In).to(self.Device, dtype=self.DataType)
-        def Init(self, IsSuper=False, IsRoot=True):
+        def Build(self, IsSuper=False, IsRoot=True):
             if not hasattr(self, "Device"):
                 self.Device = "cpu"
 
@@ -72,7 +72,7 @@ else:
             super().__init__(**Dict)
         def Receive(self, In):
             return In.to(self.DeviceTarget)
-        def Init(self, IsSuper=False, IsRoot=True):
+        def Build(self, IsSuper=False, IsRoot=True):
             Param = self.Param
             Param.Device.setdefault("Target", "cpu")
             self.DeviceTarget = Param.Device.Target

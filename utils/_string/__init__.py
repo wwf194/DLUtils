@@ -3,7 +3,7 @@ import string
 import warnings
 import DLUtils
 import sys
-from io import StringIO, BytesIO, TextIOWrapper
+from io import StringIO
 
 # String Related Functions
 def LStrip(Str, Prefix):
@@ -72,15 +72,10 @@ def Str2Bytes(Str:str, Encoding="utf-8"):
 
     return Str.encode(Encoding)
 
-import re
 def SelectStrWithPatternFromList(List, StrPattern):
     StrPattern = re.compile(StrPattern)
     for Str in List:
         assert isinstance(Str, str)
-        
-def Test():
-    # python 3 string all uses unicode.
-    Str = "你好，世界！"
 
 def CodePoint2Char(CodePointInt):
     # CodePointNum: Int
@@ -138,7 +133,7 @@ def NaturalCmp(StrA, StrB):
     else:
         return StrA > StrB
 
-def Bytes2Hex(Bytes):
+def Bytes2Hex(Bytes:bytes):
     return Bytes.hex()
 
 def HexStr2Bytes(HexStr):

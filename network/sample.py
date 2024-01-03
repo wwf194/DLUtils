@@ -44,7 +44,7 @@ class SampleFromNormalDistribution(DLUtils.module.AbstractNetwork):
         return _Std
     def _GetStd(self, Std):
         return Std
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         Param.Receive.setdefault("Format", "SplitMeanStd")
         Param.In.setdefault("Type", "LogOfVar")

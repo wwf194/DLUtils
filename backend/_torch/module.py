@@ -71,8 +71,9 @@ def PrintOptimizerStateDict(Optimizer, Out="Std"):
     DLUtils.PrintDict(StateDict, Out=Out)
     return
 
-def GetLR(optimizer):
+def GetLearningRate(optimizer):
     return optimizer.state_dict()['param_groups'][0]['lr']
+GetLR = GetLearningRate
 
 def TorchModelStateDict2CPU(state_dict):
     return StateDict2CPURecur(state_dict)
@@ -203,7 +204,7 @@ class TorchModuleWrapper(AbstractNetwork):
     def UpdateDictFromTensor(self, Recur=False):
         self.UpdateModuleFromParam()
         return super().UpdateDictFromTensor(Recur=Recur)
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         assert hasattr(self, "module")
         Param = self.Param
         if self.IsInit():

@@ -1,8 +1,7 @@
 
 import sys
-sys.path.append("../")
 import DLUtils
-
+from DLUtils.module import AbstractModule
 from ftplib import FTP
 
 def FTPConnect(Host=None, Port=21):
@@ -15,8 +14,8 @@ def FTPConnect(Host=None, Port=21):
     FTPSession.dir() # print all folders under current dir.
     FileNmaeList = FTPSession.nlst()
     return
-import DLUtils
-from DLUtils.module import AbstractModule
+
+
 class FTPSession(AbstractModule):
     def Connect(self, Host=None, Port=21):
         Param = self.Param

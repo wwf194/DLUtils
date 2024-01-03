@@ -14,7 +14,7 @@ class CrossEntropyNClass(DLUtils.module.AbstractModule):
         Loss = - Target * torch.log(Pred) # [BatchSize, OutNum]
         Loss = torch.sum(Loss, dim=1) # [BatchSize]
         return self.AfterOperation(Loss)
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         Param.Operation.setdefault("After", "Mean")
         if Param.Operation.After in ["Mean"]:
@@ -47,7 +47,7 @@ class SoftMaxAndCrossEntropy(DLUtils.module.AbstractModule):
         OutProb = self.SoftMax(Out)
         Loss = self.CrossEntropy(OutProb, OutTarget)
         return Loss
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         self.AddSubModule(
             "SoftMax", SoftMax()
@@ -76,7 +76,7 @@ class CrossEntropy2Class(DLUtils.module.AbstractNetwork):
         Loss = torch.sum(Loss, dim=(1, 2))
         Loss = self.AfterOperation(Loss)
         return Loss
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         # pytorch default: mean 
         AfterOperation = Param.Operation.setdefault("After", "Mean")
@@ -113,7 +113,7 @@ class KLNormMuSigmaAndNorm01(DLUtils.module.AbstractNetwork):
         KLDivergence = - 0.5 * torch.sum(1.0 + LogOfVar - Mu ** 2 - Var, dim=1)
         KLDivergence = self.AfterOperation(KLDivergence)
         return KLDivergence
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         AfterOperation = Param.Operation.setdefault("After", "Mean")
         if AfterOperation in ["Mean"]:

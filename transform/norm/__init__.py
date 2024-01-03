@@ -15,7 +15,7 @@ class ShiftRange(AbstractOperator):
     def Receive(self, In):
         Output = (In - self.Min1) * self.Scale + self.Min2
         return Output
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         self.Min1 = Param.Min1
         self.Max1 = Param.Max1
@@ -43,7 +43,7 @@ class NormOnColorChannel(AbstractOperator):
         return Out
     def _Receive(self, In):
         return In
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         Param.After.setdefault("Mean", 0.0)
         Param.After.setdefault("Std", 1.0)

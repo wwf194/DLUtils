@@ -160,7 +160,7 @@ else:
             for StatusName, OutName in self.OutNameMap.items():
                 OutDict[StatusName] = Nodes[OutName]
             return OutDict
-        def Init(self, IsSuper=False, IsRoot=True):
+        def Build(self, IsSuper=False, IsRoot=True):
             Param = self.Param
             self.RouteList = []
             RouteFuncMap = DLUtils.IterableKeyToElement({

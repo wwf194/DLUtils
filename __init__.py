@@ -1,6 +1,7 @@
 Verbose = True
 
 from .utils._dict import IterableKeyToElement, IterableKeyToKeys, ToDict
+import DLUtils.utils._string as string
 from .utils._string import Print2OutPipe as print
 from .utils._string import (
         SetStdOut, OutputTo, Output2, ResetStdOut,
@@ -24,18 +25,40 @@ from .utils._json import \
 import DLUtils.utils as utils
 
 import DLUtils.utils._param as param
-#from .utils import _1DTo2D
+
 from .utils._param import (
         Param, param,
         new_param, NewParam,
         ToParam,
         Param2JsonFile, Param2JsonStr
     )
-import DLUtils.utils._numpy as numpy
-from .utils._numpy import SetSeedForNumpy, NpArray2TextFile
+# import DLUtils.utils._numpy as numpy
+from .utils._numpy import (
+        SetSeedForNumpy,
+        NpArray2TextFile,
+        NpArray2D2TextFile,
+        NpArray2D2Str,
+        FlattenNpArray,
+        NpArray2List,
+        EnsureFlatNp,
+        EnsureFlat
+    )
 
-# from .utils import *
-from .utils import GetSystemType, ExpandIterableKey, ToList, GetFirstValue
+from .utils.format import (
+    Curve2TextFile
+)
+
+from DLUtils.utils import (
+        GetSystemType,
+        ExpandIterableKey,
+        ToList,
+        GetFirstValue,
+        GetFirstNotNoneValue,
+        Float2StrDisplay,
+        ToLowerStr,
+        EmptyListWithShape, GetListWithShape,
+        LeafListToMean, LeafListToStd
+    )
 try:
     from .utils import ToNpArray
 except Exception:
@@ -63,7 +86,19 @@ except Exception:
 import DLUtils.utils.parse as parse
 import DLUtils.utils.file as file
 import DLUtils.utils.func as function
-import DLUtils.utils.math as math
+import DLUtils.utils._math as math
+
+from DLUtils.utils._math import (
+    SampleFromKaimingNormal,
+    SampleFromKaimingUniform,
+    SampleFromXaiverNormal,
+    SampleFromXaiverUniform,
+    SampleFromConstantDistribution,
+    SampleFromNormalDistribution,
+    SampleFrom01NormalDistribution,
+    SampleFromGaussianDistribution,
+    SampleFromUniformDistribution,
+)
 
 try:
     import DLUtils.utils.plot as plot
@@ -95,7 +130,7 @@ try:
     from .optimize import SGD, Adam
 except Exception:
     pass
-import DLUtils.evaluate as evaluate
+
 import DLUtils.analysis as analysis
 import DLUtils.transform as transform
 try:
@@ -131,15 +166,6 @@ except Exception:
 try:
     import DLUtils.data as data
     from DLUtils.data.generate import (
-        SampleFromKaimingNormal,
-        SampleFromKaimingUniform,
-        SampleFromXaiverNormal,
-        SampleFromXaiverUniform,
-        SampleFromConstantDistribution,
-        SampleFromNormalDistribution,
-        SampleFrom01NormalDistribution,
-        SampleFromGaussianDistribution,
-        SampleFromUniformDistribution,
         DefaultConv2DKernel, DefaultUpConv2DKernel, ShapeWithSameValue,
         DefaultNonLinearLayerWeight, DefaultNonLinearLayerBias, DefaultLinearLayerWeight,
         DefaultUpConv2DBias, DefaultConv2DBias, DefaultLinearLayerBias,
@@ -181,7 +207,14 @@ try:
 except Exception:
     pass
 else:
-    from .backend._torch import SetSeedForTorch
+    from .backend._torch import (
+        SetSeedForTorch,
+        NpArray2Tensor,
+        TorchTensor2NpArray, TorchTensorToNpArray
+    )
+
+import DLUtils.utils.parallel as parallel
+from .utils.parallel import RunProcessPool
 
 PackageFolderPath = FolderPathOfFile(__file__)
 
@@ -191,14 +224,17 @@ except Exception:
     pass
 else:
     from DLUtils.utils._time import CurrentTimeStr, TimeStr
-from DLUtils.utils.system import NewCmdArg, ParseCmdArg, ErrorStackStr, PrintErrorStackTo, \
-    PrintErrorStackWithInfoTo, PrintErrorStackWithInfo2
-
+from DLUtils.utils.system import (
+        NewCmdArg, ParseCmdArg,
+        ErrorStackStr, PrintErrorStackTo, PrintErrorStackWithInfoTo, PrintErrorStackWithInfo2,
+        GetCurrentProcessID, CurrentPID, CurrentProcessID
+    )
 try:
     from DLUtils.backend._torch import NullParameter, ToTorchTensor, ToTorchTensorOrNum
 except Exception:
     pass
 
+import sys
 def DoTask(Param):
     TaskName = GetFirstValue(Param, ["Task", "Name"])
     if TaskName in ["Move", "MoveFile"]:
@@ -256,6 +292,61 @@ def DoTask(Param):
         )
     else:
         raise Exception("Invalid task name: %s"%TaskName)
+
+def RunAtBackground(
+        MainFunc,
+        IsDebug, __file__=None, StdOut=None, StdErr=None, *List, **Dict):
+    if IsDebug:
+        # exceptions will be directly thrown.
+        # stdout / stderr will not be redirected to file.
+        MainFunc(*List, **Dict)
+    else:
+        import sys
+        if StdOut is None:
+            f = open(
+                DLUtils.FileNameFromPath(__file__, StripSuffix=True) + ".txt", "w"
+            ) # stdout pipe
+        else:
+            f = StdOut
+
+        if StdErr is None:
+            e = open(
+                DLUtils.FileNameFromPath(__file__, StripSuffix=True) + ".txt.err.txt", "w"
+            ) # stderr pipe
+        else:
+            e = StdErr
+        sys.stderr = e
+        sys.stdout = f
+        try:
+            MainFunc(*List, **Dict)
+        except Exception:
+            DLUtils.PrintErrorStackWithInfoTo(e)
+        else:
+            DLUtils.PrintTo(f, "Finished. %s."%DLUtils.CurrentTimeStr())
+        e.close()
+        f.close()
+    
+def ExecuteFunction(Func, IsDebug, StdOut=None, StdErr=None, *List, **Dict):
+    if IsDebug:
+        # exceptions will be directly thrown.
+        # stdout / stderr will not be redirected to file.
+        return Func(*List, **Dict)
+    else:
+        if StdOut is None:
+            pass
+        else:
+            _stdout = sys.stdout
+            sys.stdout = StdOut
+        try:
+            return Func(*List, **Dict)
+        except Exception:
+            if StdErr is None:
+                DLUtils.PrintErrorStackWithInfoTo(sys.stderr)
+            else:
+                DLUtils.PrintErrorStackWithInfoTo(StdErr)
+        sys.stdout = _stdout
+        return None
+
 def SetSeedForRandom(Seed: int):
     import random
     random.seed(0)

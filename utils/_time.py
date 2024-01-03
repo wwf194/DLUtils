@@ -70,12 +70,6 @@ def GetCurrentTimeStampInt():
     return round(GetCurrentTimeStampFloat())
 CurrentTimeStampInt = GetCurrentTimeStampInt
 
-def GetCurrentTimeStampInt():
-    return round(DateTimeObj2TimeStampFloat(
-        # datetime.datetime.now()
-        datetime.datetime.utcnow() # caution. should use Greenwich Mean Time(GMT) here.
-    ))
-
 def TimeStamp2Type(TimeStamp, Type):
     if Type in ["UnixTimeStamp", "TimeStamp"]:
         return TimeStamp
@@ -122,12 +116,23 @@ def LastModifiedTime(Path, ReturnType="TimeStamp"):
     else:
         raise Exception("non-existent path: %s"%Path)
 
-def TimeStamp2LocalTimeStr(TimeStamp, Format="%Y-%m-%d %H-%M-%S"):
+def TimeStamp2LocalTimeStr(TimeStamp, Format=None):
+    if Format is None:
+        Format = "%Y-%m-%d %H-%M-%S"
     if isinstance(TimeStamp, int):
         TimeStamp = TimeStamp * 1.0
     DateTimeObj = TimeStamp2DateTimeObj(TimeStamp)
     return DateTimeObj2Str(DateTimeObj, Format=Format)
-TimeStamp2Str = TimeStamp2LocalTimeStr
+
+def TimeStamp2Str(TimeStamp, TimeZone="Local", Format=None):
+    if TimeZone in ["Local"]:
+        return TimeStamp2LocalTimeStr(TimeStamp)
+    elif TimeZone in ["UTC", "Greenwich", "UTC+0", "UTC0"]:
+        return TimeStamp2UTCTimeStr(TimeZone)
+    else:
+        raise Exception()
+def TimeStamp2UTCTimeStr(TimeZone):
+    return NotImplementedError()
 
 def CurrentTimeStr(Format=None, Verbose=False):
     if Format is None:

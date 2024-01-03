@@ -94,7 +94,7 @@ class MNIST(ImageClassificationTask):
         return self
     def AllTrainData(self):
         return DLUtils.param(self.Data.Train)
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         if not hasattr(self, "Data"):
             self.Data = LoadDataSet(self.DataPath)
         return super().Init(IsSuper=True, IsRoot=IsRoot)

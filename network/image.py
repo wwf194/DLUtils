@@ -26,7 +26,7 @@ class Image2PatchList(DLUtils.module.AbstractNetwork):
         # Rearrange('BatchSize ChannelNum (Height PatchHeight) (Width PatchWidth) -> BatchSize (Height Width) \
         # (PatchNumY PatchNumX ChannelNum)', PatchHeight=PatchHeight, p2=PatchWidth),
         return X
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         assert Param.Patch.hasattr("NumX")
         assert Param.Patch.hasattr("NumY")
@@ -54,7 +54,7 @@ class CenterCrop(DLUtils.module.AbstractNetwork):
         # X: (..., Height, Width)
         # image smaller than (Param.Height, Param.Width) will be patched with zero.
         return self.module(X)
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         assert Param.hasattr("Height")
         assert Param.hasattr("Width")

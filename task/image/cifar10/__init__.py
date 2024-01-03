@@ -283,5 +283,5 @@ class DataLoader(torch.utils.data.DataLoader, DLUtils.module.AbstractModule):
     def Reset(self):
         self.Iter = iter(self)
         return self
-    def Init(self, IsSuper=False, IsRoot=True):  
+    def Build(self, IsSuper=False, IsRoot=True):  
         return super().Init(IsSuper=True, IsRoot=IsRoot)

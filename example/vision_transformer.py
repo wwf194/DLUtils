@@ -58,7 +58,7 @@ class VisionTransformer(DLUtils.module.AbstractNetwork):
         Y = self.ClassificationHead(X)
         # (BatchSize, ClassNum)
         return {"Out": Y}
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         self.TokenSize = Param.Token.Size
         self.PatchNumX = Param.Patch.NumX

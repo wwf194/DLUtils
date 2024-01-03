@@ -73,7 +73,7 @@ class _SGD(GradientDescend):
             GradWithMomentum = Grad.add(H, alpha=alpha)
             Param.add_(GradWithMomentum, alpha=-LearningRate)
         return self
-    def Init(self, IsSuper=False, IsRoot=True):
+    def Build(self, IsSuper=False, IsRoot=True):
         Param = self.Param
         self.LearningRate = Param.LearningRate
         return super().Init(IsSuper=True, IsRoot=IsRoot)
