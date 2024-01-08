@@ -122,6 +122,8 @@ def LoadTestImage(Name="lenna"):
         raise Exception()
 
 from .transform import ImageFile2Jpg, ImageFile2PNG, ImageFile2Webp
-from .transform import SVG2NpArray, SVG2PNG, SVGStr2PNG
-
+try:
+    from .transform import SVG2NpArray, SVG2PNG, SVGStr2PNG
+except Exception:
+    pass
 JPG2NpArray = Jpeg2NpArray = Jpg2NpArray = ImageFile2NpArray

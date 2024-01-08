@@ -137,7 +137,7 @@ def MoveFile(FilePath, PathDest=None, RaiseIfNonExist=False, Overwrite=True, Rai
                 raise Exception(Msg)
             else:
                 warnings.warn(Msg)
-    DLUtils.print("FilePath: %s\nFilePathDest: %s"%(FilePath, FilePathDest))
+    # DLUtils.print("FilePath: %s\nFilePathDest: %s"%(FilePath, FilePathDest))
     shutil.move(FilePath, FilePathDest)
     # DeleteFile(FilePath) # shutil.move will delete file upon successful move.
     return True
@@ -179,12 +179,18 @@ def ListFilePathsWithPattern(DirPath, FileNamePattern):
     return FilePathList
 AllFilePathsWithNamePattern = AllFilePathsWithFileNamePattern = ListFilePathWithPattern = ListFilePathsWithPattern
 
-def MoveAllFiles(DirSource, DirDest):
+def MoveAllFiles(DirSource, DirDest, MoveFileBeingUsed=True):
     DirSource = DLUtils.file.StandardizeDirPath(DirSource)
     DirDest = DLUtils.file.EnsureDir(DirDest)
     assert DLUtils.file.ExistsDir(DirSource)
     for FileName in ListAllFileNames(DirSource):
-        MoveFile(DirSource + FileName, DirDest + FileName)
+        FilePathSource = DirSource + FileName
+        FilePathDest = DirSource + FileName
+        if not MoveFileBeingUsed:
+            if DLUtils.IsFileUsedByAnotherProcess(FilePathSource):
+                DLUtils.print("File:(%s) is used by another process."%FilePathSource)
+                continue                
+        MoveFile(FilePathSource, FilePathDest)
 MoveAllFile = MoveAllFiles
 
 def DeleteFileWithFileNamePattern(DirSource, FileNamePattern=None):
@@ -215,7 +221,8 @@ def MoveFileWithFileNamePattern(
         DirSource,
         DirDest,
         FileNamePattern=None,
-        FileSizeMax=None
+        FileSizeMax=None,
+        MoveFileBeingUsed=True
     ):
     Num = 0
     DirSource = CheckDirExists(DirSource)
@@ -233,6 +240,10 @@ def MoveFileWithFileNamePattern(
             if FileSizeMax > 0:
                 if FileSizeInBytes(FilePathSource) > FileSizeMax:
                     continue
+            if not MoveFileBeingUsed:
+                if IsFileUsedByAnotherProcess(FilePathSource):
+                    DLUtils.print("File:(%s) is used by another process."%FilePathSource)
+                    continue
             Result = DLUtils.file.MoveFile(
                 FilePathSource, FilePathDest
             )
@@ -241,9 +252,15 @@ def MoveFileWithFileNamePattern(
     else:
         FileNamePatternCompiled = re.compile(FileNamePattern)
         for FileName in DLUtils.ListFileNames(DirSource):
+            FilePathSource = DirSource + FileName
+            FilePathDest = DirDest + FileName
+            if not MoveFileBeingUsed:
+                if IsFileUsedByAnotherProcess(FilePathSource):
+                    DLUtils.print("File:(%s) is used by another process."%FilePathSource)
+                    continue
             if FileNamePatternCompiled.match(FileName) is not None: 
-                FilePathSource = DirSource + FileName
-                FilePathDest = DirDest + FileName
+                FilePathSource=FilePathSource
+                FilePathDest=FilePathDest
                 Result = DLUtils.file.MoveFile(
                     FilePathSource, FilePathDest
                 )
@@ -866,6 +883,15 @@ def RenameFileIfExists(FilePath, RenameExistingFile=False):
     else:
         return FilePath
 RenameIfFileExists = RenameFileIfExists
+
+def IsFileUsedByAnotherProcess(FilePath):
+    # windows only
+    FilePath = DLUtils.CheckFileExists(FilePath)
+    try:
+        os.rename(FilePath, FilePath)
+        return False
+    except OSError:    # file is in use
+        return True
 
 def RenameDir(FolderPath, FolderNameNew):
     # providing a new folder path is not allowed

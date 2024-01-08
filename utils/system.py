@@ -457,14 +457,14 @@ def PrintErrorStackTo(Pipe, Indent=None):
     DLUtils.PrintUTF8To(Pipe, traceback.format_exc(), Indent=Indent)
 PrintErrorStack2 = PrintErrorStackTo
 
-def PrintErrorStackWithInfoTo(Pipe, Indent=None):
+def PrintErrorStackWithInfoTo(Pipe):
     if Pipe is None:
         Pipe = DLUtils.GetOutPipe()
-    if Indent is None:
-        Indent = 0
-    DLUtils.PrintTimeStrTo(Pipe, Indent=Indent)
-    DLUtils.PrintPIDTo(Pipe, Indent=Indent + 1)
-    DLUtils.PrintErrorStackTo(Pipe, Indent=Indent + 1)
+    DLUtils.PrintTimeStrTo(Pipe)
+    DLUtils.IncreaseIndent()
+    DLUtils.PrintPIDTo(Pipe)
+    DLUtils.PrintErrorStackTo(Pipe)
+    DLUtils.DecreaseIndent()
 PrintErrorStackWithInfo2 = PrintErrorStackWithInfoTo
 
 def PrintErrorStack():

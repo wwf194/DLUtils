@@ -245,17 +245,18 @@ def DoTask(Param):
             DirDest = Param["To"]
             Pattern = Param.get("WithPattern")
             if Pattern is not None:                        
-                for FileName in DLUtils.ListFileNameWithPattern(DirSource):
-                    pass
+                # for FileName in DLUtils.ListFileNameWithPattern(DirSource, Pattern):
+                #     pass
                 DLUtils.MoveFileWithFileNamePattern(
                     DirSource,
                     DirDest,
                     Pattern,
-                    FileSizeMax="5.00GB"
+                    FileSizeMax="5.00GB",
+                    MoveFileBeingUsed=False
                 )
             else:
                 assert len(Param) == 3
-                DLUtils.file.MoveAllFile(DirSource, DirDest)
+                DLUtils.file.MoveAllFile(DirSource, DirDest, MoveFileBeingUsed=False)
     elif TaskName in ["DeleteFile"]:
         Dir = Param["In"]
         Dir = DLUtils.StandardizeDirPath(Dir)
