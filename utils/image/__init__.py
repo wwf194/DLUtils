@@ -89,29 +89,39 @@ def ImageFile2JpgImageFile(FilePath, Verbose=True):
 
 File2JpgFile = ImageFile2JpgFile = ImageFile2JpgImageFile
 
-from PIL import Image as Im
-def ImageFile2NpArrayFloat01(FilePath):
-    FilePath = DLUtils.StandardizeFilePath(FilePath)
-    assert DLUtils.file.FileExists(FilePath)
-    # Image = plt.imread(FilePath)
+try:
+    from PIL import Image as Im
+except Exception:
+    IsPILImported = True
+else:
+    IsPILImported = False
 
-    # data type: float. value range: [0.0, 1.0]
-    # Image = cv2.cv.LoadImage(FilePath)
-    ImagePIL = Im.open(FilePath)
-    Image = np.asarray(ImagePIL) / 255.0
-    if Image is not None: # some error occurs:
+if IsPILImported:
+    def ImageFile2NpArrayFloat01(FilePath):
+        FilePath = DLUtils.StandardizeFilePath(FilePath)
+        assert DLUtils.file.FileExists(FilePath)
+        # Image = plt.imread(FilePath)
+
+        # data type: float. value range: [0.0, 1.0]
+        # Image = cv2.cv.LoadImage(FilePath)
+        ImagePIL = Im.open(FilePath)
+        Image = np.asarray(ImagePIL) / 255.0
+        if Image is not None: # some error occurs:
+            return Image
+        # Image = cv2.imread(FilePath)
         return Image
-    # Image = cv2.imread(FilePath)
-    return Image
-ImageFile2NpArray = ImageFile2NpArrayFloat01
+    JPG2NpArray = Jpeg2NpArray = Jpg2NpArray = ImageFile2NpArray = ImageFile2NpArrayFloat01
 
 def ImageUInt2Float(Image):
     return Image / 255.0
 
-from .transform import \
-    ImageFile2Jpg, ToJPGFile, ToJpgFile, ToJpg, ToJPG, \
-    ImageFile2PNG, ToPNG, ToPNGFile, HEIC2PNG, HEIF2PNG, \
+from .transform import (
+    ImageFile2Jpg, ToJPGFile, ToJpgFile, ToJpg, ToJPG,
+    ImageFile2PNG,
+    ToPNG,
+    ToPNGFile,
     ImageFile2Webp
+)
 def LoadTestImage(Name="lenna"):
     if Name in ["lenna"]:
         Image = ImageFile2NpArrayFloat01(
@@ -126,4 +136,10 @@ try:
     from .transform import SVG2NpArray, SVG2PNG, SVGStr2PNG
 except Exception:
     pass
-JPG2NpArray = Jpeg2NpArray = Jpg2NpArray = ImageFile2NpArray
+
+try:
+    from .heic import (
+        HEIC2PNG, HEIF2PNG,
+    )
+except Exception:
+    pass

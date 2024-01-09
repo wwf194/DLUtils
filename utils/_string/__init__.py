@@ -1,8 +1,8 @@
-import re
-import string
-import warnings
+import sys, re
+import string, re
+import warnings, time
 import DLUtils
-import sys
+
 from io import StringIO
 
 # String Related Functions
@@ -133,38 +133,107 @@ def NaturalCmp(StrA, StrB):
     else:
         return StrA > StrB
 
-def Bytes2Hex(Bytes:bytes):
-    return Bytes.hex()
+def ByteArrayToHex(ByteArray: bytes):
+    return ByteArray.hex()
+Bytes2Hex = ByteArrayToHex
 
-def ToHex(Var, Prefix="0x", UpperCase=True, LeastSignificantByte="Left", DigitNum=None):
+def ByteArrayTo01Str(ByteArray: bytes):
+    StrList = []
+    for Byte in ByteArray:
+        StrList.append(IntTo01Str(Byte, Prefix=None, DigitNum=8))
+    return "".join(StrList)
+Bytes201Str = BytesTo01Str = ByteArray201Str = ByteArrayTo01Str
+
+def ToHex(Var, Prefix="0x", Case="Upper", MostSignificantByte="Left", DigitNum=None):
     if isinstance(Var, bytes):
-        return BytesToHex(Var, Prefix=Prefix, UpperCase=UpperCase, LeastSignificantByte=LeastSignificantByte)
+        return ByteArrayToHex(Var, Prefix=Prefix, Case=Case, MostSignificantByte=MostSignificantByte)
     elif isinstance(Var, int):
-        return IntToHex(Var, Prefix=Prefix, UpperCase=UpperCase, DigitNum=DigitNum)
+        return IntToHex(Var, Prefix=Prefix, Case=Case, DigitNum=DigitNum)
     else:
         raise Exception()
  
-def IntToHex(Int, Prefix="0x", UpperCase=True, DigitNum=None):
-    if UpperCase:
+def IntToHex(Int, Prefix="", Case="Upper", DigitNum=None):
+    if Case in ["upper", "Upper", "u", "U"]:
         if DigitNum is None:
             return Prefix + "%X"%Int
         else:
             assert isinstance(DigitNum, int)
             return Prefix + ("%X"%Int).zfill(DigitNum)
-    else:
+    elif Case in ["lower", "Lower", "l", "L"]:
         if DigitNum is None:
             return Prefix + "%x"%Int
         else:
             assert isinstance(DigitNum, int)
             return Prefix + ("%X"%Int).zfill(DigitNum)
+    else:
+        raise Exception()
+
+def IntTo01Str(Int: int, Prefix=None, DigitNum=None):
+    if Prefix is None:
+        Prefix = ""
+    if Int < 0:
+        Prefix += "-"
+        Int = -Int
+    _DigitList = []
+
+    if Int == 0:
+        _DigitList = ["0"]
+    else:
+        while(Int > 0):
+            if Int % 2 == 0:
+                _DigitList.append("0")
+            else:
+                _DigitList.append("1")
+            Int = Int // 2
+    
+    if DigitNum is None:
+        DigitList = _DigitList
+    else:
+        if DigitNum > len(_DigitList):
+            for Index in range(DigitNum - len(_DigitList)):
+                _DigitList.append("0")
+    _DigitList = _DigitList[::-1]
+
+    return Prefix + "".join(DigitList)
+Int201Str = IntTo01Str
+
+def Str01ToInt(Str, MostSignificantBit="Right"):
+    Int = 0
+    if MostSignificantBit in ["right", "Right", "r", "R"]: # big endian. natural. Str[0] is least significant bit.
+        pass
+    else:
+        Str = Str[::-1]
+    Base = 1
+    for Index in len(Str):
+        if Str[Index] == "0":
+            pass
+        elif Str[Index] == "1":
+            Int += Base
+        else:
+            raise Exception()
+        Base *= 2
+    return Int
+ZeroOneStrToInt = ZeroOneStr2Int = String01ToInt = Str012Int = Str01ToInt
+
+
+
+def ByteArrayToHex(ByteArray, Prefix="0x", Case="Upper", MostSignificantByte="Left", Endian=None):
+    if MostSignificantByte in ["right", "Right", "r", "R"]: # ByteArray[0] is least significant
+        pass
+    else:
+        ByteArray = ByteArray[::-1]    
+    Base = 1
+    Int = 0
+    for Byte in ByteArray:
+        IntCurrentByte = ByteArrayToHex(ByteArray, MostSignificantByte=MostSignificantByte, Endian=Endian)
+        Int += Base * IntCurrentByte
+        Base *= 256
+        
+    return IntToHex(Int, Prefix=Prefix, Case=Case)
+Bytes2Hex = BytesToHex = ByteArrayToHex
 
 def Address(Var, DigitNum=16):
-    return IntToHex(id(Var), UpperCase=True, DigitNum=16)
-
-def BytesToHex(Bytes, Prefix="0x", UpperCase=True, LeastSignificantByte="Left", Endian=None):
-    Int = Bytes2Int(Bytes, LeastSignificantByte=LeastSignificantByte, Endian=Endian)
-    return IntToHex(Int, Prefix=Prefix, UpperCase=UpperCase)
-Bytes2Hex = BytesToHex
+    return IntToHex(id(Var), Case="Upper", DigitNum=DigitNum)
 
 def ByteToHex(Byte: bytes):
     
@@ -186,89 +255,100 @@ def Bytes2Int(Bytes, LeastSignificantByte="Left", Endian=None):
 def HexStr2Bytes(HexStr):
     return bytes.fromhex(HexStr)
 
-OutPipe = sys.__stdout__
-IndentLevel = 0
-PrintBuf = StringIO()
-Write2StdOut = None
+class OutPipeWriter:
+    def __init__(self, OutPipe):
+        self.OutPipe = OutPipe
+        self.Indent = 0
+        return
+    def IncreaseIndent(self):
+        self.Indent += 1
+        return self
+    def DecreaseIndent(self):
+        if self.Indent > 0:
+            self.Indent -= 1
+        return self
+    def PrintWithouthIndent(self, *List, **Dict):
+        Result = PrintStrTo(self.OutPipe, *List, Indent=0, **Dict)
+        return Result
+    def Print(self, *List, Indent=None, **Dict):
+        if Indent is None:
+            Indent = self.Indent
+        Result = PrintStrTo(self.OutPipe, *List, Indent=Indent, **Dict)
+        return Result
+
+def GetLibOutPipeWriter():
+    LibOutPipe = GetLibOutPipe()
+    return OutPipeWriter(LibOutPipe)
+
 def SetFileStrOut(FilePath):
-    DLUtils.file.StandardizeFilePath(FilePath)
-    global FileStrOut
+    FilePath = DLUtils.StandardizeFilePath(FilePath)
     FileStrOut = open(FilePath, "w")
-    SetStdOut(FileStrOut)
+    return FileStrOut
     
 def CloseFileStrOut(FileStrOut=None):
-    ResetStdOut()
-    assert FileStrOut is not None
     FileStrOut.close()
 
 def RedirectSysStdOutTo(Pipe):
     pass
 
-def HasStdOut():
+def CheckIsStdOutExists():
     try:
-        print("check", file=sys.__stdout__, flush=True)
+        print("DLUtils: checking if stdout exists.", file=sys.__stdout__, flush=True)
         return True
     except Exception:
         return False
 
-def OutputTo(Pipe):
-    global OutPipe
-    global IndentLevel
-    global Write2StdOut, WriteBytes2StdOut, WriteStr2StdOut
-    # sys.stdout = Pipe
-    OutPipe = Pipe
-    if hasattr(OutPipe, "buffer"):
-        WriteBytes2StdOut = lambda StdOut, Bytes: StdOut.buffer.write(Bytes)
-        WriteStr2StdOut = lambda StdOut, Str: StdOut.buffer.write(Str.encode("utf-8"))
-    else:
-        WriteBytes2StdOut = lambda StdOut, Bytes: StdOut.write(Bytes)
-        WriteStr2StdOut = lambda StdOut, Str: StdOut.write(Str.decode("utf-8"))
-Output2 = SetStdOut = OutputTo
+# def OutputTo(Pipe):
+#     global OutPipe
+#     global IndentLevel
+#     global Write2StdOut, WriteBytes2StdOut, WriteStr2StdOut
+#     # sys.stdout = Pipe
+#     OutPipe = Pipe
+#     if hasattr(OutPipe, "buffer"):
+#         WriteBytes2StdOut = lambda StdOut, Bytes: StdOut.buffer.write(Bytes)
+#         WriteStr2StdOut = lambda StdOut, Str: StdOut.buffer.write(Str.encode("utf-8"))
+#     else:
+#         WriteBytes2StdOut = lambda StdOut, Bytes: StdOut.write(Bytes)
+#         WriteStr2StdOut = lambda StdOut, Str: StdOut.write(Str.decode("utf-8"))
 
-def AddIndentLevel():
-    global IndentLevel
+def AddLibIndent():
+    global LibIndent
     IndentLevel += 1
-IncreaseIndent = IncreaseIndentLevel = AddIndent = AddIndentLevel
+IncreaseLibIndentLevel = IncreaseLibIndent = AddLibIndentLevel = AddLibIndent
 
-def DecreaseIndentLevel():
-    global IndentLevel
-    if IndentLevel > 0:
-        IndentLevel -= 1
-DecreaseIndent = DecreaseIndentLevel
+def DecreaseLibIndent():
+    global LibIndent
+    if LibIndent > 0:
+        LibIndent -= 1
+DecreaseLibIndentLevel = DecreaseLibIndent
 
-def SetIndentLevel(Indent: int):
-    global IndentLevel
-    IndentLevel = Indent
+def SetLibIndent(Indent: int):
+    global LibIndent
+    LibIndent = Indent
+SetLibIndentLevel = SetLibIndent
 
-def Write(*List, **Dict):
-    global OutPipe, IndentLevel
-    PrintTo(OutPipe, *List, Indent=IndentLevel, **Dict)
-
-def SetStdErrOut(Pipe):
-    SetStdOut(Pipe)
+def SetSysStdErr(Pipe):
     sys.stderr = Pipe
 
-def GetStdOut():
-    global OutPipe
-    return OutPipe
-GetOutPipe = GetStdOut
+def GetCurrentSysStdOut():
+    return sys.stdout
+GetStdOut = GetCurrentSysStdOut
 
-def Print2StdErr(*List, **Dict):
+def PrintToStdErr(*List, **Dict):
     print(*List, file=sys.stderr, **Dict)
+Print2StdErr = PrintToStdErr
 
-def ResetOutPipe():
-    global OutPipe
-    OutPipe = sys.__stdout__
-    global Write2StdOut, WriteBytes2StdOut, WriteStr2StdOut
-    if hasattr(OutPipe, "buffer"):
-        WriteBytes2StdOut = lambda StdOut, Bytes: StdOut.buffer.write(Bytes)
-        WriteStr2StdOut = lambda StdOut, Str: StdOut.buffer.write(Str.encode("utf-8"))
-    else:
-        WriteBytes2StdOut = lambda StdOut, Bytes: StdOut.write(Bytes.decode("utf-8"))
-        WriteStr2StdOut = lambda StdOut, Str: StdOut.write(Str)
-ResetStdOut = ResetOutPipe
+def ResetLibOutPipe():
+    global LibOutPipe
+    LibOutPipe = sys.__stdout__
+    # if hasattr(OutPipe, "buffer"):
+    #     WriteBytes2StdOut = lambda StdOut, Bytes: StdOut.buffer.write(Bytes)
+    #     WriteStr2StdOut = lambda StdOut, Str: StdOut.buffer.write(Str.encode("utf-8"))
+    # else:
+    #     WriteBytes2StdOut = lambda StdOut, Bytes: StdOut.write(Bytes.decode("utf-8"))
+    #     WriteStr2StdOut = lambda StdOut, Str: StdOut.write(Str)
 
-def PrintStr2Pipe(
+def PrintStrToPipe(
         Pipe,
         Str: str,
         Indent=None,
@@ -276,11 +356,9 @@ def PrintStr2Pipe(
         IndentStr="    " # "\t"
     ):
     if Pipe is None:
-        global OutPipe
-        Pipe = OutPipe
+        Pipe = GetLibOutPipe()
     if Indent is None:
-        global IndentLevel
-        Indent = IndentLevel
+        Indent = 0
     if Indent > 0:
         if Str.endswith("\n"):
             IsEndWithNewLine = True
@@ -299,10 +377,11 @@ def PrintStr2Pipe(
         Pipe.write(Str)
     if Flush and hasattr(Pipe, "flush"):
         Pipe.flush()
+PrintStr2Pipe = PrintStrToPipe
 
 def PrintPIDTo(Pipe, Indent=None):
     Str = "PID: " + str(DLUtils.system.CurrentPID()) + "\n"
-    PrintStr2Pipe(Pipe, Str, Indent=Indent)
+    PrintStrToPipe(Pipe, Str, Indent=Indent)
 
 def PrintPIDToPipeAndStdOut(Pipe, Indent=None):
     PrintPIDTo(Pipe, Indent=Indent)
@@ -329,7 +408,7 @@ def PrintTimeStr(Indent=None, Format=None, Prefix="Time: "):
         Indent = IndentLevel
     PrintTimeStrTo(OutPipe, Indent=Indent, Format=Format, Prefix=Prefix)
 
-import time
+
 def PrintHeartBeatTo(Pipe, Indent=None):
     Count = 0
     _Indent = Indent
@@ -345,29 +424,51 @@ def PrintHeartBeatTo(Pipe, Indent=None):
         Count += 1
         time.sleep(1.0)
 
+def GetLibOutPipe():
+    if not "LibOutPipe" in globals():
+        global LibOutPipe
+        LibOutPipe = sys.__stdout__
+
+    return LibOutPipe
+
+IsPrintBufInit = False
+
+def GetPrintBuf():
+    global PrintBuf
+    global IsPrintBufInit
+    if IsPrintBufInit:
+        return PrintBuf
+    else:
+        IsPrintBufInit = True
+        PrintBuf = StringIO()
+        return PrintBuf
+
 def PrintWithParam(*List, **Dict):
+    # faster than reusing.
+    # https://stackoverflow.com/questions/4330812/how-do-i-clear-a-stringio-object
+    PrintBuf = StringIO()
     PrintBuf.seek(0)
     PrintBuf.truncate(0)
     print(*List, **Dict, file=PrintBuf)
     Str = PrintBuf.getvalue()
     PrintBuf.flush()
+    del PrintBuf
     return Str
 
-def PrintUTF8ToStdOut(*List, Indent=None, **Dict):
-    return PrintUTF8To(sys.__stdout__, *List, Indent=Indent)
+def PrintStrToStdOut(*List, Indent=None, **Dict):
+    return PrintStrTo(sys.__stdout__, *List, Indent=Indent)
+PrintUTF8ToStdOut = PrintStrToStdOut
 
-def PrintUTF8ToStdErr(*List, Indent=None, **Dict):
-    return PrintUTF8To(sys.__stderr__, *List, Indent=Indent)
+def PrintStr8ToStdErr(*List, Indent=None, **Dict):
+    return PrintStrTo(sys.__stderr__, *List, Indent=Indent)
+PrintUTF8ToStdErr = PrintStr8ToStdErr
 
-Print = _print = PrintUTF8ToStdOut
-
-def PrintUTF8To(Pipe, *List, Indent=None, **Dict):
+def PrintStrTo(Pipe, *List, Indent=None, **Dict):
     Str = PrintWithParam(*List, **Dict)
     if Indent is None:
-        global IndentLevel
-        Indent = IndentLevel
+        Indent = 0
     PrintStr2Pipe(Pipe, Str, Indent=Indent)
-PrintTo = PrintToPipe = PrintUTF8To
+PrintTo = PrintToPipe = PrintUTF8To = WriteTo = WriteStrTo = OutputTo = PrintStrTo
 
 def PrintToPipeAndStdOut(Pipe, *List, Indent=None, **Dict):
     PrintUTF8ToStdOut(*List, Indent=Indent, **Dict)
@@ -376,26 +477,22 @@ def PrintToPipeAndStdOut(Pipe, *List, Indent=None, **Dict):
 def PrintToPipeAndStdErr(Pipe, *List, Indent=None, **Dict):
     PrintUTF8ToStdErr(*List, Indent=Indent, **Dict)
     PrintUTF8To(Pipe, *List, Indent=Indent, **Dict)
-WriteTo = PrintTo = PrintUTF8To
 
-def PrintToPipeUTF8(*List, Indent=None, **Dict):
-    global OutPipe
-    Str = PrintWithParam(*List, **Dict)
-    Result = PrintStr2Pipe(OutPipe, Str, Indent=Indent)
+def PrintStrToLibOutPipe(*List, Indent=None, **Dict):
+    LibOutPipe = GetLibOutPipe()
+    Result = PrintStr2Pipe(LibOutPipe, *List, Indent=Indent, **Dict)
     return Result
-Print = Print2OutPipe = Print2OutPipeUTF8 = PrintToOutPipeUTF8 = PrintToPipeUTF8
+PrintToLibOutPipeUTF8 = PrintToLibOutPipe = PrintStrToLibOutPipe
 
-def PrintWithTimeStr(*List, Encoding="utf-8", Indent=None, **Dict):
-    Buf = StringIO()
-    # faster than reusing.
-    # https://stackoverflow.com/questions/4330812/how-do-i-clear-a-stringio-object
-    print(*List, **Dict, file=Buf)
-    Str = Buf.getvalue()
+def PrintWithTimeStr(*List, Encoding="utf-8", Indent=None, OutPipe=None, **Dict):
+    Str = PrintWithParam(*List, **Dict)
     if Str.endswith("\n"):
         Str = Str[:-1] + " time: %s."%DLUtils.system.CurrentTimeStr() + "\n"
     else:
         Str = Str + " time: %s."%DLUtils.system.CurrentTimeStr()
-    Result = WriteBytes2StdOut(OutPipe, Str.encode(Encoding))
+    if OutPipe is None:
+        OutPipe = GetLibOutPipe()
+    Result = PrintStrTo(OutPipe, Indent=Indent)
     OutPipe.flush()
     return Result
 try:
@@ -403,49 +500,9 @@ try:
 except Exception:
     if DLUtils.Verbose:
         warnings.warn("lib bitarray not found")
-    pass
+    IsBitArrayImported = False
 else:
-    def Bytes201Str(Bytes: bytes, MostSignificantBit="Right"):
-        if MostSignificantBit in ["Right", "right", "R", "r"]:
-            bits = bitarray(endian='big')
-        else:
-            bits = bitarray(endian="small")
-        bits.frombytes(Bytes)
-        return bits.to01()
-    ByteArrayTo01Str = Bytes201Str
-
-def Int201Str(Int, _0bPrefix=False, LeadingZero=False, Length=None):
-    Pattern = []
-    if _0bPrefix:
-        Pattern.append("#")
-    if LeadingZero:
-        Pattern.append("0")
-    if Length is not None:
-        Pattern.append(str(Length))
-    Pattern = "".join(Pattern)
-    if Length is None:
-        return format(Int, Pattern)
-    
-    # return "{0:b}".format(Int)
-IntTo01Str = Int201Str
-
-def Str012Int(String, MostSignificantBit="Right", BigEndian=False):
-    Int = 0
-    DLUtils.RemovePrefix(String, "0b", MustMatch=False)
-    if MostSignificantBit in ["big", "Big"] or BigEndian:
-        Base = 1
-        for Index in len(String):
-            if String[Index] == "0":
-                pass
-            elif String["Index"] == "1":
-                Int += Base
-            else:
-                raise Exception()
-            Base *= 2
-    else:
-        raise NotImplementedError()
-
-ZeroOneStrToInt = ZeroOneStr2Int = Str01ToInt = Str01ToInt = String01ToInt = Str012Int
+    IsBitArrayImported = True
 
 def RemoveStartEndEmptySpaceChars(Str):
     Str = re.match(r"\s*([\S].*)", Str).group(1)

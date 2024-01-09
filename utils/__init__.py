@@ -892,4 +892,7 @@ except Exception:
 if GetSystemType() in ["Windows", "win"]:
     import DLUtils.backend.win as win
 
-from .parallel import RunProcessPool
+try:
+    from .parallel import RunProcessPool
+except Exception:
+    pass

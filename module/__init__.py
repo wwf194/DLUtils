@@ -132,4 +132,7 @@ try:
 except Exception:
     pass
 
-from .param_map import ParamMap, GetParamMapDefault
+try:
+    from .param_map import ParamMap, GetParamMapDefault
+except Exception:
+    pass

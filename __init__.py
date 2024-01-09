@@ -2,20 +2,22 @@ Verbose = True
 
 from .utils._dict import IterableKeyToElement, IterableKeyToKeys, ToDict
 import DLUtils.utils._string as string
-from .utils._string import Print2OutPipe as print
+from .utils._string import PrintStrToLibOutPipe as print
 from .utils._string import (
-        SetStdOut, OutputTo, Output2, ResetStdOut,
+        ResetLibOutPipe,
         SetFileStrOut, CloseFileStrOut,
         Print2StdErr, PrintHeartBeatTo,
-        PrintTo, PrintUTF8To, Write,
+        PrintTo, PrintUTF8To, WriteTo, PrintStrTo, OutputTo,
         PrintTimeStrTo, PrintTimeStr2, PrintCurrentTimeTo, 
         PrintWithTimeStr, PrintTimeStr,
         PrintPIDTo,
-        AddIndent, AddIndentLevel, IncreaseIndent, IncreaseIndentLevel,
-        DecreaseIndent, DecreaseIndentLevel,
-        SetIndentLevel, Write,
-        GetOutPipe, GetStdOut,
-        RemoveHeadTailWhiteChars
+        AddLibIndent, AddLibIndentLevel, IncreaseLibIndent, IncreaseLibIndentLevel,
+        DecreaseLibIndent, DecreaseLibIndentLevel,
+        SetLibIndentLevel,
+        GetLibOutPipe, GetStdOut,
+        RemoveHeadTailWhiteChars,
+        ToHex, Address,
+        GetLibOutPipeWriter, PrintStrTo, PrintTo
     )
 
 import DLUtils.utils._json as json
@@ -37,12 +39,16 @@ from .utils._numpy import (
         SetSeedForNumpy,
         NpArray2TextFile,
         NpArray2D2TextFile,
-        NpArray2D2Str,
         FlattenNpArray,
         NpArray2List,
         EnsureFlatNp,
         EnsureFlat
     )
+
+try:
+    from .utils._numpy import NpArray2D2Str
+except Exception:
+    pass
 
 from .utils.format import (
     Curve2TextFile
@@ -88,17 +94,21 @@ import DLUtils.utils.file as file
 import DLUtils.utils.func as function
 import DLUtils.utils._math as math
 
-from DLUtils.utils._math import (
-    SampleFromKaimingNormal,
-    SampleFromKaimingUniform,
-    SampleFromXaiverNormal,
-    SampleFromXaiverUniform,
-    SampleFromConstantDistribution,
-    SampleFromNormalDistribution,
-    SampleFrom01NormalDistribution,
-    SampleFromGaussianDistribution,
-    SampleFromUniformDistribution,
-)
+
+try:
+    from DLUtils.utils._math import (
+        SampleFromKaimingNormal,
+        SampleFromKaimingUniform,
+        SampleFromXaiverNormal,
+        SampleFromXaiverUniform,
+        SampleFromConstantDistribution,
+        SampleFromNormalDistribution,
+        SampleFrom01NormalDistribution,
+        SampleFromGaussianDistribution,
+        SampleFromUniformDistribution,
+    )
+except Exception:
+    pass
 
 try:
     import DLUtils.utils.plot as plot
@@ -213,8 +223,11 @@ else:
         TorchTensor2NpArray, TorchTensorToNpArray
     )
 
-import DLUtils.utils.parallel as parallel
-from .utils.parallel import RunProcessPool
+try:
+    import DLUtils.utils.parallel as parallel
+    from .utils.parallel import RunProcessPool
+except Exception:
+    pass
 
 PackageFolderPath = FolderPathOfFile(__file__)
 

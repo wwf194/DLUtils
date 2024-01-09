@@ -32,23 +32,6 @@ def ImageFile2Jpg(FilePath, SavePath=None):
 
 ToJPGFile = ToJpgFile = ToJpg = ToJPG = ImageFile2Jpg
 
-def HEIF2PNG(FilePath, SavePath=None):
-    FilePath = DLUtils.CheckFileExists(FilePath)
-    heif_file = pillow_heif.read_heif(FilePath)
-    Image = Im.frombytes(
-        heif_file.mode,
-        heif_file.size,
-        heif_file.data,
-        "raw"
-    )
-    if SavePath is None:
-        SavePath = DLUtils.file.ChangeFileNameSuffix(FilePath, ".png")
-        SavePath = DLUtils.EnsureFileDir(SavePath)
-    SavePath = DLUtils.EnsureFileDir(SavePath)
-    Image.save(SavePath, "png")
-    return SavePath
-HEIC2PNG = HEIF2PNG
-
 def ImageFile2PNG(FilePath, SavePath=None):
     FilePath = DLUtils.CheckFileExists(FilePath)
     Image = Im.open(FilePath).convert("RGB")

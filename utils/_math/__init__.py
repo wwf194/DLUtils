@@ -494,4 +494,7 @@ try:
 except Exception:
     pass
 
-from .distribution import *
+try:
+    from .distribution import *
+except Exception:
+    pass
