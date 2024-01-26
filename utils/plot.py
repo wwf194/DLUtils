@@ -1,13 +1,18 @@
-import warnings
+from __future__ import annotations # must be at start of file
 import math
 import DLUtils
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import numpy as np
     import scipy # pip install scikit-py
+    import matplotlib
+    import imageio
 else:
     np = DLUtils.LazyImport("numpy")
     scipy = DLUtils.LazyImport("scipy")
+    mpl = DLUtils.LazyImport("matplotlib")
+    imageio = DLUtils.LazyImport("imageio")
+
 if TYPE_CHECKING:
     from PIL import Image as Im
 else:
@@ -21,8 +26,9 @@ if TYPE_CHECKING:
     from matplotlib.lines import Line2D
     from matplotlib.patches import Rectangle
 else:
-    matplotlib = DLUtils.LazyImport("matplotlib")
-    plt = DLUtils.LazyFromImport("matplotlib", "pyplot")
+    mpl = DLUtils.LazyImport("matplotlib")
+    # plt = DLUtils.LazyFromImport("matplotlib", "pyplot")
+    plt = DLUtils.LazyImport("matplotlib.pyplot")
     Line2D = DLUtils.LazyFromImport("matplotlib.pyplot", "Line2D")
     Rectangle = DLUtils.LazyFromImport("matplotlib.patches", "Rectangle")
     image = DLUtils.LazyImport("matplotlib.image")
@@ -38,7 +44,7 @@ else:
 def SetMatplotlibParamToDefault():
     mpl.rcParams.update(mpl.rcParamsDefault)
 # matplotlib default param might be overwritten by other lib using it, such as seaborn.
-SetMatplotlibParamToDefault() # ticks may disappear after imshow.
+# SetMatplotlibParamToDefault() # ticks may disappear after imshow.
 
 NamedColor = DLUtils.Param().from_dict({
     "White": (1.0, 1.0, 1.0),
@@ -73,7 +79,12 @@ def GenerateColors(Num=10, ColorMap="Auto"):
     
     return ColorList
 
-def PlotLinesPlt(ax: plt.Axes, XYsStart, XYsEnd=None, Width=1.0, Color=NamedColor.Black):
+def PlotLinesPlt(
+    ax: plt.Axes,
+    # ax: np.ndarray,
+    XYsStart, XYsEnd=None,
+    Width=1.0, Color=NamedColor.Black
+):
     if XYsEnd is None:
         Edges = DLUtils.ToNpArray(XYsStart)
         XYsStart = Edges[:, 0]
@@ -1935,22 +1946,18 @@ def SetYTicksFloat(ax, Min, Max, Method="Auto"):
     ax.set_yticklabels(TicksStr)
     return Ticks, TicksStr
 
-
-import imageio
 def ImageFiles2GIFFile(ImageFiles, TimePerFrame=0.5, SavePath=None):
     Frames = []
     for ImageFile in ImageFiles:
         Frames.append(imageio.imread(ImageFile))
     imageio.mimsave(SavePath, Frames, 'GIF', duration=TimePerFrame)
     return
-
 ImageFiles2GIF = ImageFiles2GIFFile
 
 def ImagesNp2GIFFile():
     return
 ImagesNp2GIF = ImagesNp2GIFFile
 
-import imageio
 def create_gif(image_list, gif_name, duration = 1.0):
     '''
     :param image_list: 这个列表用于存放生成动图的图片
@@ -2021,7 +2028,7 @@ def PlotDistAndHist1D(Data, ax=None, BinNum=15, Label=None,
     sns.displot(Data, kde=True, bins=BinNum)
     SaveFigForPlt(Save, SavePath)
 
-from scipy.stats import gaussian_kde
+
 def PlotGaussianDensityCurve(
         ax=None, data=None, KernelStd="auto", 
         Save=False, SavePath=None,
@@ -2051,6 +2058,7 @@ def PlotGaussianDensityCurve(
     if KernelStd == 0.0:
         KernelStd = 1.0
     try:
+        from scipy.stats import gaussian_kde
         DensityCurve = gaussian_kde(data, bw_method=KernelStd)
         ax.plot(data, DensityCurve(data))
     except Exception:
@@ -2420,7 +2428,7 @@ def NpArrayFloat01ToImageFileMPL(Data, ImageFilePath):
         # ChannelNum: RGB or RGBA
     DLUtils.EnsureFileDir(ImageFilePath)
     # ImageFilePath = DLUtils.file.RenameFileIfExists(ImageFilePath)
-    matplotlib.image.imsave(ImageFilePath, Data)
+    mpl.image.imsave(ImageFilePath, Data)
     return
 
 NpArray2ImageFileFloat = NpArrayFloat01ToImageFileMPL

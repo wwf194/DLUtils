@@ -97,6 +97,7 @@ def NpArrayToTextFile(Data, SavePath, **Dict):
         NpArray2DToTextFile(Data, SavePath=SavePath, **Dict)
     else:
         raise Exception()
+NpArray2TextFile = NpArrayToTextFile
 
 def SetSeedForNumpy(Seed: int):
     np.random.seed(Seed)

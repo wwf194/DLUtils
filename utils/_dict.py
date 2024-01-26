@@ -14,6 +14,7 @@ class Dict(dict):
     def __getattr__(self, Key, Default=None):
         return self.get(Key, Default)
     getattr = __getattr__
+
 def UpdateDict(DictSource, DictTarget, KeyPrefix=None):
     if KeyPrefix is None:
         for Key, Value in DictSource.keys():

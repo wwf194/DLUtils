@@ -117,6 +117,7 @@ def Floats2BaseAndExponent(Floats, Base=10.0):
     return Coefficient, Exponent
 Floats2BaseExp = Floats2BaseAndExponent
 
+from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import sklearn
     from sklearn.decomposition import PCA as PCAsklearn # sklearn.decomposition.PCA not supported
@@ -205,7 +206,8 @@ def RemoveNaNOrInf(Data):
     return Data[np.isfinite(Data)]
 
 def CalculateZScore(Data):
-    return scipy.stats.zscore(Data)
+    from scipy.stats import zscore
+    return zscore(Data)
 
 def TorchTrainParamStat(tensor, verbose=False, ReturnType="PyObj"):
     statistics = {

@@ -379,39 +379,39 @@ class MNISTDataset:
         # assert Index < self.DataNum
         return self.GetImage(Index), self.GetLabel(Index)
 
-class DataFetcher(torch.utils.data.Dataset, AbstractModule):
-    def __init__(self, Image, Label, BatchSize=None):
-        AbstractModule.__init__(self)
-        torch.utils.data.Dataset.__init__(self)
-        self.Image = Image
-        self.Label = Label
-        self.BatchSize = BatchSize
-    def SetDevice(self, Device, IsRoot=True):
-        self.Device = Device
-        self.Log(f"change device to {Device}")
-        return self
-    def __getitem__(self, Index):
-        # Image = torch.from_numpy(seexamplelf.Image[Index]).to(self.Device)
-        # Label = torch.from_numpy(self.Label[Index]).to(self.Device)
-        Image = self.Image[Index]
-        Label = self.Label[Index]
-        return Image, Label
-    def __len__(self):
-        return self.Image.shape[0]    
+# class DataFetcher(torch.utils.data.Dataset, AbstractModule):
+#     def __init__(self, Image, Label, BatchSize=None):
+#         AbstractModule.__init__(self)
+#         torch.utils.data.Dataset.__init__(self)
+#         self.Image = Image
+#         self.Label = Label
+#         self.BatchSize = BatchSize
+#     def SetDevice(self, Device, IsRoot=True):
+#         self.Device = Device
+#         self.Log(f"change device to {Device}")
+#         return self
+#     def __getitem__(self, Index):
+#         # Image = torch.from_numpy(seexamplelf.Image[Index]).to(self.Device)
+#         # Label = torch.from_numpy(self.Label[Index]).to(self.Device)
+#         Image = self.Image[Index]
+#         Label = self.Label[Index]
+#         return Image, Label
+#     def __len__(self):
+#         return self.Image.shape[0]
 
-class DataLoader(DLUtils.train.DataLoaderForEpochBatchTrain):
-    # def __init__(self, DataFetcher, BatchSize, BatchNum):
-    #     self.DataFetcher = DataFetcher
-    #     AbstractModule.__init__(self)
-    #     torch.utils.data.DataLoader.__init__(
-    #         self, 
-    #         Dataset=DataFetcher, 
-    #         batch_size=BatchSize,
-    #         # num_workers=2 # Setting num_workers > 1 might severely slow down speed.
-    #     )
-    #     self.BatchSize = BatchSize
-    #     self._BatchNum = BatchNum
-    #     if hasattr(DataFetcher, "Device"):
-    #         self.Device = DataFetcher.Device
-    #     self.Reset()
-    pass
+# class DataLoader(DLUtils.train.DataLoaderForEpochBatchTrain):
+#     def __init__(self, DataFetcher, BatchSize, BatchNum):
+#         self.DataFetcher = DataFetcher
+#         AbstractModule.__init__(self)
+#         torch.utils.data.DataLoader.__init__(
+#             self, 
+#             Dataset=DataFetcher, 
+#             batch_size=BatchSize,
+#             # num_workers=2 # Setting num_workers > 1 might severely slow down speed.
+#         )
+#         self.BatchSize = BatchSize
+#         self._BatchNum = BatchNum
+#         if hasattr(DataFetcher, "Device"):
+#             self.Device = DataFetcher.Device
+#         self.Reset()
+#     pass

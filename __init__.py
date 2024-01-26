@@ -263,10 +263,7 @@ if TYPE_CHECKING:
         MultiRandomInt, MultiRandomIntInRange
     )
 
-try:
-    import DLUtils.utils.plot as plot
-except Exception:
-    pass
+import DLUtils.utils.plot as plot
 
 import DLUtils.utils.__struct__ as struct
 import DLUtils.utils.system as system
@@ -296,8 +293,8 @@ except Exception:
 
 import DLUtils.analysis as analysis
 import DLUtils.transform as transform
+import DLUtils.train as train # module -> train
 try:
-    import DLUtils.train as train # module -> train
     from .train.evaluate import Evaluator, EvaluationLog
     from .train import TrainSession, EpochBatchTrainSession
 except Exception:
@@ -381,10 +378,13 @@ from .utils.file import (
     SeparateFileNameSuffix
 )
 
-try:
-    import DLUtils.example as example
-except Exception:
-    pass
+def __getattr__(Name):
+    if Name in ["example"]:
+        import DLUtils.example as _example
+        global example
+        example = _example
+    else:
+        raise Exception(Name)
 
 try:
     import DLUtils.backend as backend

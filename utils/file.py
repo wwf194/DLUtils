@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     import hashlib
     import filecmp
     import json
+    import pathlib
     from pathlib import Path
 else:
     send2trash = DLUtils.LazyFromImport("send2trash", "send2trash")
@@ -22,6 +23,7 @@ else:
     hashlib = DLUtils.LazyImport("hashlib")
     filecmp = DLUtils.LazyImport("filecmp")
     json = DLUtils.LazyImport("json")
+    pathlib = DLUtils.LazyImport("pathlib")
     Path = DLUtils.LazyFromImport("pathlib", "Path")
 
 from ._json import (

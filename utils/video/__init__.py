@@ -3,8 +3,11 @@ import DLUtils
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import ffmpeg
+    import moviepy
+    import cv2
 else:
     ffmpeg = DLUtils.LazyImport("ffmpeg")
+    moviepy = DLUtils.LazyImport("moviepy")
 
 def Test():
     import sys
@@ -82,22 +85,16 @@ def CompressVideo(FilePath, SavePath, Ratio=None, FileSizeTarget=None):
 
 if __name__ == "__main__":
     Test()
-    
-    
-    
 
-import os
-from moviepy.video.io.ImageSequenceClip import ImageSequenceClip
-import moviepy
-from moviepy.editor import concatenate_videoclips
-import cv2
 def ImageList2Video(ImageList, FilePath, FPS=24):
     # ImageList: value range: [0, 255]
     FilePath = DLUtils.EnsureFileDir(FilePath)
     # for Frame in ImageList:
     #     pass
+    # from moviepy.editor import concatenate_videoclips
     # FrameList = concatenate_videoclips(ImageList, method="compose")
     # FrameList.write_videofile(FilePath, fps=24)
+    from moviepy.video.io.ImageSequenceClip import ImageSequenceClip
     clip = ImageSequenceClip(ImageList, fps=24)
     moviepy_logger = "bar" # or None
     clip.write_videofile(FilePath, logger=moviepy_logger)
