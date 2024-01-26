@@ -1,6 +1,9 @@
 import DLUtils
-import re
-import numpy as np
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import numpy as np
+else:
+    np = DLUtils.GetLazyNumpy()
 
 class FixedSizeQueuePassiveOut(): # first in, first out. out is passive. queue is fixed size.
     def __init__(self, NumMax):

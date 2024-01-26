@@ -1,9 +1,14 @@
-import torch
 import DLUtils
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import numpy as np
+    import torch
+else:
+    np = DLUtils.GetLazyNumpy()
+    torch = DLUtils.GetLazyTorch()
 
-
-from ...backend._torch import TorchModuleWrapper
-class BatchNorm2D(TorchModuleWrapper):
+# from ...backend._torch import TorchModuleWrapper
+class BatchNorm2D(DLUtils.backend._torch.TorchModuleWrapper):
     ModuleParamMap = {
         "Affine.Weight": "weight",
         "Affine.Bias": "bias",

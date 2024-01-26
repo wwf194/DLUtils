@@ -1,6 +1,11 @@
 import DLUtils
-import torch
-import numpy as np
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import numpy as np
+    import torch
+else:
+    np = DLUtils.GetLazyNumpy()
+    torch = DLUtils.GetLazyTorch()
 
 from ..EpochBatchTrain.Component import EvaluatorPredAndTargetSelect1FromN, EvaluatorPredAndTarget
 def Evaluator(Type):

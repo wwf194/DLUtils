@@ -1,23 +1,31 @@
 import DLUtils
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import numpy as np
+    import pandas as pd
+    import matplotlib as mpl
+    from matplotlib import pyplot as plt
+    from pydblite import Base
+    import json5
+    import logging
+else:
+    np = DLUtils.GetLazyNumpy()
+    pd = DLUtils.LazyImport("pandas")
+    mpl = DLUtils.LazyImport("matplotlib")
+    plt = DLUtils.LazyFromImport("matplotlib", "pyplot")
+    json5 = DLUtils.LazyImport("json5")
+    logging = DLUtils.LazyImport("logging")
 
-import numpy as np
-import matplotlib as mpl
-import pandas as pd
-
-from matplotlib import pyplot as plt
-from pydblite import Base
 from collections import defaultdict
-
-import time
-import logging
-import json5
 from inspect import getframeinfo, stack
 
-import DLUtils
 
 import DLUtils.log.AbstractLog as AbstractLog
-from DLUtils.log.AbstractLog import \
-    AbstractLogAlongEpochBatchTrain, AbstractLogAlongBatch, AbstractModuleAlongEpochBatchTrain
+from DLUtils.log.AbstractLog import (
+    AbstractLogAlongEpochBatchTrain,
+    AbstractLogAlongBatch,
+    AbstractModuleAlongEpochBatchTrain
+)
 
 from .SeriesLog import SeriesLog
 

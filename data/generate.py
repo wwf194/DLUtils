@@ -1,14 +1,17 @@
-import numpy as np
-
+import DLUtils
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import numpy as np
+else:
+    np = DLUtils.GetLazyNumpy()
 from enum import Enum
 import math
 
 def ShapeWithSameValue(Shape, Value):
     return np.full(Shape, Value)
 
-import math
 def DefaultNonLinearLayerWeight(Shape, NonLinear):
-    return SampleFromKaimingUniform(Shape, NonLinear=NonLinear)
+    return DLUtils.math.SampleFromKaimingUniform(Shape, NonLinear=NonLinear)
 
 def DefaultNonLinearLayerBias(Shape):
     if isinstance(Shape, list) or isinstance(Shape, tuple):

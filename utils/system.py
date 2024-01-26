@@ -5,31 +5,32 @@ import time
 import signal
 import warnings
 import traceback
-from inspect import Traceback
 import DLUtils
-
-try:
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
     import psutil
-    def ProcessExists(PID):
-        if psutil.pid_exists(PID):
-            return True
-        else:
-            return False
-    def ProcessStartTime(PID, ReturnType="UnixTimeStamp"):
-        assert ExistsProcess(PID)
-        ProcessObj = psutil.Process(PID)
-        TimeStamp = ProcessObj.create_time()
-        if ReturnType in ["ReturnType"]:
-            return TimeStamp
-        else:
-            return DLUtils.time.TimeStamp2Str(TimeStamp)
+else:
+    psutil = DLUtils.GetLazyPsUtil()
 
-    ExistsProcess = ProcessExists
-    def ListNetworkInterface():
-        psutil.net_if_stats()
-        raise NotImplementedError()
-except Exception:
-    warnings.warn("package psutil not found.")
+def ProcessExists(PID):
+    if psutil.pid_exists(PID):
+        return True
+    else:
+        return False
+def ProcessStartTime(PID, ReturnType="UnixTimeStamp"):
+    assert ExistsProcess(PID)
+    ProcessObj = psutil.Process(PID)
+    TimeStamp = ProcessObj.create_time()
+    if ReturnType in ["ReturnType"]:
+        return TimeStamp
+    else:
+        return DLUtils.time.TimeStamp2Str(TimeStamp)
+
+ExistsProcess = ProcessExists
+def ListNetworkInterface():
+    psutil.net_if_stats()
+    raise NotImplementedError()
+
     
 def KillProcessbyPID(PID):
     os.kill(PID, signal.SIGTERM) #or signal.SIGKILL 
@@ -65,6 +66,8 @@ def ReportPyTorchInfo():
     return Report
 
 import platform
+import subprocess
+
 def IsWindowsSystem():
     return platform.system() in ["Windows"]
 IsWin = IsWindows = IsWindowsSystem
@@ -79,9 +82,6 @@ def GetSystemType():
     return SystemType
 SystemType = SysType = GetSysType = GetSystemType
 SystemType = GetSystemType()
-
-import platform
-import subprocess
 
 def GetSystemType2():
     SystemType = platform.system().lower()

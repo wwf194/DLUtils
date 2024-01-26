@@ -1,82 +1,95 @@
 
-try:
-    import torch
-    import torch.nn.functional as F
-except Exception:
-    pass
-else:
-    from .reshape import Reshape, Index2OneHot, ChangeDimOrder, Permute
-    from .norm import LayerNorm, BatchNorm2D
-    from .norm import ShiftRange 
-    from .norm import NormOnColorChannel
+import DLUtils
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
     import numpy as np
-    import DLUtils
-    import DLUtils.transform.nonlinear as nonlinear
-    from .nonlinear import NonLinearFunction, NonLinearModule, NonLinearTransform
+    import torch
+    import torch.nn as nn
+    import torch.nn.functional as F
+else:
+    np = DLUtils.GetLazyNumpy()
+    torch = DLUtils.GetLazyTorch()
+    nn = DLUtils.LazyImport("torch.nn")
+    F = DLUtils.LazyImport("torch.nn.functional")
+from .reshape import Reshape, Index2OneHot, ChangeDimOrder, Permute
+from .norm import LayerNorm
 
-    class Sum(DLUtils.module.AbstractOperator):
-        def Receive(self, *List):
-            return sum(List)
+def __getattr__(Name):
+    if Name in ["BatchNorm2D"]:
+        from .norm import BatchNorm2D as _BatchNorm2D
+        global BatchNorm2D
+        BatchNorm2D = _BatchNorm2D
+        return BatchNorm2D
 
-    class WeightedSum(DLUtils.module.AbstractOperator):
-        def __init__(self, *List, **Dict):
-            super().__init__(**Dict)
-            if len(List) > 0:
-                self.SetCoeff(*List)
-        def SetCoeff(self, *List):
-            Param = self.Param
-            Param.Coeff.List = list(List)
-            return self
-        def Receive(self, *List):
-            # Result = 0.0
-            # for Element, Coeff in List:
-            #     Result += Element * Coeff
-            # return Result
-            Result = 0.0
-            for Index in self.IndexList:
-                Result += self.CoeffList[Index] * List[Index]
-            return Result
-        def Build(self, IsSuper=False, IsRoot=True):
-            Param = self.Param
-            assert Param.Coeff.hasattr("List")
-            self.CoeffList = list(Param.Coeff.List)
-            self.IndexList = range(len(self.CoeffList))
-            return super().Init(IsSuper=True, IsRoot=IsRoot)
+from .norm import ShiftRange 
+from .norm import NormOnColorChannel
+import DLUtils
+import DLUtils.transform.nonlinear as nonlinear
+from .nonlinear import NonLinearFunction, NonLinearModule, NonLinearTransform
+
+class Sum(DLUtils.module.AbstractOperator):
+    def Receive(self, *List):
+        return sum(List)
+
+class WeightedSum(DLUtils.module.AbstractOperator):
+    def __init__(self, *List, **Dict):
+        super().__init__(**Dict)
+        if len(List) > 0:
+            self.SetCoeff(*List)
+    def SetCoeff(self, *List):
+        Param = self.Param
+        Param.Coeff.List = list(List)
+        return self
+    def Receive(self, *List):
+        # Result = 0.0
+        # for Element, Coeff in List:
+        #     Result += Element * Coeff
+        # return Result
+        Result = 0.0
+        for Index in self.IndexList:
+            Result += self.CoeffList[Index] * List[Index]
+        return Result
+    def Build(self, IsSuper=False, IsRoot=True):
+        Param = self.Param
+        assert Param.Coeff.hasattr("List")
+        self.CoeffList = list(Param.Coeff.List)
+        self.IndexList = range(len(self.CoeffList))
+        return super().Init(IsSuper=True, IsRoot=IsRoot)
+    
+class NpArray2TorchTensor(DLUtils.module.AbstractOperator):
+    def Receive(self, In):
+        return torch.from_numpy(In).to(self.Device, dtype=self.DataType)
+    def Build(self, IsSuper=False, IsRoot=True):
+        if not hasattr(self, "Device"):
+            self.Device = "cpu"
+
+        Param = self.Param
+        Param.setdefault("DataType", "torch.float32")
         
-    class NpArray2TorchTensor(DLUtils.module.AbstractOperator):
-        def Receive(self, In):
-            return torch.from_numpy(In).to(self.Device, dtype=self.DataType)
-        def Build(self, IsSuper=False, IsRoot=True):
-            if not hasattr(self, "Device"):
-                self.Device = "cpu"
+        if Param.DataType in ["torch.float32", "float32"]:
+            self.DataType = torch.float32
+        else:
+            raise Exception()
+        return super().Init(IsSuper=True, IsRoot=IsRoot)
+    def SetDevice(self, Device=None, IsRoot=True):
+        self.Device = Device
+        return super().SetDevice(Device=Device, IsRoot=IsRoot)
 
-            Param = self.Param
-            Param.setdefault("DataType", "torch.float32")
-            
-            if Param.DataType in ["torch.float32", "float32"]:
-                self.DataType = torch.float32
-            else:
-                raise Exception()
-            return super().Init(IsSuper=True, IsRoot=IsRoot)
-        def SetDevice(self, Device=None, IsRoot=True):
-            self.Device = Device
-            return super().SetDevice(Device=Device, IsRoot=IsRoot)
-
-    class MoveTensor2Device(DLUtils.module.AbstractOperator):
-        ParamMap = DLUtils.IterableKeyToElement({
-            ("Device"): "Device.Target"
-        })
-        def __init__(self, Device=None, **Dict):
-            if Device is not None:
-                Dict["Device"] = Device
-            super().__init__(**Dict)
-        def Receive(self, In):
-            return In.to(self.DeviceTarget)
-        def Build(self, IsSuper=False, IsRoot=True):
-            Param = self.Param
-            Param.Device.setdefault("Target", "cpu")
-            self.DeviceTarget = Param.Device.Target
-            return super().Init(IsSuper=True, IsRoot=IsRoot)
-        def SetDevice(self, Device=None, IsRoot=True):
-            self.DeviceTarget = self.Param.Device.Target = Device
-            return super().SetDevice(Device=Device, IsRoot=IsRoot)
+class MoveTensor2Device(DLUtils.module.AbstractOperator):
+    ParamMap = DLUtils.IterableKeyToElement({
+        ("Device"): "Device.Target"
+    })
+    def __init__(self, Device=None, **Dict):
+        if Device is not None:
+            Dict["Device"] = Device
+        super().__init__(**Dict)
+    def Receive(self, In):
+        return In.to(self.DeviceTarget)
+    def Build(self, IsSuper=False, IsRoot=True):
+        Param = self.Param
+        Param.Device.setdefault("Target", "cpu")
+        self.DeviceTarget = Param.Device.Target
+        return super().Init(IsSuper=True, IsRoot=IsRoot)
+    def SetDevice(self, Device=None, IsRoot=True):
+        self.DeviceTarget = self.Param.Device.Target = Device
+        return super().SetDevice(Device=Device, IsRoot=IsRoot)

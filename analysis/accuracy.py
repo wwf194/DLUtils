@@ -1,7 +1,12 @@
-import matplotlib as mpl
-from matplotlib import pyplot as plt
 
 import DLUtils
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import matplotlib as mpl
+    from matplotlib import pyplot as plt
+else:
+    mpl = DLUtils.GetLazyMatplotlib()
+    plt = DLUtils.GetLazyPlt()
 
 class LogForAccuracy:
     def __init__(self):

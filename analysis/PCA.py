@@ -1,7 +1,9 @@
-import numpy as np
-import collections
-
 import DLUtils
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import numpy as np
+else:
+    np = DLUtils.GetLazyNumpy()
 
 class LogForPCA(DLUtils.log.AbstractLogAlongBatch):
     def __init__(self, EpochIndex=None, BatchIndex=None, **kw):

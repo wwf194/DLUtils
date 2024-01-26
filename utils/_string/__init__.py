@@ -1,8 +1,7 @@
-import sys, re
+import sys
 import string, re
 import warnings, time
 import DLUtils
-
 from io import StringIO
 
 # String Related Functions
@@ -88,9 +87,13 @@ Char2Num = Char2UnicodePoint = Char2CodePoint
 
 def CharListAZ():
     return list(string.ascii_uppercase)
+def StrAZ():
+    return string.ascii_uppercase
 
 def CharListaz():
     return list(string.ascii_lowercase)
+def Straz():
+    return string.ascii_lowercase
 
 def CharListazAZ():
     return list(StrAZ()() + CharListAZ())
@@ -98,17 +101,14 @@ def CharListazAZ():
 def CharList09():
     return list(string.digits)
 
-def Str09():
+def StrDigit():
     return string.digits
+Str09 = StrDigit
 
 def CharListAZ09():
     return CharListAZ() + CharList09()
 
-def Straz():
-    return list(string.ascii_lowercase)
 
-def StrAZ():
-    return list(string.ascii_uppercase)
 
 def CharListazAZ09():
     return list(Straz() + StrAZ() + Str09())
@@ -215,8 +215,6 @@ def Str01ToInt(Str, MostSignificantBit="Right"):
     return Int
 ZeroOneStrToInt = ZeroOneStr2Int = String01ToInt = Str012Int = Str01ToInt
 
-
-
 def ByteArrayToHex(ByteArray, Prefix="0x", Case="Upper", MostSignificantByte="Left", Endian=None):
     if MostSignificantByte in ["right", "Right", "r", "R"]: # ByteArray[0] is least significant
         pass
@@ -270,11 +268,15 @@ class OutPipeWriter:
     def PrintWithouthIndent(self, *List, **Dict):
         Result = PrintStrTo(self.OutPipe, *List, Indent=0, **Dict)
         return Result
+    def PrintWithIncreaseIndent(self, *List, **Dict):
+        Result = self.Print(*List, Indent=self.Indent + 1, **Dict)
+        return Result
     def Print(self, *List, Indent=None, **Dict):
         if Indent is None:
             Indent = self.Indent
         Result = PrintStrTo(self.OutPipe, *List, Indent=Indent, **Dict)
         return Result
+    print = Print
 
 def GetLibOutPipeWriter():
     LibOutPipe = GetLibOutPipe()
@@ -482,6 +484,7 @@ def PrintStrToLibOutPipe(*List, Indent=None, **Dict):
     LibOutPipe = GetLibOutPipe()
     Result = PrintStr2Pipe(LibOutPipe, *List, Indent=Indent, **Dict)
     return Result
+Print = PrintStrToLibOutPipe
 PrintToLibOutPipeUTF8 = PrintToLibOutPipe = PrintStrToLibOutPipe
 
 def PrintWithTimeStr(*List, Encoding="utf-8", Indent=None, OutPipe=None, **Dict):
@@ -495,14 +498,11 @@ def PrintWithTimeStr(*List, Encoding="utf-8", Indent=None, OutPipe=None, **Dict)
     Result = PrintStrTo(OutPipe, Indent=Indent)
     OutPipe.flush()
     return Result
-try:
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
     from bitarray import bitarray
-except Exception:
-    if DLUtils.Verbose:
-        warnings.warn("lib bitarray not found")
-    IsBitArrayImported = False
 else:
-    IsBitArrayImported = True
+    bitarray = DLUtils.LazyFromImport("bitarray", "bitarray")
 
 def RemoveStartEndEmptySpaceChars(Str):
     Str = re.match(r"\s*([\S].*)", Str).group(1)

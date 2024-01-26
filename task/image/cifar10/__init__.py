@@ -1,7 +1,12 @@
 import sys
-import numpy as np
-import torch
 import DLUtils
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import numpy as np
+    import torch
+else:
+    np = DLUtils.GetLazyNumpy()
+    torch = DLUtils.GetLazyTorch()
 from .. import ImageClassificationTask
 
 LabelContent = [
@@ -76,8 +81,6 @@ class CIFAR10(ImageClassificationTask):
         return self
 
 from six.moves import cPickle as pickle
-import numpy as np
-import os
 import platform
 
 # read file

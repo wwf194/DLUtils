@@ -1,29 +1,38 @@
-import warnings
-import numpy as np
-import scipy # pip install scikit-py
-
 import math
-
-import matplotlib as mpl
-# mpl.use('TkAgg',force=True)
-# ImportError: Cannot load backend 'TkAgg' which requires the 'tk' interactive framework, as 'headless' is currently running
-import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
-from matplotlib.patches import Rectangle
-try:
+import DLUtils
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import numpy as np
+    import scipy # pip install scikit-py
+else:
+    np = DLUtils.LazyImport("numpy")
+    scipy = DLUtils.LazyImport("scipy")
+if TYPE_CHECKING:
+    from PIL import Image as Im
+else:
+    Im = DLUtils.LazyFromImport("PIL", "Image")
+if TYPE_CHECKING:
+    import matplotlib as mpl
+    # mpl.use('TkAgg',force=True)
+    # ImportError: Cannot load backend 'TkAgg' which requires the 'tk' interactive framework, as 'headless' is currently running
+    import matplotlib.pyplot as plt
+    import matplotlib.image
+    from matplotlib.lines import Line2D
+    from matplotlib.patches import Rectangle
+else:
+    matplotlib = DLUtils.LazyImport("matplotlib")
+    plt = DLUtils.LazyFromImport("matplotlib", "pyplot")
+    Line2D = DLUtils.LazyFromImport("matplotlib.pyplot", "Line2D")
+    Rectangle = DLUtils.LazyFromImport("matplotlib.patches", "Rectangle")
+    image = DLUtils.LazyImport("matplotlib.image")
+    
+if TYPE_CHECKING:
     import seaborn as sns
     sns.set_style("white")
-except Exception:
-    warnings.warn("lib seaborn not found.")
-
-try:
     import cv2 as cv
-except Exception:
-    warnings.warn("lib cv2 not found")
-
-default_res=60
-
-import DLUtils
+else:
+    sns = DLUtils.LazyImport("seaborn", FuncAfterImport=lambda module:module.set_style("white"))
+    cv = DLUtils.LazyImport("cv2")
 
 def SetMatplotlibParamToDefault():
     mpl.rcParams.update(mpl.rcParamsDefault)
@@ -63,7 +72,7 @@ def GenerateColors(Num=10, ColorMap="Auto"):
     
     return ColorList
 
-def PlotLinesPlt(ax, XYsStart, XYsEnd=None, Width=1.0, Color=NamedColor.Black):
+def PlotLinesPlt(ax: plt.Axes, XYsStart, XYsEnd=None, Width=1.0, Color=NamedColor.Black):
     if XYsEnd is None:
         Edges = DLUtils.ToNpArray(XYsStart)
         XYsStart = Edges[:, 0]
@@ -78,15 +87,15 @@ def PlotLinesPlt(ax, XYsStart, XYsEnd=None, Width=1.0, Color=NamedColor.Black):
         ax.add_line(Line2D(X, Y, linewidth=Width, color=Color))
 PlotLines = PlotLinesPlt
 
-def SetHeightWidthRatio(ax, ratio, XRange, YRange):
+def SetHeightWidthRatio(ax: plt.Axes, ratio, XRange, YRange):
     ax.set_aspect(ratio * XRange / YRange)
 
-def PlotLineAndMarkVerticesXY(ax, PointStart, PointEnd, Width=1.0, Color=NamedColor.Black):
+def PlotLineAndMarkVerticesXY(ax: plt.Axes, PointStart, PointEnd, Width=1.0, Color=NamedColor.Black):
     PlotLinePlt(ax, PointStart, PointEnd, Width, Color)
     PlotPointAndMarkXY(ax, PointStart)
     PlotPointAndMarkXY(ax, PointEnd)
 
-def PlotArrowAndMarkVerticesXY(ax, PointStart, PointEnd, Width=0.001, Color=NamedColor.Black):
+def PlotArrowAndMarkVerticesXY(ax: plt.Axes, PointStart, PointEnd, Width=0.001, Color=NamedColor.Black):
     PlotArrowFromVertexPairsPlt(ax, PointStart, PointEnd, Width=Width, Color=Color)
     PlotPointAndMarkXY(ax, PointStart)
     PlotPointAndMarkXY(ax, PointEnd)
@@ -101,17 +110,17 @@ def PlotLinePlt(ax, PointStart, PointEnd, Width=1.0, Color=NamedColor.Black, Sty
     line.set_linestyle(Style)
 PlotLine = PlotLinePlt
 
-def PlotDashedLinePlt(ax, PointStart, PointEnd, Width=1.0, Color=NamedColor.Black):
+def PlotDashedLinePlt(ax: plt.Axes, PointStart, PointEnd, Width=1.0, Color=NamedColor.Black):
     PlotLinePlt(ax, PointStart, PointEnd, Width, Color, Style=(0, (5, 10)))
 PlotDashedLine = PlotDashedLinePlt
 
-def PlotPointAndAddText(ax, XY, PointColor=NamedColor.Blue, Text="TextOnPoint", TextColor=None):
+def PlotPointAndAddText(ax: plt.Axes, XY, PointColor=NamedColor.Blue, Text="TextOnPoint", TextColor=None):
     if TextColor is None:
         TextColor = PointColor
     PlotPoint(ax, XY, PointColor)
     PlotText(ax, XY, Text, TextColor)
 
-def PlotText(ax, XY, Text, Color=NamedColor.Blue):
+def PlotText(ax: plt.Axes, XY, Text, Color=NamedColor.Blue):
     ax.text(XY[0], XY[1], Text, color=Color)
 
 def print_notes(notes, y_line, y_interv):
@@ -139,7 +148,7 @@ def ParsePointTypePlt(Type):
         #raise Exception(Type)
         return Type
 
-def PlotPoint(ax, XY, Color=NamedColor.Blue, Type="Circle", Size=None):
+def PlotPoint(ax: plt.Axes, XY, Color=NamedColor.Blue, Type="Circle", Size=None):
     Color = ParseColor(Color)
     Type = ParsePointTypePlt(Type)
     
@@ -195,7 +204,7 @@ def PlotMultiPoints(
     # SetTicksAndRangeForAx(ax, Xs, Ys, XRange, YRange)
     return
 
-def SetXTicksAndRange(ax, *List, **Dict):
+def SetXTicksAndRange(ax: plt.Axes, *List, **Dict):
     XTicks = Dict.setdefault("XTicks", "float")
     if XTicks in ["float", "Float"]:
         SetXTicksAndRangeFloat(ax, *List, **Dict)
@@ -216,7 +225,7 @@ def SetXTicksAndRange(ax, *List, **Dict):
     else:
         raise Exception(XTicks)
 
-def SetYTicksAndRange(ax, *List, **Dict):
+def SetYTicksAndRange(ax: plt.Axes, *List, **Dict):
     YTicks = Dict.setdefault("YTicks", "float")
     if YTicks in ["float", "Float"]:
         SetYTicksAndRangeFloat(ax, *List, **Dict)
@@ -237,7 +246,7 @@ def SetYTicksAndRange(ax, *List, **Dict):
     else:
         raise Exception(YTicks)
 
-def SetXTicksInt(ax, Min, Max, Method="Auto", **Dict):
+def SetXTicksInt(ax: plt.Axes, Min, Max, Method="Auto", **Dict):
     if Min > Max:
         Min, Max = Max, Min
     # Min, Max = round(Min) + 1, round(Max)
@@ -291,7 +300,7 @@ def MaxList2D(List):
             Max = _Max
     return Max
 
-def SetXTicksAndRangeInt(ax, Xs, Range=None, **Dict):
+def SetXTicksAndRangeInt(ax: plt.Axes, Xs, Range=None, **Dict):
     XMin = Dict.setdefault("XMin", None)
     XMax = Dict.setdefault("XMax", None)
     DimNum = Dict.setdefault("DimNum", 1)
@@ -309,7 +318,7 @@ def SetXTicksAndRangeInt(ax, Xs, Range=None, **Dict):
     SetXRangeMinMaxInt(ax, XMin, XMax)
     return XTicks, XTicksStr
 
-def SetYTicksAndRangeInt(ax, Ys, Range=None, **Dict):
+def SetYTicksAndRangeInt(ax: plt.Axes, Ys, Range=None, **Dict):
     YMin = Dict.setdefault("YMin", None)
     YMax = Dict.setdefault("YMax", None)
     DimNum = Dict.setdefault("DimNum", 1)
@@ -326,7 +335,7 @@ def SetYTicksAndRangeInt(ax, Ys, Range=None, **Dict):
     SetYTicksInt(ax, YMin, YMax)
     SetYRangeMinMaxInt(ax, YMin, YMax)
 
-def SetYTicksInt(ax, Min, Max, Method="Auto", **Dict):
+def SetYTicksInt(ax: plt.Axes, Min, Max, Method="Auto", **Dict):
     if Min > Max:
         Min, Max = Max, Min
     #Min, Max = round(Min) + 1, round(Max)
@@ -335,6 +344,10 @@ def SetYTicksInt(ax, Min, Max, Method="Auto", **Dict):
     #ax.set_yticklabels(TicksStr)
     return Ticks, TicksStr
 
+def RemoveRightAndTopAxis(ax: plt.Axes):
+    ax.spines[['right', 'top']].set_visible(False)
+    return ax
+
 def GetYTicksInt(Min, Max, Method="Auto", **Dict):
     if Min > Max:
         Min, Max = Max, Min
@@ -342,11 +355,11 @@ def GetYTicksInt(Min, Max, Method="Auto", **Dict):
     Ticks, TicksStr = CalculateTicksInt(Method, Min, Max, **Dict)
     return Ticks, TicksStr
 
-def SetTicksAndRangeForAx(ax, Xs, Ys, XRange, YRange):
+def SetTicksAndRangeForAx(ax: plt.Axes, Xs, Ys, XRange, YRange):
     SetXTicksAndRangeFloat(ax, Xs=Xs, Range=XRange)
     SetYTicksAndRangeFloat(ax, Ys=Ys, Range=YRange)
 
-def SetXTicksAndRangeFloat(ax, Xs=None, Range=None, **Dict):
+def SetXTicksAndRangeFloat(ax: plt.Axes, Xs=None, Range=None, **Dict):
     XMin = Dict.setdefault("XMin", None)
     XMax = Dict.setdefault("XMax", None)
     DimNum = Dict.setdefault("DimNum", 1)
@@ -361,7 +374,7 @@ def SetXTicksAndRangeFloat(ax, Xs=None, Range=None, **Dict):
     SetXRangeMinMaxFloat(ax, XMin, XMax)
     return XTicks, XTicksStr
 
-def SetYTicksAndRangeFloat(ax, Ys=None, Range=None, **Dict):
+def SetYTicksAndRangeFloat(ax: plt.Axes, Ys=None, Range=None, **Dict):
     YMin = Dict.setdefault("YMin", None)
     YMax = Dict.setdefault("YMax", None)
     DimNum = Dict.setdefault("DimNum", 1)
@@ -377,7 +390,7 @@ def SetYTicksAndRangeFloat(ax, Ys=None, Range=None, **Dict):
     return YTicks, YTicksStr
 
 def PlotPointsPltNp(
-        ax, Points, Color="Blue", Type="Circle", Size=None,
+        ax: plt.Axes, Points, Color="Blue", Type="Circle", Size=None,
         XLabel=None, YLabel=None, Title=None, XRange=None, YRange=None
     ):
     Points = DLUtils.ToNpArray(Points)
@@ -391,7 +404,7 @@ def PlotPointsPltNp(
     SetTicksAndRangeForAx(ax, Xs, Ys, XRange, YRange)
     return
 
-def PlotDirectionsOnEdges(ax, Edges, Directions, **kw):
+def PlotDirectionsOnEdges(ax: plt.Axes, Edges, Directions, **kw):
     Edges = DLUtils.ToNpArray(Edges)
     Directions = DLUtils.ToNpArray(Directions)
     EdgesLength = DLUtils.geometry2D.Vectors2Lengths(DLUtils.geometry2D.VertexPairs2Vectors(Edges))
@@ -409,11 +422,15 @@ def Str2RGB(ColorStr):
     else:
         raise Exception()
 
-def Map2Color(
-        data, ColorMap="jet", Method="MinMax", Alpha=False,
-        RefData=None, **Dict
-    ):
-    data = DLUtils.ToNpArray(data)
+def DataToColor(
+    Data, ColorMap="jet", Method="MinMax", Alpha=False,
+    RefData=None, **Dict
+):
+    """
+    turns every element of Data to an array of 3 or 4 elements, representing RGB(A) color
+    return: np.ndarray of shape (*Data.shape, 3)
+    """
+    Data = DLUtils.ToNpArray(Data)
     ColorForEqualValues = Dict.setdefault("ColorForEqualValues", ParseColor("LightGray"))
 
     if Method in ["MinMax", "GivenRange", "GivenMinMax"]:
@@ -424,7 +441,7 @@ def Map2Color(
                 else:
                     dataMin, dataMax = np.NaN, np.NaN
             else:
-                dataMin, dataMax = np.nanmin(data), np.nanmax(data)
+                dataMin, dataMax = np.nanmin(Data), np.nanmax(Data)
         elif Method in ["GivenRange", "GivenMinMax"]:
             dataMin, dataMax = Dict["Min"], Dict["Max"]
 
@@ -436,9 +453,9 @@ def Map2Color(
                 Color = ColorForEqualValues
             else:
                 raise Exception()
-            dataInColor = np.full((*data.shape, 4), Color)
+            dataInColor = np.full((*Data.shape, 4), Color)
         else:
-            dataNormed = (data - dataMin) / (dataMax - dataMin) # normalize to [0, 1]
+            dataNormed = (Data - dataMin) / (dataMax - dataMin) # normalize to [0, 1]
             dataInColor = ParseColorMapPlt(ColorMap)(dataNormed) # [*data.Shape, (r,g,b,a)]
     else:
         raise Exception(Method)
@@ -452,12 +469,12 @@ def Map2Color(
         "Min": dataMin,
         "Max": dataMax
     })
-Map2Colors = Map2Color
+Map2Colors = Map2Color = DataToColor
 
 def MapColors2Colors(dataColored, ColorMap="jet", Range="MinMax"):
     return # to be implemented
 
-def norm(data):
+def Norm(Data):
     # to be implemented
     return
 
@@ -2348,7 +2365,7 @@ def PlotImage(Image, SavePath):
         PlotImageRGBFloat01(Image, SavePath)
     else:
         raise Exception()
-from PIL import Image as Im
+
 def NpArray2ImageFilePIL(Data, SavePath=None):
     # image : np.ndarray, with dtype np.uint8
     ImagePIL = Im.fromarray(Data)
@@ -2364,7 +2381,6 @@ def NpArray2ImageFileGreyFloat01PIL(Image, ImageFilePath):
     _Image = _Image.convert('L')
     _Image.save(ImageFilePath)
 
-import matplotlib.image
 
 def NpArray2ImageFile(Data, ImageFilePath):
     if isinstance(Data, np.ndarray):

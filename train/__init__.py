@@ -1,13 +1,20 @@
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-
-import pandas as pd
-import numpy as np
+import DLUtils
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import numpy as np
+    import torch
+    import torch.nn as nn
+    import torch.nn.functional as F
+    import pandas as pd
+    import matplotlib.pyplot as plt
+else:
+    np = DLUtils.GetLazyNumpy()
+    torch = DLUtils.GetLazyTorch()
+    nn = DLUtils.LazyImport("torch.nn")
+    F = DLUtils.LazyImport("torch.nn.functional")
+    pd = DLUtils.LazyImport("pandas")
+    plt = DLUtils.GetLazyPlt()
 import re
-
-import matplotlib.pyplot as plt
-
 import DLUtils
 #from DLUtils.attr import *
 import DLUtils.optimize as optimzie

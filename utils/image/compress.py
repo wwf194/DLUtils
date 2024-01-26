@@ -1,20 +1,16 @@
 import sys
 import DLUtils
-
-try:
-    import cv2
-except Exception:
-    cv2_imported = False
-else:
-    cv2_imported = True
-
-try:
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import numpy as np
     import PIL
-except Exception:
-    PIL_imported = False
+    from PIL import Image as Im
+    import cv2
 else:
-    PIL_imported = True
-
+    np = DLUtils.LazyImport("numpy")
+    PIL = DLUtils.LazyImport("PIL")
+    cv2 = DLUtils.LazyImport("cv2")
+    Im = DLUtils.LazyFromImport("PIL", "Image")
 
 def CompressImageFile(FilePathSource, FilePathDest=None, *List, **Dict):
     if FilePathDest is None:
@@ -30,35 +26,33 @@ def CompressImage(Image, Ratio=0.5):
     # ImageData: ImageNp
     return ImageNew
 
-if cv2_imported:
-    def ResizeImage(Image, Height=None, Width=None, Ratio=None, KeepShape=False, MaxHeight=None, MaxWidth=None):
-        Height0 = Image.shape[0]
-        Width0 = Image.shape[1]
-        if KeepShape:
-            if Height is not None:
-                assert Width is None
-                assert Ratio is not None
-                Ratio = Height / Height0
-                Width = round(Ratio * Width0)
-            if Width is not None:
-                assert Height is None
-                assert Ratio is None
-                Ratio = Width / Width0
-                Height = round(Ratio * Height0)
-        
-        if Ratio is None:
-            assert Height is None
+def ResizeImage(Image, Height=None, Width=None, Ratio=None, KeepShape=False, MaxHeight=None, MaxWidth=None):
+    Height0 = Image.shape[0]
+    Width0 = Image.shape[1]
+    if KeepShape:
+        if Height is not None:
             assert Width is None
-            Height = round(Image)
-        else:
-            assert isinstance(Ratio, float)
-            Height = round(Ratio * Height0)
+            assert Ratio is not None
+            Ratio = Height / Height0
             Width = round(Ratio * Width0)
-            
-        ImageNew = cv2.resize(Image, (Width, Height), interpolation=cv2.INTER_AREA)
-        return ImageNew
+        if Width is not None:
+            assert Height is None
+            assert Ratio is None
+            Ratio = Width / Width0
+            Height = round(Ratio * Height0)
+    
+    if Ratio is None:
+        assert Height is None
+        assert Width is None
+        Height = round(Image)
+    else:
+        assert isinstance(Ratio, float)
+        Height = round(Ratio * Height0)
+        Width = round(Ratio * Width0)
+        
+    ImageNew = cv2.resize(Image, (Width, Height), interpolation=cv2.INTER_AREA)
+    return ImageNew
 
-import numpy as np
 def File2Image(FilePath):
     # cv2.imread might have problem when FilePath contains unicode characters.
     Stream = open(FilePath, "rb")
@@ -94,7 +88,7 @@ def ImageNp2FileCv(Image, FilePath, Format=None):
         f.write(ImageBytes)
     return True
 
-from PIL import Image as Im
+
 def ImageUnit82FilePIL(Image, FilePath):
     FilePath = DLUtils.EnsureFileDir(FilePath)
     ImagePIL = Im.fromarray(Image)

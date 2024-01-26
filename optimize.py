@@ -1,6 +1,11 @@
-import torch
 import DLUtils
-from DLUtils.attr import *
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import numpy as np
+    import torch
+else:
+    np = DLUtils.GetLazyNumpy()
+    torch = DLUtils.GetLazyTorch()
 
 from collections import defaultdict
 

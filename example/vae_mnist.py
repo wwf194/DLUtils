@@ -1,11 +1,15 @@
 import DLUtils
-import matplotlib.pyplot as plt
-import numpy as np
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import numpy as np
+    import matplotlib.pyplot as plt
+else:
+    np = DLUtils.GetLazyNumpy()
+    plt = DLUtils.GetLazyPlt()
 def SampleImage(Dict, LatentUnitNum):
     Model, SaveDir = Dict.Model, Dict.SaveDir
     # test input
     #Z = DLUtils.SampleFromGaussianDistribution((10, LatentUnitNum))
-    import numpy as np
     Z = np.full((10, LatentUnitNum), 0.1)
     #Z = np.full((10, LatentUnitNum), 0.0)
     XPred = Model.Decoder(

@@ -1,5 +1,11 @@
-import os, ffmpeg
+import os
 import DLUtils
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import ffmpeg
+else:
+    ffmpeg = DLUtils.LazyImport("ffmpeg")
+
 def Test():
     import sys
     # Compress input.mp4 to 50MB and save as output.mp4

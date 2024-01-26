@@ -1,8 +1,19 @@
 import DLUtils
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import numpy as np
+    import torch
+
+else:
+    np = DLUtils.GetLazyNumpy()
+    torch = DLUtils.GetLazyTorch()
 import os
-import torch
-from PIL import Image as Im
-import json
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from PIL import Image as Im
+else:
+    Im = DLUtils.LazyFromImport("PIL", "Image")
+
 from .. import ImageClassificationTask
 # adapted from
 # https://towardsdatascience.com/downloading-and-using-the-imagenet-dataset-with-pytorch-f0908437c4be

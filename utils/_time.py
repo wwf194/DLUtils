@@ -23,14 +23,21 @@ def TimeStr2Second(TimeStr):
     else:
         raise Exception()
 
-try:
-    import tzlocal # pip install tzlocal
-except Exception:
-    warnings.warn("lib tzlocal not found.")
+# import tzlocal # pip install tzlocal
+    # tzlocal is not a standard package
+    # //2024.01 import failure despited installed
+
+def GetLocalTimeZone():
+    LocalTimeZone = datetime.datetime.utcnow().astimezone().tzinfo
+    return LocalTimeZone # <class 'datetime.timezone'>
 
 def GMTTime2LocalTime(DateTimeObj, TimeZone=None):
+    # assert IsTzLocalImported
     if TimeZone is None:        
-        return DateTimeObj.astimezone(tzlocal.get_localzone())
+        return DateTimeObj.astimezone(
+            # tzlocal.get_localzone()
+            GetLocalTimeZone()
+        )
     else:
         raise NotImplementedError()
 
@@ -70,53 +77,17 @@ def GetCurrentTimeStampInt():
     return round(GetCurrentTimeStampFloat())
 CurrentTimeStampInt = GetCurrentTimeStampInt
 
-def TimeStamp2Type(TimeStamp, Type):
+def TimeStampToType(TimeStamp, Type, Format=None):
     if Type in ["UnixTimeStamp", "TimeStamp"]:
         return TimeStamp
     elif Type in ["Str", "LocalTimeStr"]:
-        return DLUtils.time.TimeStamp2Str(TimeStamp)
+        return DLUtils.time.TimeStampToStr(
+            TimeStamp, TimeZone="Local", Format=Format
+        )
     else:
         raise Exception()
 
-def FileCreateTime(FilePath):
-    FilePath = DLUtils.file.CheckFileExists(FilePath)
-    if DLUtils.system.IsWin():
-        return os.path.getctime(FilePath)
-    else:
-        raise NotImplementedError()
-
-def FolderLastModifiedTime(DirPath, ReturnType="LocalTimeStr"):
-    # following operation will update a folder's last modified time:
-        # delete child file or folder.
-        # create(include by paste) child file or folder.
-    DirPath = DLUtils.CheckDirExists(DirPath)
-    LastModifiedTimeStamp = os.path.getmtime(DirPath)
-    return TimeStamp2Type(LastModifiedTimeStamp, ReturnType)
-DirLastModifiedTime = FolderLastModifiedTime
-
-def FileLastModifiedTime(FilePath, ReturnType="LocalTimeStr"):
-    # following operation will update a folder's last modified time:
-        # delete child file or folder.
-        # create(include by paste) child file or folder.
-    FilePath = DLUtils.CheckFileExists(FilePath)
-    LastModifiedTimeStamp = os.path.getmtime(FilePath)
-    return TimeStamp2Type(LastModifiedTimeStamp, ReturnType)
-
-def FileCreatedTime(FilePath):
-    FilePath = DLUtils.CheckFileExists(FilePath)
-    
-
-def LastModifiedTime(Path, ReturnType="TimeStamp"):
-    if DLUtils.file._ExistsFile(Path):
-        # Path = DLUtils.file.StandardizeFilePath(Path)
-        return FolderLastModifiedTime(Path, ReturnType)
-    elif DLUtils.file._ExistsDir(Path):
-        # Path = DLUtils.file.StandardizeDirPath(Path)
-        return FolderLastModifiedTime(Path, ReturnType)
-    else:
-        raise Exception("non-existent path: %s"%Path)
-
-def TimeStamp2LocalTimeStr(TimeStamp, Format=None):
+def TimeStampToLocalTimeStr(TimeStamp, Format=None):
     if Format is None:
         Format = "%Y-%m-%d %H-%M-%S"
     if isinstance(TimeStamp, int):
@@ -124,14 +95,15 @@ def TimeStamp2LocalTimeStr(TimeStamp, Format=None):
     DateTimeObj = TimeStamp2DateTimeObj(TimeStamp)
     return DateTimeObj2Str(DateTimeObj, Format=Format)
 
-def TimeStamp2Str(TimeStamp, TimeZone="Local", Format=None):
+def TimeStampToStr(TimeStamp, TimeZone="Local", Format=None):
     if TimeZone in ["Local"]:
-        return TimeStamp2LocalTimeStr(TimeStamp)
+        return TimeStampToLocalTimeStr(TimeStamp, Format=Format)
     elif TimeZone in ["UTC", "Greenwich", "UTC+0", "UTC0"]:
-        return TimeStamp2UTCTimeStr(TimeZone)
+        return TimeStampToUTCTimeStr(TimeZone, Format=Format)
     else:
         raise Exception()
-def TimeStamp2UTCTimeStr(TimeZone):
+
+def TimeStampToUTCTimeStr(TimeZone, Format=None):
     return NotImplementedError()
 
 def CurrentTimeStr(Format=None, Verbose=False):
@@ -145,18 +117,24 @@ GetCurrentTime = GetTime = TimeStr = CurrentTimeStr
 
 try:
     import dateutil
-    def GetTimeDifferenceFromStr(TimeStr1, TimeStr2):
-        Time1 = dateutil.parser.parse(TimeStr1)
-        Time2 = dateutil.parser.parse(TimeStr2)
-
-        TimeDiffSeconds = (Time2 - Time1).total_seconds()
-        TimeDiffSeconds = round(TimeDiffSeconds)
-
-        _Second = TimeDiffSeconds % 60
-        Minute = TimeDiffSeconds // 60
-        _Minute = Minute % 60
-        Hour = Minute // 60
-        TimeDiffStr = "%d:%02d:%02d"%(Hour, _Minute, _Second)
-        return TimeDiffStr
 except Exception:
-    warnings.warn("lib dateutil not found")
+    if DLUtils.Verbose:
+        warnings.warn("lib dateutil not found")
+    IsDateUtilImported = False
+else:
+    IsDateUtilImported = True
+
+def GetTimeDifferenceFromStr(TimeStr1, TimeStr2):
+    assert IsDateUtilImported
+    Time1 = dateutil.parser.parse(TimeStr1)
+    Time2 = dateutil.parser.parse(TimeStr2)
+
+    TimeDiffSeconds = (Time2 - Time1).total_seconds()
+    TimeDiffSeconds = round(TimeDiffSeconds)
+
+    _Second = TimeDiffSeconds % 60
+    Minute = TimeDiffSeconds // 60
+    _Minute = Minute % 60
+    Hour = Minute // 60
+    TimeDiffStr = "%d:%02d:%02d"%(Hour, _Minute, _Second)
+    return TimeDiffStr

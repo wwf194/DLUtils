@@ -1,5 +1,9 @@
 import DLUtils
-import numpy as np
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import numpy as np
+else:
+    np = DLUtils.GetLazyNumpy()
 
 try:
     from ..module import AbstractNetwork, AbstractModuleGroup

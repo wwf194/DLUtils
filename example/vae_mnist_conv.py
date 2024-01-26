@@ -1,10 +1,18 @@
-import torch
 import functools
 
 import DLUtils
 import DLUtils.network as network
 import DLUtils.loss as loss
 import DLUtils.train as train
+from typing import TYPE_CHECKING
+import DLUtils
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import numpy as np
+    import torch
+else:
+    np = DLUtils.GetLazyNumpy()
+    torch = DLUtils.GetLazyTorch()
 
 from .vae_mnist import SampleImage, PlotLabelClusters, PlotLatentSpace
 
@@ -203,7 +211,6 @@ def SampleImage(Dict, LatentUnitNum):
     Model, SaveDir = Dict.Model, Dict.SaveDir
     # test input
     #Z = DLUtils.SampleFromGaussianDistribution((10, LatentUnitNum))
-    import numpy as np
     Z = np.full((10, LatentUnitNum), 0.1)
     #Z = np.full((10, LatentUnitNum), 0.0)
     XPred = Model.Decoder(

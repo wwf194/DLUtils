@@ -1,5 +1,11 @@
 import DLUtils
-
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import numpy as np
+    import json
+else:
+    np = DLUtils.GetLazyNumpy()
+    json = DLUtils.LazyImport("json")
 import warnings
 from enum import Enum
 
@@ -612,8 +618,6 @@ def Tree2JsonStr(RootNode):
     _CompressTree(RootNode)
     return _Tree2JsonStr(RootNode)
 
-import json
-import numpy as np
 def ToJsonStr(Obj):
     if isinstance(Obj, set):
         Obj = list(Obj)

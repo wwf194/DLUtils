@@ -1,7 +1,13 @@
-import torch
+import DLUtils
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import numpy as np
+    import torch
+else:
+    np = DLUtils.GetLazyNumpy()
+    torch = DLUtils.GetLazyTorch()
 import DLUtils
 from DLUtils.module import AbstractModule
-import numpy as np
 import struct
 from .. import ImageClassificationTask
 
@@ -161,43 +167,43 @@ def DatasetImage2File(Data, IndexList=None, PlotNum=10, SavePath="./"):
         DLUtils.plot.NpArray2ImageFile(
             Image, SavePath + f"{Type} No.{Index} Class:{Label}.png" 
         )
-    
-class DataFetcher(torch.utils.data.Dataset, AbstractModule):
-    def __init__(self, Image, Label, BatchSize=None):
-        AbstractModule.__init__(self)
-        torch.utils.data.Dataset.__init__(self)
-        self.Image = Image
-        self.Label = Label
-        self.BatchSize = BatchSize
-    def SetDevice(self, Device, IsRoot=True):
-        self.Device = Device
-        self.Log(f"change device to {Device}")
-        return self
-    def __getitem__(self, Index):
-        #Image = torch.from_numpy(seexamplelf.Image[Index]).to(self.Device)
-        #Label = torch.from_numpy(self.Label[Index]).to(self.Device)
-        Image = self.Image[Index]
-        Label = self.Label[Index]
-        return Image, Label
-    def __len__(self):
-        return self.Image.shape[0]
+   
+# class DataFetcher(torch.utils.data.Dataset, AbstractModule):
+#     def __init__(self, Image, Label, BatchSize=None):
+#         AbstractModule.__init__(self)
+#         torch.utils.data.Dataset.__init__(self)
+#         self.Image = Image
+#         self.Label = Label
+#         self.BatchSize = BatchSize
+#     def SetDevice(self, Device, IsRoot=True):
+#         self.Device = Device
+#         self.Log(f"change device to {Device}")
+#         return self
+#     def __getitem__(self, Index):
+#         #Image = torch.from_numpy(seexamplelf.Image[Index]).to(self.Device)
+#         #Label = torch.from_numpy(self.Label[Index]).to(self.Device)
+#         Image = self.Image[Index]
+#         Label = self.Label[Index]
+#         return Image, Label
+#     def __len__(self):
+#         return self.Image.shape[0]
 
-class DataLoader(DLUtils.train.DataLoaderForEpochBatchTrain):
-    # def __init__(self, DataFetcher, BatchSize, BatchNum):
-    #     self.DataFetcher = DataFetcher
-    #     AbstractModule.__init__(self)
-    #     torch.utils.data.DataLoader.__init__(
-    #         self, 
-    #         dataset=DataFetcher, 
-    #         batch_size=BatchSize,
-    #         # num_workers=2 # Setting num_workers > 1 might severely slow down speed.
-    #     )
-    #     self.BatchSize = BatchSize
-    #     self._BatchNum = BatchNum
-    #     if hasattr(DataFetcher, "Device"):
-    #         self.Device = DataFetcher.Device
-    #     self.Reset()
-    pass
+# class DataLoader(DLUtils.train.DataLoaderForEpochBatchTrain):
+#     # def __init__(self, DataFetcher, BatchSize, BatchNum):
+#     #     self.DataFetcher = DataFetcher
+#     #     AbstractModule.__init__(self)
+#     #     torch.utils.data.DataLoader.__init__(
+#     #         self, 
+#     #         dataset=DataFetcher, 
+#     #         batch_size=BatchSize,
+#     #         # num_workers=2 # Setting num_workers > 1 might severely slow down speed.
+#     #     )
+#     #     self.BatchSize = BatchSize
+#     #     self._BatchNum = BatchNum
+#     #     if hasattr(DataFetcher, "Device"):
+#     #         self.Device = DataFetcher.Device
+#     #     self.Reset()
+#     pass
     
 def ExtractDataSet(Path, MoveCompressedFile2ExtractFolder=True):
     Path = DLUtils.file.ToAbsPath(Path)

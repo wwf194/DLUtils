@@ -1,6 +1,12 @@
-import DLUtils
 from .gradient_descend import GradientDescend
-import torch
+import DLUtils
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import numpy as np
+    import torch
+else:
+    np = DLUtils.GetLazyNumpy()
+    torch = DLUtils.GetLazyTorch()
 
 class SGD(GradientDescend):
     def _INIT(self, *List, **Dict):

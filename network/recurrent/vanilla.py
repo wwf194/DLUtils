@@ -1,6 +1,11 @@
-
 import DLUtils
-import torch
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import numpy as np
+    import torch
+else:
+    np = DLUtils.GetLazyNumpy()
+    torch = DLUtils.GetLazyTorch()
 class VanillaRNN(DLUtils.module.AbstractNetwork):
     ParamMap = DLUtils.IterableKeyToElement({
         ("LayerNum"): "Layer.Num",

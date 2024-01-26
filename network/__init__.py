@@ -1,7 +1,7 @@
 try:
     from ..module import AbstractModule, AbstractNetwork, AbstractOperator
     from ..module import ModuleGraph, ModuleList, ModuleSeries, _ModuleSeries, _ModuleList
-    from ..backend._torch import TorchModuleWrapper
+    # from ..backend._torch import TorchModuleWrapper
 except Exception:
     pass
 

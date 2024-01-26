@@ -8,7 +8,12 @@
 # yacc.py for further details.
 
 import os.path
-import shutil
+import DLUtils
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import shutil
+else:
+    shutil = DLUtils.LazyImport("import shutil")
 
 def get_source_range(lines, tag):
     srclines = enumerate(lines)

@@ -1,8 +1,17 @@
-import numpy as np
-import torch
-import torch.nn as nn
+from __future__ import annotations
 import DLUtils
-
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import numpy as np
+    import torch
+    import torch.nn as nn
+    import torch.nn.functional as F
+else:
+    np = DLUtils.GetLazyNumpy()
+    torch = DLUtils.GetLazyTorch()
+    nn = DLUtils.LazyImport("torch.nn")
+    F = DLUtils.LazyImport("torch.nn.functional")
+    
 def NullParameter(Shape=(1)):
     return nn.Parameter(torch.empty(Shape))
 def ToTorchTensor(Data, Device=None):
@@ -28,21 +37,24 @@ def ToTorchTensorOrNum(data):
     else:
         return ToTorchTensor(data)
 
-def ToGivenDataTypeTorch(Data, DataType=torch.float32):
+def ToGivenDataTypeTorch(Data, DataType=None):
+    if DataType is None:
+        DataType = torch.float32
     if Data.dtype == DataType:
         return Data
     else:
         return Data.to(DataType)
 Tensor2GivenDataType = ToGivenDataTypeTorch
 
-def NpArray2TorchTensor(Data, Location="cpu", DataType=torch.float32, RequiresGrad=False):
+def NpArrayToTorchTensor(Data, Location="cpu", DataType=None, RequiresGrad=False):
+    if DataType is None:
+        DataType = torch.float32
     Data = torch.from_numpy(Data)
     Data = Tensor2GivenDataType(Data, DataType)
     Data = Data.to(Location)
     Data.requires_grad = RequiresGrad
     return Data
-
-NpArray2Tensor = NpArray2TorchTensor
+NpArray2Tensor = NpArrayToTensor = NpArray2TorchTensor = NpArrayToTorchTensor
 
 def TorchTensorToNpArray(data):
     data = data.detach().cpu().numpy()

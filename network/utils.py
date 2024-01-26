@@ -1,5 +1,9 @@
-import DLUtils
-import numpy as np
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import numpy as np
+else:
+    np = DLUtils.GetLazyNumpy()
+
 def NewNpArray(Param):
     if isinstance(Param, dict):
         Param = DLUtils.Param().from_dict(Param)

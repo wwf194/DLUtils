@@ -1,19 +1,37 @@
 import os
 import re
 import warnings
-import shutil
+
 import sys
 import gzip
-from pathlib import Path
+
+import traceback
 import DLUtils
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import shutil
+    import pickle
+    from send2trash import send2trash
+    import hashlib
+    import filecmp
+    import json
+    from pathlib import Path
+else:
+    send2trash = DLUtils.LazyFromImport("send2trash", "send2trash")
+    shutil = DLUtils.LazyImport("shutil")
+    pickle = DLUtils.LazyImport("pickle")
+    hashlib = DLUtils.LazyImport("hashlib")
+    filecmp = DLUtils.LazyImport("filecmp")
+    json = DLUtils.LazyImport("json")
+    Path = DLUtils.LazyFromImport("pathlib", "Path")
 
 from ._json import (
-        PyObj2DataFile, DataFile2PyObj, PyObj2JsonFile,
-        JsonFile2PyObj, JsonFile2JsonDict, JsonObj2JsonFile,
-        DataFile2JsonObj, JsonFile2Dict, Obj2JsonFile
-    )
+    PyObj2DataFile, DataFile2PyObj, PyObj2JsonFile,
+    JsonFile2PyObj, JsonFile2JsonDict, JsonObj2JsonFile,
+    DataFile2JsonObj, JsonFile2Dict, Obj2JsonFile
+)
 from ._param import JsonDict2Str, JsonFile2Param
-from ._time import LastModifiedTime
+
 def MostRecentlyModified(PathList, Num=None):
     if Num is None:
         Num = len(PathList)
@@ -280,11 +298,17 @@ def MoveFolder(FolderPath, FolderPathNew, RaiseIfNonExist=False, Overwrite=True)
     return True
 MoveDir = MoveFolder
 
+def HaveSameContent(FilePath1, FilePath2):
+    import filecmp # python standard lib
+    FilePath1 = DLUtils.CheckFileExists(FilePath1)
+    FilePath2 = DLUtils.CheckFileExists(FilePath2)
+    return filecmp.cmp(FilePath1, FilePath2, shallow=False) # byte to byte compare
+
 def _MoveDirIntoDirMethod(DirDest, DirSource, FileName, FilePath, FilePathRel, **Dict):
     FilePathDest = DirDest + FilePathRel
     if DLUtils.ExistsFile(FilePathDest):
         try:
-            if filecmp.cmp(FilePath, FilePathDest, shallow=False): # byte to byte compare
+            if HaveSameContent(FilePath, FilePathDest): # byte to byte compare
                 try:
                     DLUtils.DeleteFile(FilePath)
                 except Exception:
@@ -344,12 +368,7 @@ def CopyFile(FilePath, FilePathDest):
 def IsSameFile(FilePath1, FilePath2):
     return os.path.samefile(FilePath1, FilePath2)
 
-try:
-    from send2trash import send2trash
-except Exception:
-    if DLUtils.Verbose:
-        warnings.warn("lib send2trash not found.")
-import traceback
+
 def DeleteFile(FilePath, RaiseIfNonExist=False, Move2TrashBin=False, DeleteIfMove2TrashBinFail=True, Verbose=True):
     FilePath = StandardizeFilePath(FilePath)
     SigMove2TrashBinFail = False
@@ -448,11 +467,13 @@ def SeperateFileNameAndDirPath(FilePath):
     return DirPath, FileName
 
 def DirPathFromFileName(FilePath):
+    """
+    return path of a directory, with same name parent directory and name(without suffix) as given file path.
+    """
     FilePath = StandardizeFilePath(FilePath)
     Name, Suffix = SeparateFileNameSuffix(FilePath)
     assert Suffix is not None and Suffix not in [""]
     return StandardizeDirPath(Name)
-DirPathFromFileName = DirPathFromFileName
 
 def DirPathFromFilePath(FilePath):
     FilePathObj = Path(FilePath)
@@ -460,7 +481,7 @@ def DirPathFromFilePath(FilePath):
     ParentDirPath = str(ParentDirPath)
     ParentDirPath = StandardizeDirPath(ParentDirPath)
     return ParentDirPath
-FolderPathOfFolder = DirPathFromFileName = DirPathFromFilePath
+FolderPathOfFolder = DirPathFromFilePath
 
 def RemoveFiles(FilesPath):
     for FilePath in FilesPath:
@@ -816,6 +837,11 @@ def AppendOnFileNameAndChangeSuffix(FilePath, Append, Suffix):
     return Name + Append + "." + Suffix
 AppendOnCurrentFileNameAndChangeSuffix = AppendOnFileNameAndChangeSuffix
 
+def SeparateDirPathAndFileName(FilePath):
+    FileName = os.path.basename(FilePath)
+    DirPath = DirPathFromFilePath(FilePath)
+    return FileName, DirPath
+
 def SeparateFileNameSuffix(FilePath):
     if FilePath.endswith("/"):
         raise Exception()
@@ -940,7 +966,7 @@ def File2Bytes(FilePath):
 
 def Tensor2TextFile2D(Data, SavePath="./test/"):
     Data = DLUtils.ToNpArray(Data)
-    DLUtils.NpArray2D2TextFile(Data, SavePath=SavePath)
+    DLUtils.NpArray2DToTextFile(Data, SavePath=SavePath)
 
 def GetRelativePath(path_rel=None, path_start=None, path_main=None):
     # path_rel: file path relevant to path_start
@@ -982,9 +1008,6 @@ def GetRelativePath(path_rel=None, path_start=None, path_main=None):
     '''
     #print('path_rel: %s path_start: %s path_main: %s'%(path_rel, path_start, path_main))
     return path_from_main
-
-import pickle
-from pathlib import Path
 
 def File2Str(FilePath):
     return Path(FilePath).read_text()
@@ -1064,7 +1087,7 @@ def TextFile2Str(FilePath):
     with open(FilePath, "r") as f:
         Str = f.read()
     return Str
-import hashlib
+
 def Str2MD5(Str):
     Bytes = Str.encode('utf-8')
     return hashlib.md5(Bytes).hexdigest()
@@ -1072,8 +1095,8 @@ def Str2MD5(Str):
 def ToMD5(Obj):
     return Str2MD5(str(Obj))
 
-import filecmp
-def HasSameContent(FilePath1, FilePath2):
+
+def HaveSameContent(FilePath1, FilePath2):
     return filecmp.cmp(FilePath1, FilePath2, shallow=False)
 
 def File2MD5(FilePath):
@@ -1108,8 +1131,6 @@ def ListFilesAndCalculateMd5(DirPath, Md5InKeys=False):
 
 ListFilesAndMd5 = ListFilesAndCalculateMd5
 
-
-import pathlib
 def _AbsPath(Path):
     if "~" in Path:
         Path = os.path.expanduser(Path)
@@ -1168,7 +1189,7 @@ def DirContains(DirSource, DirDest, Recur=True, DirPathRel="", **Dict):
     for FileName in FileNameList:
         FilePath = DirSource + FileName
         FilePathDest = DirDest + FileName
-        if not HasSameContent(FilePath, FilePathDest):
+        if not HaveSameContent(FilePath, FilePathDest):
             return False
     if Recur:
         DirNameList = DLUtils.ListAllDirNames(DirSource)
@@ -1426,7 +1447,6 @@ def FileList2ZipFile(FilePathList, ZipFilePath):
             zipObj.write(FilePathAbs, os.path.basename(FilePathAbs))
     return ZipFilePath
 
-import json
 def JsonDict2JsonFile(JsonDict, FilePath, Mode=None):
     if Mode in ["Simple"]:
         JsonStr = json.dumps(JsonDict, indent=4)
@@ -1466,23 +1486,86 @@ def ParseSavePath(SaveDir=None, SaveName=None, SaveNameDefault=None):
                 SaveDir += "/"
             assert not SaveName.endswith("/")
             return SaveDir + SaveName
-try:
-    import psutil
-except Exception:
-    warnings.warn("lib psutils not found.")
+import DLUtils
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import psutil # pip install psutil
 else:
-    def IsFileUsedByOtherProcess(FilePath):
-        for proc in psutil.process_iter():
-            try:
-                # this returns the list of opened files by the current process
-                FileList = proc.open_files()
-                if FileList:
-                    print(proc.pid,proc.name)
-                    for FileName in FileList:
-                        print("\t",FileName.path)
-            except psutil.NoSuchProcess as err:
-                # This catches a race condition where a process ends before we can examine its files
-                pass
-            except Exception:
-                traceback.print_exc()
-                pass
+    psutil = DLUtils.GetLazyPsUtil()
+
+def IsFileUsedByOtherProcess(FilePath):
+    # assert IsPsUtilImported
+    for proc in psutil.process_iter():
+        try:
+            # this returns the list of opened files by the current process
+            FileList = proc.open_files()
+            if FileList:
+                print(proc.pid,proc.name)
+                for FileName in FileList:
+                    print("\t",FileName.path)
+        except psutil.NoSuchProcess as err:
+            # This catches a race condition where a process ends before we can examine its files
+            pass
+        except Exception:
+            traceback.print_exc()
+            pass
+
+def FileCreateTime(FilePath):
+    FilePath = DLUtils.file.CheckFileExists(FilePath)
+    if DLUtils.system.IsWin():
+        return os.path.getctime(FilePath)
+    else:
+        raise NotImplementedError()
+
+def FolderLastModifiedTimeStamp(DirPath):
+    # following operation will update a folder's last modified time:
+        # delete child file or folder.
+        # create(include by paste) child file or folder.
+    DirPath = DLUtils.CheckDirExists(DirPath)
+    LastModifiedTimeStamp = os.path.getmtime(DirPath)
+    return LastModifiedTimeStamp
+DirLastModifiedTimeStamp = FolderLastModifiedTimeStamp
+
+def FolderLastModifiedTime(DirPath, ReturnType="LocalTimeStr"):
+    # following operation will update a folder's last modified time:
+        # delete child file or folder.
+        # create(include by paste) child file or folder.
+    DirPath = DLUtils.CheckDirExists(DirPath)
+    LastModifiedTimeStamp = os.path.getmtime(DirPath)
+    return DLUtils.time.TimeStampToType(LastModifiedTimeStamp, ReturnType)
+DirLastModifiedTime = FolderLastModifiedTime
+
+def FileLastModifiedTimeStamp(FilePath):
+    # following operation will update a folder's last modified time:
+        # delete child file or folder.
+        # create(include by paste) child file or folder.
+    FilePath = DLUtils.CheckFileExists(FilePath)
+    TimeStamp = os.path.getmtime(FilePath)
+    return TimeStamp
+
+def FileLastModifiedTime(FilePath, ReturnType="LocalTimeStr"):
+    LastModifiedTimeStamp = FileLastModifiedTime(FilePath)
+    return DLUtils.time.TimeStampToType(LastModifiedTimeStamp, ReturnType)
+
+def FileCreatedTime(FilePath):
+    FilePath = DLUtils.CheckFileExists(FilePath)
+
+def LastModifiedTimeStamp(Path):
+    if DLUtils.file._ExistsFile(Path):
+        # Path = DLUtils.file.StandardizeFilePath(Path)
+        return FileLastModifiedTimeStamp(Path)
+    elif DLUtils.file._ExistsDir(Path):
+        # Path = DLUtils.file.StandardizeDirPath(Path)
+        return FolderLastModifiedTimeStamp(Path)
+    else:
+        raise Exception("non-existent path: %s"%Path)
+
+def LastModifiedTime(Path, ReturnType="TimeStamp"):
+    if DLUtils.file._ExistsFile(Path):
+        # Path = DLUtils.file.StandardizeFilePath(Path)
+        return FileLastModifiedTime(Path, ReturnType)
+    elif DLUtils.file._ExistsDir(Path):
+        # Path = DLUtils.file.StandardizeDirPath(Path)
+        return FolderLastModifiedTime(Path, ReturnType)
+    else:
+        raise Exception("non-existent path: %s"%Path)

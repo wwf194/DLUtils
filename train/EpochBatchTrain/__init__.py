@@ -1,5 +1,9 @@
 import DLUtils
-import numpy as np
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import numpy as np
+else:
+    np = DLUtils.GetLazyNumpy()
 
 class EpochBatchTrainComponent(DLUtils.module.AbstractModule):
     def GetParamMap(self):
@@ -486,11 +490,13 @@ class EpochBatchTrainSession(DLUtils.module.AbstractModule):
                 Param.SubModules.setattr(Name, SubModule.ExtractParam())
         Param.ToFile(SavePath)
         return self
-
-from .Component import \
-    Save, \
-    Validate, \
-    AnalysisAfterTrain, EvaluatorPredAndTargetSelect1FromN, \
-    DataLoaderForEpochBatchTrain, DataFetcherForEpochBatchTrain
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .Component import (
+        Save, \
+        Validate, \
+        AnalysisAfterTrain, EvaluatorPredAndTargetSelect1FromN, \
+        DataLoaderForEpochBatchTrain, DataFetcherForEpochBatchTrain
+    )
 
 import DLUtils.train.Select1FromN as Select1FromN

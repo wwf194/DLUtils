@@ -1,6 +1,11 @@
-import torch
-import numpy as np
 import DLUtils
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import numpy as np
+    import torch
+else:
+    np = DLUtils.GetLazyNumpy()
+    torch = DLUtils.GetLazyTorch()
 
 class ModuleParallel(DLUtils.module.AbstractModuleGroup):
     def Receive(self, In):

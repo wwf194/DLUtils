@@ -83,8 +83,14 @@ def DataSetType2InputOutputOutput(Type):
 
 ModuleList = set(ModuleList)
 
-import torch
 import DLUtils
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import numpy as np
+    import torch
+else:
+    np = DLUtils.GetLazyNumpy()
+    torch = DLUtils.GetLazyTorch()
 
 def CalculateBatchNum(BatchSize, SampleNum):
     BatchNum = SampleNum // BatchSize
@@ -109,12 +115,45 @@ def GetDataPath(Name):
 
 GetDataSetPath = GetDatasetPath = GetDataPath
 
-import DLUtils.task.image.mnist as mnist
-import DLUtils.task.image.cifar10 as cifar10
-import DLUtils.task.image.imagenet as imagenet
-import DLUtils.task.image.mscoco as mscoco
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import DLUtils.task.image.mnist as mnist
+    import DLUtils.task.image.cifar10 as cifar10
+    import DLUtils.task.image.imagenet as imagenet
+    import DLUtils.task.image.mscoco as mscoco
 
-from .mnist import MNIST
-from .cifar10 import CIFAR10
-from .imagenet import ImageNet1k
-# from .mscoco import MSCOCO
+def __getattr__(Name):
+    if Name in ["mnist"]:
+        import DLUtils.task.image.mnist as _mnist
+        global mnist
+        mnist = _mnist
+        from .mnist import MNIST as _MNIST
+        global MNIST
+        MNIST = _MNIST
+        return mnist
+    elif Name in ["cifar10"]:
+        import DLUtils.task.image.cifar10 as _cifar10
+        global cifar10
+        cifar10 = _cifar10
+        from .cifar10 import CIFAR10 as _CIFAR10
+        global CIFAR10
+        CIFAR10 = _CIFAR10
+        return cifar10
+    elif Name in ["imagenet"]:
+        import DLUtils.task.image.imagenet as _imagenet
+        global imagenet
+        imagenet = _imagenet
+        from .imagenet import ImageNet1k as _ImageNet1k
+        global ImageNet1k
+        ImageNet1k = _ImageNet1k
+        return imagenet
+    elif Name in ["mscoco"]:
+        import DLUtils.task.image.mscoco as _mscoco
+        global mscoco
+        mscoco = _mscoco
+        from .mscoco import MSCOCO as _MSCOCO
+        global MSCOCO
+        MSCOCO = _MSCOCO
+        return mscoco
+    else:
+        raise Exception(Name)

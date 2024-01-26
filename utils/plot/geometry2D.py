@@ -1,9 +1,14 @@
 import math
 import cmath
-import numpy as np
-import matplotlib as mpl
-mpl.use('TkAgg',force=True)
-from matplotlib import pyplot as plt
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import numpy as np
+    import matplotlib as mpl
+else:
+    np = DLUtils.LazyImport("numpy")
+    mpl = DLUtils.GetLazyMatplotlib()
+    mpl.use('TkAgg',force=True)
+    plt = DLUtils.GetLazyPlt()
 
 T = np.array([[0, -1], [1, 0]])
 # @Reference https://blog.csdn.net/daming98/article/details/79561777

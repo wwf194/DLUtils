@@ -1,5 +1,10 @@
 import DLUtils
-import sqlite3
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import sqlite3
+else:
+    sqlite3 = DLUtils.LazyImport("sqlite3")
+
 def PrintIndex(Operator):
     print(ListIndex(Operator))
 

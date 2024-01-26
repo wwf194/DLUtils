@@ -1,28 +1,29 @@
 import warnings
 import DLUtils
-try:
-    import pymysql # for python 3.x
-except Exception:
-    if DLUtils.Verbose:
-        warnings.warn("lib pymysql not found.")
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import pymysql
 else:
-    def CreateMySQLSession(Host=None, User=None, Password=None):
-        session = pymysql.connect(
-            host=Host,
-            user=User,
-            password=Password
-        )
-        return session
+    pymysql = DLUtils.LazyImport("pymysql")
 
-    def GetMySQLVersion(session):
-        cursor = session.cursor()
-        # 使用 execute()  方法执行 SQL 查询 
-        cursor.execute("SELECT VERSION()")
-        # 使用 fetchone() 方法获取单条数据.
-        version = cursor.fetchone()
-        return version
+def CreateMySQLSession(Host=None, User=None, Password=None):
+    # assert IsPyMySqlImported
+    session = pymysql.connect(
+        host=Host,
+        user=User,
+        password=Password
+    )
+    return session
 
-    MySQLVersion = GetMySQLVersion
+def GetMySQLVersion(session):
+    cursor = session.cursor()
+    # 使用 execute()  方法执行 SQL 查询 
+    cursor.execute("SELECT VERSION()")
+    # 使用 fetchone() 方法获取单条数据.
+    version = cursor.fetchone()
+    return version
+
+MySQLVersion = GetMySQLVersion
 
 
     

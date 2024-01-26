@@ -1,15 +1,16 @@
-import random
-
-import numpy as np
-from numpy import select, unravel_index
-
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-
-
-from DLUtils.attr import *
 import DLUtils
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import numpy as np
+    import torch
+    import torch.nn as nn
+    import torch.nn.functional as F
+else:
+    np = DLUtils.GetLazyNumpy()
+    torch = DLUtils.GetLazyTorch()
+    nn = DLUtils.LazyImport("torch.nn")
+    F = DLUtils.LazyImport("torch.nn.functional")
+
 
 from DLUtils.transform import AbstractTransformWithTensor
 class RNNLIF(AbstractTransformWithTensor):

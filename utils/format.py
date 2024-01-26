@@ -1,11 +1,13 @@
-
 import DLUtils
-import numpy as np
 import re
-try:
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import numpy as np
     import pandas as pd
-except Exception:
-    pass
+else:
+    np = DLUtils.GetLazyNumpy()
+    pd = DLUtils.LazyImport("pandas")
+
 B = 1
 KB = 1024
 MB = 1048576
@@ -85,7 +87,7 @@ def NpArray2D2Str(Data, ColName=None, RowName=None, **Dict):
         # to be implemented
         pass
     return pd.DataFrame(Data).to_string()
-def NpArray2D2TextFile(Data, ColName=None, RowName=None, WriteStat=True, SavePath=None):
+def NpArray2DToTextFile(Data, ColName=None, RowName=None, WriteStat=True, SavePath=None):
     assert SavePath is not None
     StrList = []
     StrShape = "Shape: %s\n"%(str(Data.shape))
@@ -102,10 +104,10 @@ def NpArray2D2TextFile(Data, ColName=None, RowName=None, WriteStat=True, SavePat
         FilePath=SavePath
     )
 
-def NpArray2TextFile(Data, SavePath, **Dict):
+def NpArrayToTextFile(Data, SavePath, **Dict):
     DimNum = len(Data.shape)    
     if DimNum == 2:
-        NpArray2D2TextFile(Data, SavePath=SavePath, **Dict)
+        NpArray2DToTextFile(Data, SavePath=SavePath, **Dict)
     else:
         raise Exception()
 
@@ -158,9 +160,9 @@ def Curve2TextFile(Dict, SavePath):
         ValueList.append(Value)
         ColName.append(Key)    
     Data = np.array(ValueList).transpose(1, 0)
-    NpArray2D2TextFile(Data, ColName, SavePath=SavePath)
+    NpArray2DToTextFile(Data, ColName, SavePath=SavePath)
 
 try:
-    from ._numpy import NpArray2D2Str, NpArray2D2TextFile, NpArray2TextFile
+    from ._numpy import NpArray2D2Str, NpArray2DToTextFile, NpArrayToTextFile
 except Exception:
     pass

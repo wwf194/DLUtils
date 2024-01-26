@@ -1,7 +1,3 @@
-
-
-
-
 def Str2Color(Str):
     return (0.0, 0.0, 0.0)
         

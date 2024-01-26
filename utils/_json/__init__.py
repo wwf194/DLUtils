@@ -1,18 +1,24 @@
 import re
-import json
+
 import warnings
-try:
+import DLUtils
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import json
     import json5
-except Exception:
-    warnings.warn("lib json5 not found.")
-from typing import List
+else:
+    json = DLUtils.LazyImport("json")
+    json5 = DLUtils.LazyImport("json5")
 
 import DLUtils
 from ..python import CheckIsLegalPyName
 # from DLUtils.attr import *
 # from DLUtils.utils import ListAttrs # leads to recurrent reference.
-
-import numpy as np
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import numpy as np
+else:
+    np = DLUtils.LazyImport("numpy")
 
 def JsonObj2PyObj(JsonObj):
     if isinstance(JsonObj, list):

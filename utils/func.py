@@ -1,31 +1,24 @@
 import functools
 import DLUtils
 
-def StackFunctions(FunctionList, *Functions, Inverse=False, InNum=1):
-    if isinstance(FunctionList, list):
-        if len(Functions)>0:
-            raise Exception()
-        Functions = FunctionList
-    else:
-        Functions = [FunctionList, *Functions]
-    
-    if len(Functions)==1:
-        return Functions[0]
+def StackFunction(*FunctionList, Inverse=False, InNum=1):
+    if len(FunctionList) == 1 and isinstance(FunctionList[0], list):
+        FunctionList = FunctionList[0]
 
     if not Inverse:
         # Function at head of list is called earlier.
         # return functools.reduce(lambda f, g: lambda x: g(f(x)), Functions, lambda x: x)
         if InNum == 0:
-            _Functions = functools.reduce(lambda f, g: lambda x: g(f(x)), Functions[1:])
-            return lambda :_Functions(Functions[0]())
+            _Functions = functools.reduce(lambda f, g: lambda x: g(f(x)), FunctionList[1:])
+            return lambda :_Functions(FunctionList[0]())
         elif InNum == 1:
-            return functools.reduce(lambda f, g: lambda x: g(f(x)), Functions)
+            return functools.reduce(lambda f, g: lambda x: g(f(x)), FunctionList)
         else:
             raise Exception("To Be Implemented")
     else:
         # Function at tail of list is called earlier
-        return functools.reduce(lambda f, g: lambda x: f(g(x)), Functions)
-StackFunction = StackFunctions
+        return functools.reduce(lambda f, g: lambda x: f(g(x)), FunctionList)
+StackFunctions = StackFunction
 
 def EmptyFunction(*List, **Dict):
     return
@@ -158,7 +151,6 @@ def CallGraph(Router, *InList, **InDict):
                 else: # Routing.Module is a method
                     OutputList = routing.Module(*InputList, **InputDict)
             RegisterModuleOutput(OutputList, routing, States)
-
     return DLUtils.parse.FilterFromPyObj(States, Router.Out)
 
 def RegisterModuleOutput(OutputList, routing, States):

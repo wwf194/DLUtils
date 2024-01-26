@@ -1,11 +1,15 @@
 import os
 import re
 import functools
-import threading
 import time
 import warnings
 import random
-
+import DLUtils
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import threading
+else:
+    threading = DLUtils.LazyImport("threading")
 from typing import Iterable, List
 # from inspect import getframeinfo, stack
 # from .attrs import *
@@ -203,24 +207,32 @@ def ToRunFormat(Data):
         return ToTorchTensor(Data)
     else:
         return Data
-try:
+import DLUtils
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import numpy as np
     import torch
-except Exception:
-    pass
+    import torch.nn as nn
+    import torch.nn.functional as F
 else:
-    def ToNpArray(Data, DataType=None):
-        if DataType is None:
-            DataType = np.float32
-        if isinstance(Data, np.ndarray):
-            return Data
-        elif isinstance(Data, list) or isinstance(Data, tuple):
-            return np.array(Data, dtype=DataType)
-        elif isinstance(Data, torch.Tensor):
-            return DLUtils.torch.TensorToNpArray(Data)
-        elif isinstance(Data, float):
-            return np.asarray([Data],dtype=DataType)
-        else:
-            raise Exception(type(Data))
+    np = DLUtils.GetLazyNumpy()
+    torch = DLUtils.GetLazyTorch()
+    nn = DLUtils.LazyImport("torch.nn")
+    F = DLUtils.LazyImport("torch.nn.functional")
+
+def ToNpArray(Data, DataType=None):
+    if DataType is None:
+        DataType = np.float32
+    if isinstance(Data, np.ndarray):
+        return Data
+    elif isinstance(Data, list) or isinstance(Data, tuple):
+        return np.array(Data, dtype=DataType)
+    elif isinstance(Data, torch.Tensor):
+        return DLUtils.torch.TensorToNpArray(Data)
+    elif isinstance(Data, float):
+        return np.asarray([Data],dtype=DataType)
+    else:
+        raise Exception(type(Data))
     
     
 def ToMean0Std1(Data):
@@ -299,14 +311,17 @@ def DeleteKeysIfExist(Dict, Keys):
             Dict.pop(Key)
     return Dict
 
-try:
-    import numpy as np
-    NpDataTypeMap = IterableKeyToKeys({    
-        ("np.float32", "Float32", "Float", "float"): np.float32,
-        ("np.int8", "Int8", "int8"): np.int8
-    })
-except Exception:
-    warnings.warn("lib numpy is not found")
+NpDataTypeMap = None
+def GetNpDataTypeMap():
+    global NpDataTypeMap
+    if NpDataTypeMap is not None:
+        return NpDataTypeMap
+    else:
+        NpDataTypeMap = IterableKeyToKeys({    
+            ("np.float32", "Float32", "Float", "float"): np.float32,
+            ("np.int8", "Int8", "int8"): np.int8
+        })
+        return NpDataTypeMap
 
 def ParseDataTypeNp(DataType):    
     if isinstance(DataType, str):

@@ -56,6 +56,7 @@ def ClassPathStr2Class(ClassPath):
         pass
     raise Exception()
 ParseClass = ClassPathStr2Class
+
 def ImportModule(ModulePath):
     try:
         return importlib.import_module(ModulePath)

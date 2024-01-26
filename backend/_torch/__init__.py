@@ -1,51 +1,91 @@
+from __future__ import annotations
 import DLUtils
-try:
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import numpy as np
     import torch
-except Exception:
-    pass
 else:
-    def TorchTensorElementNum(Tensor:torch.Tensor):
-        return Tensor.numel()
-    def TorchTensorSize(Tensor:torch.Tensor):
-        if Tensor.data.is_floating_point():
-            return Tensor.numel() * torch.finfo(Tensor.data.dtype).bits
-        else:
-            return Tensor.numel() * torch.iinfo(Tensor.data.dtype).bits
-    def GPUNum():
-        return torch.cuda.device_count()
-    def SampleFrom01NormalDistributionTorch(Shape):
-        return torch.randn(Shape) # sampple from N(0, 1)
-    def SetSeedForTorch(Seed: int):
-        torch.manual_seed(Seed)
-    def ReportGPUUseageOfCurrentProcess():
-        """
-            report total / reserved / allocated / free(unallocated inside reservide) memory of the process of each GPU.
-            note that 
-        """
-        GPUList = [torch.cuda.device(GPUIndex) for GPUIndex in range(torch.cuda.device_count())]
-        for GPUIndex in range(torch.cuda.device_count()):
-            MemoryTotal = torch.cuda.get_device_properties(GPUIndex).total_memory
-            MemoryReserved = torch.cuda.memory_reserved(GPUIndex)
-            MemoryAllocated = torch.cuda.memory_allocated(GPUIndex)
-            MemoryUnallocated = MemoryAllocated - MemoryReserved
-            # note that other process could also have reserved some memory on same GPU.
-            # _MemoryFree = MemoryTotal - MemoryReserved
-            # print("GPU %d. Total: %010d. Reserved: %010d. Allocated: %010d Free: %010d"%(
-            print("GPU %d. Total: %s. Reserved: %s. Allocated: %s Free: %s"%(
-                GPUIndex, 
-                DLUtils.Size2Str(MemoryTotal), 
-                DLUtils.Size2Str(MemoryReserved), 
-                DLUtils.Size2Str(MemoryAllocated), 
-                DLUtils.Size2Str(MemoryUnallocated)
-            ))
+    np = DLUtils.GetLazyNumpy()
+    torch = DLUtils.GetLazyTorch()
+
+if TYPE_CHECKING:
+    from .train import DataLoaderForEpochBatchTrain, DataFetcherForEpochBatchTrain
+
+def TorchTensorElementNum(Tensor: torch.Tensor):
+    return Tensor.numel()
+def TorchTensorSize(Tensor:torch.Tensor):
+    if Tensor.data.is_floating_point():
+        return Tensor.numel() * torch.finfo(Tensor.data.dtype).bits
+    else:
+        return Tensor.numel() * torch.iinfo(Tensor.data.dtype).bits
+def GPUNum():
+    return torch.cuda.device_count()
+def SampleFrom01NormalDistributionTorch(Shape):
+    return torch.randn(Shape) # sampple from N(0, 1)
+def SetSeedForTorch(Seed: int):
+    torch.manual_seed(Seed)
+def ReportGPUUseageOfCurrentProcess():
+    """
+        report total / reserved / allocated / free(unallocated inside reservide) memory of the process of each GPU.
+        note that 
+    """
+    GPUList = [torch.cuda.device(GPUIndex) for GPUIndex in range(torch.cuda.device_count())]
+    for GPUIndex in range(torch.cuda.device_count()):
+        MemoryTotal = torch.cuda.get_device_properties(GPUIndex).total_memory
+        MemoryReserved = torch.cuda.memory_reserved(GPUIndex)
+        MemoryAllocated = torch.cuda.memory_allocated(GPUIndex)
+        MemoryUnallocated = MemoryAllocated - MemoryReserved
+        # note that other process could also have reserved some memory on same GPU.
+        # _MemoryFree = MemoryTotal - MemoryReserved
+        # print("GPU %d. Total: %010d. Reserved: %010d. Allocated: %010d Free: %010d"%(
+        print("GPU %d. Total: %s. Reserved: %s. Allocated: %s Free: %s"%(
+            GPUIndex, 
+            DLUtils.Size2Str(MemoryTotal), 
+            DLUtils.Size2Str(MemoryReserved), 
+            DLUtils.Size2Str(MemoryAllocated), 
+            DLUtils.Size2Str(MemoryUnallocated)
+        ))
 try:
     from .format import (
-        ToTorchTensor, ToTorchTensorOrNum, NpArray2Tensor, NpArray2TorchTensor,
+        ToTorchTensor, ToTorchTensorOrNum,
         TorchTensor2NpArray, TorchTensorToNpArray, TensorToNpArray, Tensor2NpArray
     )
-    from .module import TorchModule, TorchModuleWrapper
 except Exception:
     pass
+
+from .format import (
+    NpArray2Tensor, NpArray2TorchTensor,    
+    NpArrayToTensor, NpArrayToTorchTensor
+)
+
+def __getattr__(Name):
+    if Name in ["TorchModule"]:
+        from ._module import TorchModule as _TorchModule
+        global TorchModule
+        TorchModule = _TorchModule
+        return TorchModule
+    elif Name in ["TorchModuleWrapper"]:
+        from ._module import TorchModuleWrapper as _TorchModuleWrapper
+        global TorchModuleWrapper
+        TorchModuleWrapper = _TorchModuleWrapper
+        return TorchModuleWrapper
+    elif Name in ["TorchModelWithAdditionalParamToFile"]:
+        from ._module import TorchModelWithAdditionalParamToFile as _TorchModelWithAdditionalParamToFile
+        global TorchModelWithAdditionalParamToFile
+        TorchModelWithAdditionalParamToFile = _TorchModelWithAdditionalParamToFile
+        return TorchModelWithAdditionalParamToFile
+    if Name in ["DataFetcherForEpochBatchTrain"]:
+        from .train import DataFetcherForEpochBatchTrain as _DataFetcherForEpochBatchTrain
+        global DataFetcherForEpochBatchTrain
+        DataFetcherForEpochBatchTrain = _DataFetcherForEpochBatchTrain
+        return DataFetcherForEpochBatchTrain
+    elif Name in ["DataLoaderForEpochBatchTrain"]:
+        from .train import DataLoaderForEpochBatchTrain as _DataLoaderForEpochBatchTrain
+        global DataLoaderForEpochBatchTrain
+        DataLoaderForEpochBatchTrain = _DataLoaderForEpochBatchTrain
+        return DataLoaderForEpochBatchTrain
+    else:
+        raise Exception(Name)
 
 def GetTensorByteNum(Tensor): # Byte
     return Tensor.nelement() * Tensor.element_size()
@@ -116,7 +156,10 @@ def IsEval(module: torch.nn.Module):
     return not module.training
 
 try:
-    from .module import TorchModelWithAdditionalParam2File, File2TorchModelWithAdditionalParam
+    from .module import (
+        TorchModelWithAdditionalParamToFile,
+        File2TorchModelWithAdditionalParam
+    )
     from .module import TorchModel2File, File2TorchModel, TorchModelWrapper
 except Exception:
     pass

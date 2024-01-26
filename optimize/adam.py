@@ -1,7 +1,13 @@
 
 from .gradient_descend import GradientDescend
-import torch
 import DLUtils
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import numpy as np
+    import torch
+else:
+    np = DLUtils.GetLazyNumpy()
+    torch = DLUtils.GetLazyTorch()
 class Adam(GradientDescend):
     def __init__(self):
         super().__init__()

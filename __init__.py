@@ -1,49 +1,200 @@
-Verbose = True
+Verbose = False
+import importlib
+def Import(ModuleStr: str):
+    """
+    import a.b.c => ImportSubModule("a.b.c")
+    """
+    ModulePathList = ModuleStr.split(".") # "a.b.c" => ["a", "b", "c"]
+    if len(ModulePathList) == 1:
+        Module = importlib.import_module(name=ModulePathList[0])
+        return Module
+    else:
+        # SubModule = importlib.import_module(
+        #     name="." + SubModulePathList[-1], package=".".join(SubModulePathList[:-1])
+        # )
+        SubModule = importlib.import_module(".".join(ModulePathList))
+        return SubModule
+
+def ImportModule(SubModuleStr: str):
+    SubModule = importlib.import_module(SubModuleStr)
+    return SubModule
+ImportSubModule = ImportModule
+
+def ImportSubModuleFromPathList(SubModulePathList: list):
+    assert len(SubModulePathList) > 1
+    # SubModule = importlib.import_module(
+    #     name="." + SubModulePathList[-1], package=".".join(SubModulePathList[:-1])
+    # )
+    SubModule = importlib.import_module(".".join(SubModulePathList))
+    return SubModule
+
+def LazyImport(ModuleStr, FuncAfterImport=None):
+    """
+    import a => LazyImport("a") # lazy import module
+    import a.b => LazyImport("a.b") # lazy import submodule
+    module, submodule
+    """
+    return _LazyImport(ModuleStr, ImportMode="Module", FuncAfterImport=FuncAfterImport)
+LazyImportModule = LazyImportSubModule = LazyImport
+
+def FromImport(ModuleStr: str, VarStr: str):
+    """
+    from a.b import c as d => d = FromImport("a.b", "c")
+    """
+    SubModule = ImportSubModule(ModuleStr)
+    Var = getattr(SubModule, VarStr)
+    return Var
+
+def LazyFromImport(ModuleStr: str, VarStr: str):
+    """
+    from a.b import c as d => d = LazyFromImport("a.b", "c")
+    """
+    return _LazyImport(ModuleStr, VarStr, ImportMode="From")
+
+class _LazyImport(object):
+    def __init__(self,
+        ModuleName: str,
+        VarName: str = None, 
+        RaiseOnImportFailure: bool=True,
+        ImportMode="Import", # "Import", "FromImport"
+        FuncAfterImport=None
+    ):
+        self.ModuleName = ModuleName
+        self.RaiseOnImportFailure = RaiseOnImportFailure
+        self.IsModuleImported = False
+        
+        self.SubModulePathList = ModuleName.split(".")
+        if len(self.SubModulePathList) == 1:
+            self.ImportModule = self._ImportModule
+        elif len(self.SubModulePathList) > 1:
+            self.ImportModule = self._ImportSubModule
+        else:
+            raise Exception()
+        if ImportMode in ["Module", "SubModule", "Import"]:
+            self.ImportMode = "Import"
+            self.Import = self._ImportModule
+        elif ImportMode in ["FromModuleImport", "FromSubModuleImport", "From", "FromImport"]:
+            self.ImportMode = "FromImport"
+            self.VarName = VarName
+            self.Import = self._FromImport
+        else:
+            raise Exception()
+        self.FuncAfterImport = FuncAfterImport
+    def _ImportModule(self):
+        # assert not self.IsModuleImported:
+        try:
+            Module = importlib.import_module(self.ModuleName)
+        except Exception:
+            if self.RaiseOnImportFailure:
+                raise Exception(f"Failed to import module: %{self.ModuleName}")
+            else:
+                self.IsModuleImported = False
+                Module = "DLUtils.LazyImport: ImportFailure"
+                return None
+        else:
+            self.IsModuleImported = True
+        self.Module = Module
+        if self.FuncAfterImport is not None:
+            self.FuncAfterImport(Module)
+        return Module
+    def _ImportSubModule(self):
+        Module = ImportSubModuleFromPathList(self.SubModulePathList)
+        self.Module = Module
+        if self.FuncAfterImport is not None:
+            self.FuncAfterImport(Module)
+        return Module
+    def _FromImport(self):
+        Module = self.ImportModule()
+        Var = getattr(Module, self.VarName)
+        self.Var = Var
+        return Var
+    def __call__(self, *List, **Dict):
+        """
+        self.Import = _FromImport
+        """
+        # assert self.ImportMode == "FromImport"
+        if not self.IsModuleImported:
+            self.Import()    
+        return self.Var(*List, **Dict)
+    def __getattr__(self, Name):
+        # print(f"LazyImport:{name}")
+        if not self.IsModuleImported:
+            self.Import()
+        Var = getattr(self.Module, Name) # submodule, method, variable etc
+        setattr(self, Name, Var)
+        return Var
+    def GetModuleAndIsModuleImported(self):
+        return self.Module, self.IsModuleImported
+
+LazyNumpy = LazyImport("numpy")
+def GetLazyNumpy():
+    return LazyNumpy
+LazyScipy = LazyImport("scipy")
+def GetLazyScipy():
+    return LazyScipy
+LazyTorch = LazyImport("torch")
+def GetLazyTorch():
+    return LazyTorch
+LazyPsUtil = LazyImport("psutil")
+def GetLazyPsUtil():
+    return LazyPsUtil
+LazyMatplotlib = LazyImport("matplotlib")
+def GetLazyMatplotlib():
+    return LazyMatplotlib
+LazyPlt = LazyFromImport("matplotlib", "plt")
+def GetLazyPlt():
+    return LazyPlt
 
 from .utils._dict import IterableKeyToElement, IterableKeyToKeys, ToDict
 import DLUtils.utils._string as string
-from .utils._string import PrintStrToLibOutPipe as print
 from .utils._string import (
-        ResetLibOutPipe,
-        SetFileStrOut, CloseFileStrOut,
-        Print2StdErr, PrintHeartBeatTo,
-        PrintTo, PrintUTF8To, WriteTo, PrintStrTo, OutputTo,
-        PrintTimeStrTo, PrintTimeStr2, PrintCurrentTimeTo, 
-        PrintWithTimeStr, PrintTimeStr,
-        PrintPIDTo,
-        AddLibIndent, AddLibIndentLevel, IncreaseLibIndent, IncreaseLibIndentLevel,
-        DecreaseLibIndent, DecreaseLibIndentLevel,
-        SetLibIndentLevel,
-        GetLibOutPipe, GetStdOut,
-        RemoveHeadTailWhiteChars,
-        ToHex, Address,
-        GetLibOutPipeWriter, PrintStrTo, PrintTo
-    )
+    PrintStrToLibOutPipe,
+    Print
+)
+from .utils._string import (
+    ResetLibOutPipe,
+    SetFileStrOut, CloseFileStrOut,
+    Print2StdErr, PrintHeartBeatTo,
+    PrintTo, PrintUTF8To, WriteTo, PrintStrTo, OutputTo,
+    PrintTimeStrTo, PrintTimeStr2, PrintCurrentTimeTo, 
+    PrintWithTimeStr, PrintTimeStr,
+    PrintPIDTo,
+    AddLibIndent, AddLibIndentLevel, IncreaseLibIndent, IncreaseLibIndentLevel,
+    DecreaseLibIndent, DecreaseLibIndentLevel,
+    SetLibIndentLevel,
+    GetLibOutPipe, GetStdOut,
+    RemoveHeadTailWhiteChars,
+    ToHex, Address, IntToHex,
+    GetLibOutPipeWriter, PrintStrTo, PrintTo
+)
 
 import DLUtils.utils._json as json
-from .utils._json import \
-    IsJsonObj, PyObj, EmptyPyObj, IsPyObj, IsDictLikePyObj, \
-    IsListLikePyObj, CheckIsLegalPyName
+from .utils._json import (
+    IsJsonObj,
+    PyObj, IsPyObj,
+    EmptyPyObj,
+    IsDictLikePyObj, IsListLikePyObj,
+    CheckIsLegalPyName
+)
+
 import DLUtils.utils as utils
-
 import DLUtils.utils._param as param
-
 from .utils._param import (
-        Param, param,
-        new_param, NewParam,
-        ToParam,
-        Param2JsonFile, Param2JsonStr
-    )
+    Param, param,
+    new_param, NewParam,
+    ToParam,
+    Param2JsonFile, Param2JsonStr
+)
 # import DLUtils.utils._numpy as numpy
 from .utils._numpy import (
-        SetSeedForNumpy,
-        NpArray2TextFile,
-        NpArray2D2TextFile,
-        FlattenNpArray,
-        NpArray2List,
-        EnsureFlatNp,
-        EnsureFlat
-    )
+    SetSeedForNumpy,
+    NpArrayToTextFile,
+    NpArray2DToTextFile,
+    FlattenNpArray,
+    NpArray2List,
+    EnsureFlatNp,
+    EnsureFlat
+)
 
 try:
     from .utils._numpy import NpArray2D2Str
@@ -53,18 +204,18 @@ except Exception:
 from .utils.format import (
     Curve2TextFile
 )
-
+# if TYPE_CHECKING:
 from DLUtils.utils import (
-        GetSystemType,
-        ExpandIterableKey,
-        ToList,
-        GetFirstValue,
-        GetFirstNotNoneValue,
-        Float2StrDisplay,
-        ToLowerStr,
-        EmptyListWithShape, GetListWithShape,
-        LeafListToMean, LeafListToStd
-    )
+    GetSystemType,
+    ExpandIterableKey,
+    ToList,
+    GetFirstValue,
+    GetFirstNotNoneValue,
+    Float2StrDisplay,
+    ToLowerStr,
+    EmptyListWithShape, GetListWithShape,
+    LeafListToMean, LeafListToStd
+)
 try:
     from .utils import ToNpArray
 except Exception:
@@ -93,7 +244,6 @@ import DLUtils.utils.parse as parse
 import DLUtils.utils.file as file
 import DLUtils.utils.func as function
 import DLUtils.utils._math as math
-
 
 try:
     from DLUtils.utils._math import (
@@ -243,7 +393,11 @@ from DLUtils.utils.system import (
         GetCurrentProcessID, CurrentPID, CurrentProcessID
     )
 try:
-    from DLUtils.backend._torch import NullParameter, ToTorchTensor, ToTorchTensorOrNum
+    from DLUtils.backend._torch import (
+        NullParameter,
+        ToTorchTensor,
+        ToTorchTensorOrNum
+    )
 except Exception:
     pass
 

@@ -2,7 +2,12 @@
 
 import warnings
 import DLUtils
-from DLUtils.utils._json.ply import lex, yacc
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from DLUtils.utils._json.ply import lex, yacc
+else:
+    lex = DLUtils.LazyFromImport("DLUtils.utils._json.ply", "lex")
+    yacc = DLUtils.LazyFromImport("DLUtils.utils._json.ply", "yacc")
 from enum import Enum
 
 tokens = (

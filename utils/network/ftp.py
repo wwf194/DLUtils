@@ -1,8 +1,12 @@
 
 import sys
 import DLUtils
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ftplib import FTP
+else:
+    FTP = DLUtils.LazyFromImport("ftplib", "FTP")
 from DLUtils.module import AbstractModule
-from ftplib import FTP
 
 def FTPConnect(Host=None, Port=21):
     FTPSession = FTP()
