@@ -4,26 +4,35 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import numpy as np
     import torch
+    import torch.nn.functional as F
 else:
     np = DLUtils.GetLazyNumpy()
     torch = DLUtils.GetLazyTorch()
-
+    F = DLUtils.LazyImport("torch.nn.functional")
 if TYPE_CHECKING:
     from .train import DataLoaderForEpochBatchTrain, DataFetcherForEpochBatchTrain
 
 def TorchTensorElementNum(Tensor: torch.Tensor):
+    # assert isinstance(Tensor, torch.Tensor)
     return Tensor.numel()
+
 def TorchTensorSize(Tensor:torch.Tensor):
+    # assert isinstance(Tensor, torch.Tensor)
     if Tensor.data.is_floating_point():
         return Tensor.numel() * torch.finfo(Tensor.data.dtype).bits
     else:
         return Tensor.numel() * torch.iinfo(Tensor.data.dtype).bits
-def GPUNum():
+
+def GPUNumTorch():
     return torch.cuda.device_count()
+GetGPUNum = GPUNum = GPUNumTorch
+
 def SampleFrom01NormalDistributionTorch(Shape):
     return torch.randn(Shape) # sampple from N(0, 1)
+
 def SetSeedForTorch(Seed: int):
     torch.manual_seed(Seed)
+
 def ReportGPUUseageOfCurrentProcess():
     """
         report total / reserved / allocated / free(unallocated inside reservide) memory of the process of each GPU.
@@ -45,18 +54,32 @@ def ReportGPUUseageOfCurrentProcess():
             DLUtils.Size2Str(MemoryAllocated), 
             DLUtils.Size2Str(MemoryUnallocated)
         ))
+
+def GetBatchNum(TorchDataLoader):
+    return len(TorchDataLoader)
+
+def ToOneHot(Data, ClassNum):
+    # assert len(Data.shape) == 1
+    return F.one_hot(Data.long(), num_classes=ClassNum)
+
+from .format import (
+    ToTorchTensor, ToTorchTensorOrNum,
+    NpArrayToTorchTensor, NpArray2TorchTensor,
+    NpArray2Tensor, NpArrayToTensor,
+    TorchTensorToNpArray, TorchTensor2NpArray,
+    TensorToNpArray, Tensor2NpArray
+)
+
+def SampleFrom01NormalDistributionTorch(Shape):
+    return torch.randn(Shape) # sampple from N(0, 1)
+
 try:
-    from .format import (
-        ToTorchTensor, ToTorchTensorOrNum,
-        TorchTensor2NpArray, TorchTensorToNpArray, TensorToNpArray, Tensor2NpArray
+    from .module import (
+        TorchModule,
+        TorchModuleWrapper
     )
 except Exception:
     pass
-
-from .format import (
-    NpArray2Tensor, NpArray2TorchTensor,    
-    NpArrayToTensor, NpArrayToTorchTensor
-)
 
 def __getattr__(Name):
     if Name in ["TorchModule"]:

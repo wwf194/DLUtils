@@ -1,3 +1,4 @@
+import warnings
 import math
 import DLUtils
 from typing import TYPE_CHECKING
@@ -170,7 +171,7 @@ def ParseMarkerSize(Size):
         raise Exception()
     return Size
 
-def PlotPointsPltNp(
+def PlotMultiPointMpl(
         ax, Points, Color="Blue", Type="Circle", Size=None,
         XLabel=None, YLabel=None, Title=None, XRange=None, YRange=None
     ):
@@ -184,7 +185,7 @@ def PlotPointsPltNp(
     SetTitleAndLabelForAx(ax, XLabel, YLabel, Title)
     SetTicksAndRangeForAx(ax, Xs, Ys, XRange, YRange)
     return
-PlotPoints = PlotPointsPltNp
+PlotPoints = PlotPointsPltNp = PlotPointsMpl = PlotMultiPointMpl
 
 def PlotMultiPoints(
         ax, Xs, Ys, Color="Blue", Type="Circle", Size=None, Labels=None,
@@ -1444,11 +1445,11 @@ def PlotLineChart(ax=None, Xs=None, Ys=None,
     return ax
 
 def PlotMultiLineChart(
-        ax=None, XsList=None, YsList=None,
-        Title="Untitled", Labels=None, XLabel=None, YLabel=None,
-        ColorList=None, LineWidth=2.0,
-        Save=False, SavePath=None, **Dict
-    ):
+    ax=None, XsList=None, YsList=None,
+    Title="Untitled", Labels=None, XLabel=None, YLabel=None,
+    ColorList=None, LineWidth=2.0,
+    Save=False, SavePath=None, **Dict
+):
     if ax is None:
         fig, ax = CreateFigurePlt()
     assert XsList is not None and YsList is not None
@@ -1567,7 +1568,7 @@ def PlotHistogram(
         ax.hist(Data, density=Norm2Sum1, bins=BinNum)
         if Title is not None:
             ax.set_title(Title)
-    
+        
     SetTitleAndLabelForAx(ax, XLabel, YLabel, Title)
     SaveFigForPlt(Save, SavePath)
 
@@ -1898,7 +1899,7 @@ def SetYTicksFloatFromData(ax, data, **kw):
         raise Exception(type(data))
     SetYTicksFloat(ax, Min, Max, **kw)
 
-def SetXTicksFloat(ax, Min, Max, Method="Auto", Rotate45=True):
+def SetXTicksFloat(ax, Min, Max, Method="Auto", Rotate45=False):
     if not np.isfinite(Min) or not np.isfinite(Max):
         Min, Max = -5.0, 5.0
     if Min == Max:
@@ -2333,22 +2334,21 @@ def ColorImage2GrayImage(images, ColorAxis=-1):
     B = np.take(images, 2, ColorAxis)
     return 0.30 * R + 0.59 * G + 0.11 * B   
 
-def Norm2Image(data):
-    assert len(data.shape)==2 or len(data.shape)==3 # Gray or Color Image
-
-    Min, Max = np.min(data), np.max(data)
+def Norm2Image(Data):
+    assert len(Data.shape) in [2, 3] # gray or color image
+    Min, Max = np.min(Data), np.max(Data)
     if Min==Max:
-        data = np.full_like(data, 128.0)
+        Data = np.full_like(data, 128.0)
     else:
-        data = (data - Min) / (Max - Min) * 255.0
-    data = np.around(data)
-    data = data.astype(np.uint8)
-    if len(data.shape)==2: # collapsed gray image
-        data = np.stack([data, data, data], axis=2)
-    return data
+        Data = (data - Min) / (Max - Min) * 255.0
+    Data = np.around(data)
+    Data = Data.astype(np.uint8)
+    if len(Data.shape) == 2: # gray image
+        Data = np.stack([Data, Data, Data], axis=2) # (Height, Width, 3)
+    return Data
 
 def PlotImageLFloat01(Image, SavePath):
-    NpArray2ImageFileGreyFloat01PIL(Image, SavePath)
+    NpArrayToImageFileGreyFloat01PIL(Image, SavePath)
 PlotGreyImage = PlotImageGreyFloat = PlotImageGreyFloat01 = PlotImageLFloat01
 
 def PlotImageRGBFloat01(Image, SavePath):
@@ -2360,20 +2360,23 @@ PlotColorImage = PlotImageRGBFloat = PlotImageRGBFloat01
 def PlotImage(Image, SavePath):
     Shape = Image.shape
     if len(Shape) == 2:
-        NpArray2ImageFileGreyFloat01PIL(Image, SavePath)
+        NpArrayToImageFileGreyFloat01PIL(Image, SavePath)
     elif len(Shape) == 3:
         PlotImageRGBFloat01(Image, SavePath)
     else:
         raise Exception()
 
-def NpArray2ImageFilePIL(Data, SavePath=None):
-    # image : np.ndarray, with dtype np.uint8
+def NpArrayToImageFilePIL(ImageNp, SaveFilePath=None):
+    """
+    ImageNp: np.ndarray, with dtype np.uint8. (Height, Width, 3)
+    """
     ImagePIL = Im.fromarray(Data)
-    DLUtils.EnsureFileDir(SavePath)
-    ImagePIL.save(SavePath)
+    DLUtils.EnsureFileDir(SaveFilePath)
+    ImagePIL.save(SaveFilePath)
+NpArray2ImageFilePIL = NpArrayToImageFilePIL
 
-def NpArray2ImageFileGreyFloat01PIL(Image, ImageFilePath):
-    # Image: (Height, Width). float within range [0.0, 1.0].
+def NpArrayToImageFileGreyFloat01PIL(Image, ImageFilePath):
+    # Image: (Height, Width). float within range (0.0, 1.0).
     DLUtils.EnsureFileDir(ImageFilePath)
     ImageFilePath = DLUtils.file.RenameFileIfExists(ImageFilePath)
     ImageInt255 = (Image * 255.999).astype(np.uint8)
@@ -2385,20 +2388,34 @@ def NpArray2ImageFileGreyFloat01PIL(Image, ImageFilePath):
 def NpArray2ImageFile(Data, ImageFilePath):
     if isinstance(Data, np.ndarray):
         TypeStr = str(Data.dtype)
-        if isinstance(Data.flat[0], np.integer):
-            NpArray2ImageFileFloat01MPL(
+        if TypeStr in ["uint8"]:
+            return NpArrayUInt8ToImageFile(
                 Data.astype(np.float32) / 255.0,
                 ImageFilePath
             )
+        elif TypeStr in ["uint32", "uint64"]:
+            raise NotImplementedError()
+        elif "int" in TypeStr:
+            raise NotImplementedError()
         elif isinstance(Data.flat[0], np.floating):
-            NpArray2ImageFileFloat01MPL(Data, ImageFilePath)
+            NpArrayFloat01ToImageFileMPL(Data, ImageFilePath)
         else:
             raise Exception()
     else:
         raise Exception()
 
-def NpArray2ImageFileFloat01MPL(Data, ImageFilePath):
+def NpArrayUInt8ToImageFile(Data, ImageFilePath):
+    return NpArrayFloat01ToImageFileMPL(
+        Data.astype(np.float32) / 255.0,
+        ImageFilePath
+    )
+
+def NpArrayFloat01ToImageFileMPL(Data, ImageFilePath):
     # requires Data is float, values in [0.0, 1.0].
+    if len(Data.shape) == 2: # Data: (Height, Width).
+        # plot as gray image
+        Data = np.stack([Data, Data, Data], axis=2)
+        # Data: (Height, Width, 3)
     # Data: (Height, Width, ChannelNum)
         # ChannelNum: RGB or RGBA
     DLUtils.EnsureFileDir(ImageFilePath)
@@ -2406,8 +2423,8 @@ def NpArray2ImageFileFloat01MPL(Data, ImageFilePath):
     matplotlib.image.imsave(ImageFilePath, Data)
     return
 
-NpArray2ImageFileFloat = NpArray2ImageFileFloat01MPL
-NpArray2ImageFileInt255 = NpArray2ImageFileFloat01MPL
+NpArray2ImageFileFloat = NpArrayFloat01ToImageFileMPL
+NpArray2ImageFileInt255 = NpArrayFloat01ToImageFileMPL
 
 def Tensor2ImageFile(Data, SavePath):
     Data = DLUtils.TorchTensor2NpArray(Data)
@@ -2422,11 +2439,15 @@ def PlotExampleImage(Images, PlotNum=10, SaveDir=None, SaveName=None):
         Image = Norm2Image(Image)
         NpArray2ImageFile(Image, SaveDir + SaveName + "-No.%d.png"%ImageIndex)
 
-# https://stackoverflow.com/questions/41597177/get-aspect-ratio-of-axes
-# answered on Feb 2, 2017 at 23:10 by Mad Physicist
-# till 2022.11 matplotlib does not have a method for this function
+
 from operator import sub
 def GetAspectOfAx(ax, Positive=True):
+    """
+    aspect of ax: height / width of a pixel / square area when plotting.
+    https://stackoverflow.com/questions/41597177/get-aspect-ratio-of-axes
+        answered on Feb 2, 2017 at 23:10 by Mad Physicist
+        till 2022.11 matplotlib does not have a method for this function
+    """
     # Total figure size
     figW, figH = ax.get_figure().get_size_inches()
     # Axis size on figure

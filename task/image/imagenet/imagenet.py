@@ -14,10 +14,11 @@ if TYPE_CHECKING:
 else:
     Im = DLUtils.LazyFromImport("PIL", "Image")
 
-from .. import ImageClassificationTask
-# adapted from
-# https://towardsdatascience.com/downloading-and-using-the-imagenet-dataset-with-pytorch-f0908437c4be
-class ImageNet1k(ImageClassificationTask):
+from .. import ImageClassTask
+"""
+adapted from https://towardsdatascience.com/downloading-and-using-the-imagenet-dataset-with-pytorch-f0908437c4be
+"""
+class ImageNet1k(ImageClassTask):
     ParamMap = DLUtils.ExpandIterableKey({
         ("DataPath", "DataSetPath"): "Data.Path",
     })
@@ -195,7 +196,4 @@ class DataFetcher(DLUtils.train.DataFetcherForEpochBatchTrain):
 
 # provide batch
 class DataLoader(DLUtils.train.DataLoaderForEpochBatchTrain):
-    pass
-
-if __name__ == "__main__":
     pass

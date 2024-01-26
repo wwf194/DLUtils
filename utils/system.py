@@ -72,13 +72,16 @@ def IsWindowsSystem():
     return platform.system() in ["Windows"]
 IsWin = IsWindows = IsWindowsSystem
 
-def GetSystemType():
+def GetSystemType(RaiseIfUnknown=False):
     if "win" in sys.platform is not None:
         SystemType = 'Windows'
     elif "linux" in sys.platform is not None:
         SystemType = 'Linux'
     else:
-        SystemType = 'Unknown'
+        if RaiseIfUnknown:
+            raise Exception(SystemType)
+        else:
+            SystemType = 'Unknown'
     return SystemType
 SystemType = SysType = GetSysType = GetSystemType
 SystemType = GetSystemType()
@@ -92,25 +95,35 @@ def GetSystemType2():
     else:
         raise Exception(SystemType)
 
-def GetBytesInMemory(Obj):
+def GetByteNumInMemory(Obj):
     return sys.getsizeof(Obj)
+GetByteNum = GetByteNumInMemory
 
 def ReportMemoryOccupancy(Obj):
-    ByteNum = GetBytesInMemory(Obj)
+    ByteNum = GetByteNumInMemory(Obj)
     return DLUtils.ByteNum2Str(Obj)
 
-from ._time import TimeStamp2DateTimeObj, TimeStr2Second, DateTimeObj2TimeStampFloat
-from ._time import CurrentTimeStampInt, GetCurrentTimeStampInt, CurrentTimeStr
+from ._time import (
+    TimeStamp2DateTimeObj,
+    TimeStr2Second,
+    DateTimeObj2TimeStampFloat
+)
+from ._time import (
+    CurrentTimeStampInt,
+    GetCurrentTimeStampInt,
+    CurrentTimeStr
+)
 
 def Stack2File(FilePath):
     DLUtils.EnsureFileDir(FilePath)
     traceback.print_exc(file=open(FilePath, "w"))
 
 import locale
+import subprocess
 from subprocess import PIPE, Popen
 from threading  import Thread
 try:
-    from queue import Queue, Empty
+    from queue import Queue, Empty # python 3.x
 except ImportError:
     from Queue import Queue, Empty  # python 2.x
 class _ProcessObj:

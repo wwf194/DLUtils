@@ -7,14 +7,14 @@ if TYPE_CHECKING:
 else:
     np = DLUtils.GetLazyNumpy()
     torch = DLUtils.GetLazyTorch()
-from .. import ImageClassificationTask
+from .. import ImageClassTask
 
 LabelContent = [
-        'airplane', 'automobile', 'bird', 'cat', 'deer',
-        'dog', 'frog', 'horse', 'ship', 'truck'
-    ]
+    'airplane', 'automobile', 'bird', 'cat', 'deer',
+    'dog', 'frog', 'horse', 'ship', 'truck'
+]
 
-class CIFAR10(ImageClassificationTask):
+class CIFAR10(ImageClassTask):
     def __init__(self):
         super().__init__()
         self._INIT()
@@ -106,7 +106,7 @@ def LoadDataSetFile(filename):
 
 def ExtractImage(Data, IndexList=None, PlotNum=10, SavePath="./", LabelContent=None):
     if IndexList is None:
-        IndexList = DLUtils.MultipleRandomIntInRange(0, 60000, PlotNum)
+        IndexList = DLUtils.MultiRandomIntInRange(0, 60000, PlotNum)
     for Index in IndexList:
         if Index >= 50000:
             Type = "Test "

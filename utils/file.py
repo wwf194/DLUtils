@@ -1,7 +1,6 @@
 import os
 import re
 import warnings
-
 import sys
 import gzip
 
@@ -163,7 +162,7 @@ def MoveFile(FilePath, PathDest=None, RaiseIfNonExist=False, Overwrite=True, Rai
 def ListDirNameWithPattern(DirPath, DirNamePattern, End=""):
     DirNameList = []
     DirNamePatternCompiled = re.compile(DirNamePattern)
-    for DirName in DLUtils.ListDirNames(DirPath, End=""):
+    for DirName in DLUtils.file.ListDirNames(DirPath, End=""):
         if DirNamePatternCompiled.match(DirName) is not None:
             DirNameList.append(DirName + End)
     return DirNameList
@@ -171,7 +170,7 @@ def ListDirNameWithPattern(DirPath, DirNamePattern, End=""):
 def ListFileNameWithPattern(DirPath, FileNamePattern):
     FileNameList = []
     FileNamePatternCompiled = re.compile(FileNamePattern)
-    for FileName in DLUtils.ListFileNames(DirPath):
+    for FileName in DLUtils.file.ListFileNames(DirPath):
         if FileNamePatternCompiled.match(FileName) is not None:
             FileNameList.append(FileName)
     return FileNameList
@@ -483,8 +482,8 @@ def DirPathFromFilePath(FilePath):
     return ParentDirPath
 FolderPathOfFolder = DirPathFromFilePath
 
-def RemoveFiles(FilesPath):
-    for FilePath in FilesPath:
+def RemoveFiles(*FilePathList):
+    for FilePath in FilePathList:
         RemoveFile(FilePath)
 
 def RemoveFile(FilePath):
@@ -620,8 +619,23 @@ def ListDirsPath(DirPath):
     return [DirPath + DirName for DirName in DirNameList]
 ListAllDirPaths = ListAllDirsPath = ListDirsPath
 
-def FileExists(FilePath):
-    return os.path.isfile(FilePath)
+def FileExists(FilePath, *List):
+    if len(List) == 0: # one file
+        FilePath = DLUtils.StandardizeFilePath(FilePath)
+        return os.path.isfile(FilePath)
+    else: # multiple file
+        for _FilePath in [FilePath, *List]:
+            if not FileExists(FilePath):
+                return False
+            else:
+                return True
+
+def AllFilesExist(*List, **Dict):
+    for FilePath in list(List) + list(Dict.values()):
+        if not FileExists(FilePath):
+            return False
+    return True
+
 Exists = _ExistsFile = ExistsFile = FileExists
 
 def _FolderExists(DirPath):
@@ -644,6 +658,10 @@ def CheckFileExists(FilePath):
     if not _ExistsFile(FilePath):
         raise Exception("%s does not exist."%FilePath)
     return FilePath
+
+def CheckAllFilesExist(*List, **Dict):
+    for FilePath in list(List) + list(Dict.values()):
+        CheckFileExists(FilePath)
 
 def CheckFolderExists(DirPath):
     DirPath = ToStandardDirPath(DirPath)
@@ -841,6 +859,10 @@ def SeparateDirPathAndFileName(FilePath):
     FileName = os.path.basename(FilePath)
     DirPath = DirPathFromFilePath(FilePath)
     return FileName, DirPath
+
+def GetFilePathNoSuffix(FilePath):
+    Name, Suffix = SeparateFileNameSuffix(FilePath)
+    return Name
 
 def SeparateFileNameSuffix(FilePath):
     if FilePath.endswith("/"):
@@ -1372,17 +1394,25 @@ def CheckIntegrity(FolderPath, Config, RaiseException=True):
             FolderNodeList.append(SubFolderPath)
     return True
 
+def ExtractGzFile(FilePath, DestFilePath=None):
+    """
+        turn a compressed .gz file to uncompressed file
+    """
+    FilePath = DLUtils.CheckFileExists(FilePath)
+    if DestFilePath is None:
+        Name, Suffix = DLUtils.SeparateFileNameSuffix(FilePath)
+        if Suffix is None:
+            DestFilePath = Name + "-from-gz"
+        else:
+            DestFilePath = Name
+    else:
+        DestFilePath = DLUtils.EnsureFileDir(DestFilePath)
 
-def ExtractGzFile(FilePath, ExtractFilePath=None):
-    # file -> file
-    if ExtractFilePath is None:
-        ExtractFilePath = DLUtils.RemoveSuffix(FilePath, ".gz")
-        if ExtractFilePath is None:
-            raise Exception(ExtractFilePath)
     with gzip.open(FilePath, 'rb') as FileIn:
-        with open(ExtractFilePath, 'wb') as FileOut:
+        with open(DestFilePath, 'wb') as FileOut:
             shutil.copyfileobj(FileIn, FileOut)
-    return ExtractFilePath
+    return DestFilePath
+
 def IsGzFile(FilePath):
     with open(FilePath, 'rb') as test_f:
         return test_f.read(2) == b'\x1f\x8b'
@@ -1396,9 +1426,11 @@ def _ExtractGzFile(FilePath, SavePath=None):
         with open(SavePath, 'wb') as FileOut:
             shutil.copyfileobj(FileIn, FileIn)
 import tarfile
-# Input: Zip File
-# Output: Extracted Folder
+
 def ExtractTarFile(FolderPath, ExtractFolderPath):
+    # Input: Zip File
+    # Output: Extracted Folder
+
     # file -> folder
     # importing the "tarfile" module
     File = tarfile.open(FolderPath)
@@ -1413,14 +1445,16 @@ def IsTarFile(FilePath):
     return tarfile.is_tarfile(FilePath)
 
 import zipfile
-# Input: Zip File
-# Output: Extracted Folder
-def ExtractZipFile(ZipFilePath, ExtractDir):
-    # file -> folder
-    ExtractDir = EnsureDir(ExtractDir)
+
+def ExtractZipFile(ZipFilePath, DestDirPath):
+    """
+        Extract .zip file to a folder.
+    """
+    ZipFilePath = DLUtils.CheckFileExists(ZipFilePath)
+    DestDirPath = DLUtils.EnsureDir(DestDirPath)
     with zipfile.ZipFile(ZipFilePath, 'r') as zip_ref:
-        zip_ref.extractall(ExtractDir)
-    return ExtractDir
+        zip_ref.extractall(DestDirPath)
+    return DestDirPath
 
 ZipFile2Folder = ExtractZipFile
 ExtractZipFile = ExtractZipFile

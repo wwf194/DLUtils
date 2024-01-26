@@ -186,20 +186,19 @@ from .utils._param import (
     Param2JsonFile, Param2JsonStr
 )
 # import DLUtils.utils._numpy as numpy
+
+
+import DLUtils.utils._numpy as numpy
 from .utils._numpy import (
     SetSeedForNumpy,
-    NpArrayToTextFile,
-    NpArray2DToTextFile,
+    NpArrayToTextFile, NpArray2TextFile,
+    NpArray2DToTextFile, NpArray2D2TextFile,
     FlattenNpArray,
-    NpArray2List,
-    EnsureFlatNp,
-    EnsureFlat
+    EnsureFlat, EnsureFlatNp,
+    NpArrayToList, NpArray2List,
+    ListToNpArray, ListToNpArrayFloat32,
+    NpArray2D2Str, NpArray2DToStr
 )
-
-try:
-    from .utils._numpy import NpArray2D2Str
-except Exception:
-    pass
 
 from .utils.format import (
     Curve2TextFile
@@ -224,6 +223,10 @@ SystemType = GetSystemType()
 
 import DLUtils.module as module
 try:
+    from .module import Module
+except Exception:
+    pass
+try:
     from .module import AbstractModule, AbstractNetwork, AbstractOperator
     from .module.abstract_module import GetParamMapDefault
     from .network.convolution import GetParamMapDefaultConv
@@ -245,7 +248,8 @@ import DLUtils.utils.file as file
 import DLUtils.utils.func as function
 import DLUtils.utils._math as math
 
-try:
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
     from DLUtils.utils._math import (
         SampleFromKaimingNormal,
         SampleFromKaimingUniform,
@@ -256,9 +260,8 @@ try:
         SampleFrom01NormalDistribution,
         SampleFromGaussianDistribution,
         SampleFromUniformDistribution,
+        MultiRandomInt, MultiRandomIntInRange
     )
-except Exception:
-    pass
 
 try:
     import DLUtils.utils.plot as plot
@@ -305,9 +308,11 @@ try:
     import DLUtils.network as network
 except Exception:
     print("Failed to import DLUtils.network")
+
+import DLUtils.task as task
 try:
     import DLUtils.task as task
-    from .task import Task, Dataset
+    from .task import Task, Dataset, GetDatasetHandler
 except Exception:
     pass
 
@@ -351,10 +356,30 @@ try:
         Tensor2ImageFile
 except Exception:
     pass
-from DLUtils.utils.func import (EmptyFunction)
+from DLUtils.utils.func import (
+    EmptyFunction
+)
 
-from .utils.file import *
-from .utils.file import ParseSavePath, ChangeFilePathSuffix, FolderPathOfFile
+# file system process function
+from .utils.file import (
+    StandardizeDirPath,
+    StandardizeFilePath,
+    FileExists, Exists, ExistsFile,
+    AllFilesExist,
+    DirExists, FolderExists, ExistsDir, ExistsFolder,
+    CheckFileExists, CheckAllFilesExist,
+    GetFilePathNoSuffix,
+    CheckDirExists,
+    EnsureDir, EnsureDirectory, EnsureFolder,
+    EnsureFileDir,
+    CurrentDirPath,
+    CurrentFileName,
+    ParseSavePath,
+    ChangeFilePathSuffix,
+    DirPathOfFile, FolderPathOfFile,
+    MoveFile,
+    SeparateFileNameSuffix
+)
 
 try:
     import DLUtils.example as example
@@ -369,7 +394,7 @@ except Exception:
 else:
     from .backend._torch import (
         SetSeedForTorch,
-        NpArray2Tensor,
+        NpArrayToTorchTensor, NpArray2Tensor,
         TorchTensor2NpArray, TorchTensorToNpArray
     )
 
@@ -389,7 +414,8 @@ else:
     from DLUtils.utils._time import CurrentTimeStr, TimeStr
 from DLUtils.utils.system import (
         NewCmdArg, ParseCmdArg,
-        ErrorStackStr, PrintErrorStackTo, PrintErrorStackWithInfoTo, PrintErrorStackWithInfo2,
+        ErrorStackStr, PrintErrorStackTo,
+        PrintErrorStackWithInfoTo, PrintErrorStackWithInfo2,
         GetCurrentProcessID, CurrentPID, CurrentProcessID
     )
 try:
@@ -400,8 +426,8 @@ try:
     )
 except Exception:
     pass
+import DLUtils
 
-import sys
 def DoTask(Param):
     TaskName = GetFirstValue(Param, ["Task", "Name"])
     if TaskName in ["Move", "MoveFile"]:

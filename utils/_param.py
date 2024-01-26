@@ -270,7 +270,8 @@ class param:
         return self
 
 class Param(param):
-    # tree node class for representing json-like structure.
+    """
+    # class representing a json-like tree structure.
     # content information is stored in attribute _DICT, or _LIST, _LEAF, depending on node type.
     # meta information is stored in other attributes such as _TYPE, _FORMAT etc.
     # viewed externally, node acts like an object with its attributes storing content information.
@@ -278,6 +279,7 @@ class Param(param):
         # this is implemented using magic methods of python. 
     # method names with UpperCamelCase typically indicates functions to manipulate meta information
     # method names with   lowercases   typically indicates functions to manipulate content information.
+    """
     def __init__(self, _CONTENT=None, Dict=None, _PATH_FROM_ROOT=["ROOT"], _TYPE=NODE_TYPE.SPINE, _FORMAT=NODE_FORMAT.DICT):
         super().__init__(_CONTENT=_CONTENT, Dict=Dict, _FORMAT=_FORMAT, IsSuper=True)
         self.SetAttr("_DICT_TEMP", {})
@@ -332,11 +334,6 @@ class Param(param):
         CommentList.append([Comment, Type])
     def AddCommentToChild(self, Key, Comment, Type=None):
         self.Get(Key)
-    def from_dict(self, Dict):
-        Paths = _JsonLike2Paths(Dict)
-        Tree = _Paths2Tree(Paths)
-        Node = _Tree2Param(Tree)
-        self.FromParam(Node)
         return self
     def Exists(self):
         if self.Get("_IS_FALSE") is True:
@@ -381,6 +378,12 @@ class Param(param):
     def FromFile(self, FilePath):
         Obj = DLUtils.file.BinaryFile2Obj(FilePath)
         self.FromParam(Obj)
+        return self
+    def from_dict(self, Dict):
+        Paths = _JsonLike2Paths(Dict)
+        Tree = _Paths2Tree(Paths)
+        Node = _Tree2Param(Tree)
+        self.FromParam(Node)
         return self
     def absorb_dict(self, Dict):
         TreeSelf = Param2Tree(self)
@@ -1455,19 +1458,9 @@ def _AnalyzeTreeRecur(Node, Key=None):
     else:
         raise Exception()
 
-def JsonFile2Tree(FilePath):
-    JsonStr = DLUtils.file.File2Str(FilePath)
-    if not JsonStr.endswith("\n"):
-        JsonStr += "\n"
-    Tree = _JsonStr2Tree(JsonStr)
-    if Tree is None:
-        raise Exception("Failed to parse json file.")
-    _AnalyzeTree(Tree)    
-    return Tree
-
-def JsonFile2Param(FilePath, SplitKeyByDot=True, SplitKeyException=[]):
+def JsonFileToParam(FilePath, SplitKeyByDot=True, SplitKeyException=[]):
     FilePath = DLUtils.file.StandardizePath(FilePath)
-    Tree = JsonFile2Tree(FilePath)
+    Tree = DLUtils.utils.json.JsonFile2Tree(FilePath)
     assert Tree["_TYPE"] == NODE_TYPE.SPINE
     PathTable = Tree2Paths(Tree, SplitKeyByDot=SplitKeyByDot, SplitKeyException=[])
 
@@ -1485,7 +1478,13 @@ def JsonFile2Param(FilePath, SplitKeyByDot=True, SplitKeyException=[]):
         )   
     else:
         raise Exception()
-
     Tree = _Paths2Tree(PathTable, RootNode)
     return _Tree2Param(Tree)
+JsonFile2Param = JsonFileToParam
 
+def FileToParam(FilePath):
+    FilePath = DLUtils.CheckFileExists(FilePath)
+    _Param = Param().FromFile(FilePath)
+    return _Param
+
+File2Param = FileToParam

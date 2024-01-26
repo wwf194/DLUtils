@@ -510,6 +510,16 @@ def _JsonStr2Tree(JsonStr, Verbose=False, Debug=True):
             raise Exception()
     return Tree
 
+def JsonFileToTree(FilePath):
+    JsonStr = DLUtils.file.File2Str(FilePath)
+    if not JsonStr.endswith("\n"):
+        JsonStr += "\n"
+    Tree = _JsonStr2Tree(JsonStr)
+    if Tree is None:
+        raise Exception("Failed to parse json file.")
+    _AnalyzeTree(Tree)    
+    return Tree
+JsonFile2Tree = JsonFileToTree
 
 if __name__ == '__main__':
     YaccTest()

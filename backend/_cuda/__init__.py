@@ -47,17 +47,30 @@ except Exception:
 try:
     import nvidia_smi # pip install nvidia-ml-py3
 except Exception:
-    pass
+    IsNvidiaSmiImported = True
 else:
-    def GetGPUWithLargestAvailableUseage(ReturnType="str"):
-        nvidia_smi.nvmlInit()
-        GPUNum = nvidia_smi.nvmlDeviceGetCount()
-        GPUUseageList = []
-        for GPUIndex in range(GPUNum):
-            GPUHandle = nvidia_smi.nvmlDeviceGetHandleByIndex(GPUIndex)
-            GPUUtil = nvidia_smi.nvmlDeviceGetUtilizationRates(GPUHandle)
-            GPUUseageCurrent = GPUUtil.gpu / 100.0
-            GPUUseageList.append(GPUUseageCurrent)
+    IsNvidiaSmiImported = False
+
+
+def GPUDeviceInSpecifiedType(GPUIndex, Type="str"):
+    if Type in ["str", "Str"]:
+        return "cuda:%d"%GPUIndex
+    elif Type in ["int", "Int"]:
+        return GPUIndex
+    else:
+        raise Exception()
+
+def GetGPUWithLargestAvailableUseage(ReturnType="str", Verbose=False):
+    # assert IsNvidiaSmiImported
+    nvidia_smi.nvmlInit()
+    GPUNum = nvidia_smi.nvmlDeviceGetCount()
+    GPUUseageList = []
+    for GPUIndex in range(GPUNum):
+        GPUHandle = nvidia_smi.nvmlDeviceGetHandleByIndex(GPUIndex)
+        GPUUtil = nvidia_smi.nvmlDeviceGetUtilizationRates(GPUHandle)
+        GPUUseageCurrent = GPUUtil.gpu / 100.0
+        GPUUseageList.append(GPUUseageCurrent)
+        if Verbose:
             print("GPU %d Useage: %.3f%%"%(GPUIndex, GPUUseageCurrent * 100.0))
-        GPUUseageMinIndex = np.argmin(GPUUseageList)
-        return ReturnGPUDevice(GPUUseageMinIndex, ReturnType=ReturnType)
+    GPUUseageMinIndex = np.argmin(GPUUseageList)
+    return GPUDeviceInSpecifiedType(GPUUseageMinIndex, Type=ReturnType)

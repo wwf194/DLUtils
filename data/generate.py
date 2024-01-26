@@ -23,12 +23,12 @@ def DefaultNonLinearLayerBias(Shape):
         
     Min = - 1.0 / math.sqrt(UnitNum)
     Max = - Min
-    return SampleFromUniformDistribution((UnitNum), Min, Max)
+    return DLUtils.math.SampleFromUniformDistribution((UnitNum), Min, Max)
 
 DefaultLinearLayerBias = DefaultNonLinearLayerBias
 
 def DefaultLinearLayerWeight(Shape):
-    return SampleFromKaimingUniform(Shape, NonLinear=None)
+    return DLUtils.math.SampleFromKaimingUniform(Shape, NonLinear=None)
 
 def DefaultVanillaRNNHiddenWeightTorch(Shape):
     """
@@ -42,7 +42,7 @@ def DefaultVanillaRNNHiddenWeightTorch(Shape):
     assert Shape[0] == Shape[1]
     Max = 1.0 / math.sqrt(HiddenNum)
     Min = - Max
-    return SampleFromUniformDistribution(Shape, Min, Max)
+    return DLUtils.math.SampleFromUniformDistribution(Shape, Min, Max)
 
 DefaultVanillaRNNHiddenWeight = DefaultVanillaRNNHiddenWeightTorch
 
@@ -58,7 +58,7 @@ def DefaultConv2DKernelTorch(Shape, GroupNum=1, **Dict):
     assert Shape[0] % GroupNum == 0
     assert Shape[1] % GroupNum == 0
     # Kernel: (OutNum, InNum // GroupNum, Height, Width). torch.conv2d.
-    return SampleFromUniformDistribution((Shape[1], Shape[0] // GroupNum, Shape[2], Shape[3]), Min, Max)
+    return DLUtils.math.SampleFromUniformDistribution((Shape[1], Shape[0] // GroupNum, Shape[2], Shape[3]), Min, Max)
 DefaultConv2DKernel = DefaultConv2DKernelTorch
 
 def DefaultConv2DBias(Shape, GroupNum=1, **Dict):
@@ -70,7 +70,7 @@ def DefaultConv2DBias(Shape, GroupNum=1, **Dict):
     Min = - Max
     assert Shape[0] % GroupNum == 0
     assert Shape[1] % GroupNum == 0
-    return SampleFromUniformDistribution((Shape[1]), Min, Max)
+    return DLUtils.math.SampleFromUniformDistribution((Shape[1]), Min, Max)
 
 def DefaultUpConv2DKernel(Shape, GroupNum=1, **Dict):
     """
@@ -83,7 +83,7 @@ def DefaultUpConv2DKernel(Shape, GroupNum=1, **Dict):
     assert Shape[0] % GroupNum == 0
     assert Shape[1] % GroupNum == 0
     # Weight: [InNum, OutNum // GroupNum, KernelHeight, KernelWidth]
-    return SampleFromUniformDistribution((Shape[0], Shape[1] // GroupNum, Shape[2], Shape[3]), Min, Max)
+    return DLUtils.math.SampleFromUniformDistribution((Shape[0], Shape[1] // GroupNum, Shape[2], Shape[3]), Min, Max)
 
 def DefaultUpConv2DBias(Shape, GroupNum=1, **Dict):
     """
@@ -94,4 +94,4 @@ def DefaultUpConv2DBias(Shape, GroupNum=1, **Dict):
     Min = - Max
     assert Shape[0] % GroupNum == 0
     assert Shape[1] % GroupNum == 0
-    return SampleFromUniformDistribution((Shape[1]), Min, Max)
+    return DLUtils.math.SampleFromUniformDistribution((Shape[1]), Min, Max)

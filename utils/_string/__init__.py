@@ -253,10 +253,12 @@ def Bytes2Int(Bytes, LeastSignificantByte="Left", Endian=None):
 def HexStr2Bytes(HexStr):
     return bytes.fromhex(HexStr)
 
+from collections import defaultdict
 class OutPipeWriter:
     def __init__(self, OutPipe):
         self.OutPipe = OutPipe
         self.Indent = 0
+        self.PrintCounterDict = defaultdict(lambda: 0)
         return
     def IncreaseIndent(self):
         self.Indent += 1
@@ -277,6 +279,19 @@ class OutPipeWriter:
         Result = PrintStrTo(self.OutPipe, *List, Indent=Indent, **Dict)
         return Result
     print = Print
+    def PrintEvery(self, Num, *List, Indent=None, **Dict):
+        Count = self.PrintCounterDict[Num]
+        Count += 1
+        if Count >= Num:
+            Result = self.Print(*List, Indent=Indent, **Dict)
+            Count = 0
+        else:
+            Result = None
+        self.PrintCounterDict[Num] = Count
+        return Result
+    def SetPrintCounterToZero(self):
+        self.PrintCounterDict = defaultdict(lambda: 0)
+    ResetPrintCounter = SetPrintCounterToZero
 
 def GetLibOutPipeWriter():
     LibOutPipe = GetLibOutPipe()

@@ -1,5 +1,5 @@
-import os
-import re
+import sys, os, time, warnings
+import re, random
 import functools
 import time
 import warnings
@@ -10,13 +10,21 @@ if TYPE_CHECKING:
     import threading
 else:
     threading = DLUtils.LazyImport("threading")
-from typing import Iterable, List
-# from inspect import getframeinfo, stack
-# from .attrs import *
+from typing import Iterable
 
-from .file import *
+from .file import (
+    StandardizeDirPath, StandardizeFolderPath,
+    StandardizeFilePath,
+    CheckDir, CheckDirExists,
+    EnsureDir, EnsureDirectory, EnsureDirExists,
+)
+
 import DLUtils.utils._string as string
-from DLUtils.utils._string import *
+from DLUtils.utils._string import (
+    IntTo01Str,
+    IntToHex,
+    Int2Char
+)
 
 import argparse
 
@@ -29,13 +37,14 @@ from ._dict import (
     IterableKeyToElement, IterableKeyToKeys, ExpandIterableKey
 )
 
+import DLUtils.utils._json as json
+
 def FromFile(FilePath):
     Param = DLUtils.File2Param(FilePath)
     assert hasattr(Param, "_CLASS")
     ModuleClass = DLUtils.python.ParseClass(Param._CLASS)
     Module = ModuleClass().LoadParam(Param)
     return Module
-
 File2Module = FromFile
 
 def File2Param(FilePath):
@@ -185,9 +194,6 @@ def NpArrayType(data):
         return "Not an np.ndarray, but %s"%type(data)
     return data.dtype
 
-def List2NpArray(data):
-    return np.array(data)
-
 def Dict2GivenType(Dict, Type):
     if Type in ["PyObj"]:
         return DLUtils.PyObj(Dict)
@@ -207,8 +213,7 @@ def ToRunFormat(Data):
         return ToTorchTensor(Data)
     else:
         return Data
-import DLUtils
-from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     import numpy as np
     import torch
@@ -253,11 +258,6 @@ def ToNpArrayOrNum(Data, DataType=None):
     else:
         return Data
 
-def ToNpArrayIfIsTensor(data):
-    if isinstance(data, torch.Tensor):
-        return DLUtils.ToNpArray(data), False
-    else:
-        return data, True
 
 def ToPyObj(Obj):
     if isinstance(Obj, DLUtils.json.PyObj):
@@ -265,16 +265,7 @@ def ToPyObj(Obj):
     else:
         return DLUtils.PyObj(Obj)
 
-def ToTrainableTorchTensor(data):
-    if isinstance(data, np.ndarray):
-        return NpArray2Tensor(data, RequiresGrad=True)
-    elif isinstance(data, list):
-        return NpArray2Tensor(List2NpArray(data), RequiresGrad=True)
-    elif isinstance(data, torch.Tensor):
-        data.requires_grad = True
-        return data
-    else:
-        raise Exception(type(data))
+
 
 def _1DTo2D(data):
     # turn 1-D data to 2-D data for visualization
@@ -341,16 +332,9 @@ def ToGivenDataTypeNp(data, DataType):
     DataType = DLUtils.ParseDataTypeNp(DataType)
     return data.astype(DataType)
 
-def List2NpArray(data, Type=None):
-    if Type is not None:
-        return np.array(data, dtype=Type)
-    else:
-        return np.array(data)
-
 def ToList(Obj):
     if isinstance(Obj, list):
         return Obj
-
     elif DLUtils.IsListLikePyObj(Obj):
         return Obj.ToList()
     elif isinstance(Obj, dict) or DLUtils.IsDictLikePyObj(Obj):
@@ -705,18 +689,18 @@ def check_suffix(name, suffix=None, is_path=True):
 from ._string import HasSuffix, RemoveSuffix
 
 try:
-    from .math import RandomIntInRange, RandomSelect, RandomSelectFromList
+    from ._math import (
+        RandomIntInRange,
+        RandomSelect,
+        RandomSelectFromList,
+        MultiRandomIntInRange
+    )
 except Exception:
     pass
 try:
     from .format import NpArray2D2Str, NpArray2D2TextFile, NpArray2Str, NpArray2TextFile
 except Exception:
     pass
-
-def MultipleRandomIntInRange(Left, Right, Num, IncludeRight=False):
-    if IncludeRight:
-        Right += 1
-    return RandomSelect(range(Left, Right), Num)
 
 def RandomOrder(List):
     if isinstance(List, range):
@@ -907,7 +891,10 @@ except Exception:
 if GetSystemType() in ["Windows", "win"]:
     import DLUtils.backend.win as win
 
+import DLUtils.utils.parallel as parallel
 try:
     from .parallel import RunProcessPool
 except Exception:
     pass
+
+import DLUtils.utils._numpy as _numpy

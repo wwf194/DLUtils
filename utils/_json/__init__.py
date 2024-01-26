@@ -1,6 +1,4 @@
 import re
-
-import warnings
 import DLUtils
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -12,13 +10,17 @@ else:
 
 import DLUtils
 from ..python import CheckIsLegalPyName
-# from DLUtils.attr import *
-# from DLUtils.utils import ListAttrs # leads to recurrent reference.
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import numpy as np
 else:
     np = DLUtils.LazyImport("numpy")
+
+from .parse import (
+    JsonFile2Tree,
+    JsonFileToTree,
+    _JsonStr2Tree
+)
 
 def JsonObj2PyObj(JsonObj):
     if isinstance(JsonObj, list):
@@ -96,7 +98,7 @@ def PyObj2DataObj(Obj):
 
 def Obj2JsonFile(Obj, FilePath):
     FilePath = DLUtils.EnsureFileDir(FilePath)
-    DLUtils.JsonDict2File(
+    DLUtils.file.JsonDict2File(
         _Obj2JsonFile(Obj), FilePath
     )
 
@@ -206,6 +208,7 @@ def JsonStr2PyObj(JsonStr):
     return JsonObj2PyObj(JsonObj)
     # return json.loads(JsonStr, object_hook=lambda d: SimpleNamespace(**d))
 JsonStr_to_object = JsonStr2PyObj
+
 
 def JsonFile2PyObj(FilePath):
     JsonObj = JsonFile2JsonDict(FilePath)

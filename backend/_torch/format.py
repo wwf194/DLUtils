@@ -18,7 +18,7 @@ def ToTorchTensor(Data, Device=None):
     if isinstance(Data, np.ndarray):
         _Data = NpArray2Tensor(Data)
     elif isinstance(Data, list):
-        _Data = NpArray2Tensor(DLUtils.List2NpArray(Data))
+        _Data = NpArray2Tensor(DLUtils.ListToNpArray(Data))
     elif isinstance(Data, torch.Tensor):
         _Data = Data
     elif isinstance(Data, float):
@@ -29,13 +29,24 @@ def ToTorchTensor(Data, Device=None):
         _Data = _Data.to(Device)
     return _Data
 
-def ToTorchTensorOrNum(data):
-    if isinstance(data, float):
-        return data
-    elif isinstance(data, int):
-        return data
+def ToTrainableTorchTensor(Data):
+    if isinstance(Data, np.ndarray):
+        return NpArray2Tensor(Data, RequiresGrad=True)
+    elif isinstance(Data, list):
+        return NpArray2Tensor(DLUtils.ListToNpArray(Data), RequiresGrad=True)
+    elif isinstance(Data, torch.Tensor):
+        Data.requires_grad = True
+        return Data
     else:
-        return ToTorchTensor(data)
+        raise Exception(type(Data))
+
+def ToTorchTensorOrNum(Data):
+    if isinstance(Data, float):
+        return Data
+    elif isinstance(Data, int):
+        return Data
+    else:
+        return ToTorchTensor(Data)
 
 def ToGivenDataTypeTorch(Data, DataType=None):
     if DataType is None:

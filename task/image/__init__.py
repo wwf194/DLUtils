@@ -1,15 +1,15 @@
 import DLUtils
 
-class ImageClassificationTask(DLUtils.module.AbstractModule):
+class ImageClassTask(DLUtils.Module):
     def __init__(self, Type=None, *List, **Dict):
         super().__init__(*List, **Dict)
         if Type is not None:
             self.SetType(Type)
-    def MNIST(self):
-        self.__class__ = MNIST
-        self._INIT()
-        assert isinstance(self, MNIST)
-        return self
+    # def MNIST(self):
+    #     self.__class__ = MNIST
+    #     self._INIT()
+    #     assert isinstance(self, MNIST)
+    #     return self
     def SetType(self, Type):
         if Type in ["MNIST", "mnist"]:
             return self.MNIST()
@@ -37,7 +37,21 @@ class ImageClassificationTask(DLUtils.module.AbstractModule):
         return self
     def RandomValidationSample(self):
         raise Exception()
-    
+    def GetSubDataSet(self, Name):
+        """
+        An image dataset typically consist of separate sets of data, for train and validate.
+        Train set can be further separated into train and test set.
+        """
+        if Name in ["train", "Train"]:
+            raise NotImplementedError()
+        elif Name in ["test", "Test"]:
+            raise NotImplementedError()
+        elif Name in ["validate", "validation", "Validate", "Validation"]:
+            raise NotImplementedError()
+        else:
+            raise Exception()
+        return
+    GetDataGroup = GetSubSet = GetSubDataSet
 def MinMax2FixedValue(BatchSize):
     return
 class Flow():

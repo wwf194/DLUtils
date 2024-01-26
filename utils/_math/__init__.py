@@ -41,25 +41,10 @@ def RandomSelectOne(List):
 
 def RandomSelectFromListRepeat(List, Num):
     # return random.choices(List, Num)
+    # assert isinstance(Num, int)
     return np.random.choice(List, size=Num, replace=True)
 RandomSelectWithReplacement = RandomSelectFromListWithReplacement = RandomSelectFromListRepeat
 RandomSelectWithRepeat = RandomSelectRepeat = RandomSelectFromListWithRepeat = RandomSelectFromListRepeat
-
-def RandomIntInRange(Left, Right, IncludeRight=False):
-    if not IncludeRight:
-        Right -= 1
-    #assert Left <= Right 
-    return random.randint(Left, Right)
-
-def MultipleRandomIntInRange(Num, *List, AllowSame=False, **Dict):
-    if AllowSame:
-        return [RandomIntInRange(*List, **Dict) for _ in range(Num)]
-    else:
-        NumCurrent = 0
-        IntSet = set()
-        while(len(IntSet) <= Num):
-            IntSet.add(RandomIntInRange(*List, **Dict))
-        return list(IntSet)
 
 def RandomInt(Positive=True, Max=None): # uniformly sampling from a [0, a large enough integer]
     if Positive:
@@ -71,7 +56,7 @@ def RandomInt(Positive=True, Max=None): # uniformly sampling from a [0, a large 
             Max = 2 ** 31 - 1
         return random.randint(- Max - 1, Max) # range of 32-bit signed integer
 
-def MultipleRandomInt(Num=10, *List, AllowSame=False, **Dict):
+def MultiRandomInt(Num=10, *List, AllowSame=False, **Dict):
     if AllowSame:
         return [RandomInt(*List, **Dict) for _ in range(Num)]
     else:
@@ -79,6 +64,25 @@ def MultipleRandomInt(Num=10, *List, AllowSame=False, **Dict):
         IntSet = set()
         while(len(IntSet) <= Num):
             IntSet.add(RandomInt(*List, **Dict))
+        return list(IntSet)
+
+def RandomIntInRange(Left, Right, IncludeRight=False):
+    if not IncludeRight:
+        Right -= 1
+    # assert Left <= Right 
+    return random.randint(Left, Right)
+
+def MultiRandomIntInRange(Num, *List, AllowSame=False, **Dict):
+    assert isinstance(Num, int)
+    if AllowSame:
+        return [RandomIntInRange(*List, **Dict) for _ in range(Num)]
+    else:
+        NumCurrent = 0
+        IntSet = set()
+        while True:
+            IntSet.add(RandomIntInRange(*List, **Dict))
+            if len(IntSet) == Num:
+                break
         return list(IntSet)
 
 def SelectSpecificRowsAndColsNp(Data, RowIndexList, ColIndexList):
@@ -104,11 +108,16 @@ def Float2BaseAndExponent(Float, Base=10.0):
         Exponent = math.floor(math.log(Float, Base))
     Coefficient = Float / 10.0 ** Exponent
     return Coefficient, Exponent
-
 Float2BaseExp = Float2BaseAndExponent
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
 
+def Floats2BaseAndExponent(Floats, Base=10.0):
+    Floats = DLUtils.ToNpArray(Floats)
+    Exponent = np.ceil(np.log10(Floats, Base))
+    Coefficient = Floats / 10.0 ** Exponent
+    return Coefficient, Exponent
+Floats2BaseExp = Floats2BaseAndExponent
+
+if TYPE_CHECKING:
     import sklearn
     from sklearn.decomposition import PCA as PCAsklearn # sklearn.decomposition.PCA not supported
 else:
@@ -179,13 +188,6 @@ def ReplaceNaNOrInfWithZeroNp(data):
     data[~np.isfinite(data)] = 0.0
     return data
 ReplaceNaNOrInfWithZero = ReplaceNaNOrInfWithZeroNp
-
-def RandomSelectFromListRepeat(List, Num):
-    # return random.choices(List, Num)
-    # assert isinstance(Num, int)
-    return np.random.choice(List, size=Num, replace=True)
-RandomSelectWithReplacement = RandomSelectFromListWithReplacement = RandomSelectFromListRepeat
-RandomSelectRepeat = RandomSelectFromListRepeat
 
 def GetElementRank(Data, OnNaN="omit", OnSameValue="min"):
     from scipy.stats import rankdata
@@ -343,21 +345,6 @@ def GetGaussianCurveMethod(Amp, Mean, Std):
     GaussianCurve = lambda data: Amp * np.exp(CalculateExponent(data))
     return GaussianCurve
 
-def GaussianProbDensity(data, Mean, Std):
-    Exponent = - 0.5 * ((data - Mean) / Std) ** 2
-    return GaussianCoefficient / Std * np.exp(Exponent)
-
-def GaussianCurveValue(data, Amp, Mean, Std):
-    Exponent = - 0.5 * ((data - Mean) / Std) ** 2
-    return Amp * np.exp(Exponent)
-
-def Floats2BaseAndExponent(Floats, Base=10.0):
-    Floats = DLUtils.ToNpArray(Floats)
-    Exponent = np.ceil(np.log10(Floats, Base))
-    Coefficient = Floats / 10.0 ** Exponent
-    return Coefficient, Exponent
-Floats2BaseExp = Floats2BaseAndExponent
-
 def CalculatePearsonCoefficient(dataA, dataB):
     # dataA: 1d array
     # dataB: 1d array
@@ -448,34 +435,20 @@ def CalculateBinnedMeanStd(Xs, Ys=None, BinNum=None, BinMethod="Overlap", Range=
     else:
         raise Exception(BinMethod)
 
+def ManhattanDistance(Point1, Point2):
+    return np.linalg.norm(Point1, Point2, ord=1)
+def EuclideanDistance(Point1, Point2, Norm=2):
+    return np.linalg.norm(Point1, Point2, ord=Norm)
+Distance = EuclideanDistance
 
-    def PCA(data, ReturnType="PyObj"):
-        FeatureNum = data.shape[1]
-        PCATransform = PCAsklearn(n_components=FeatureNum)
-        PCATransform.fit(data) # Learn PC directions
-        dataPCA = PCATransform.transform(data) #[SampleNum, FeatureNum]
-
-        if ReturnType in ["Transform"]:
-            return PCATransform
-        # elif ReturnType in ["TransformAndData"]:
-        #     return 
-        elif ReturnType in ["PyObj"]:
-            return DLUtils.PyObj({
-                "dataPCA": DLUtils.ToNpArray(dataPCA),
-                "Axis": DLUtils.ToNpArray(PCATransform.components_),
-                "VarianceExplained": DLUtils.ToNpArray(PCATransform.explained_variance_),
-                "VarianceExplainedRatio": DLUtils.ToNpArray(PCATransform.explained_variance_ratio_)
-            })
-        else:
-            raise Exception(ReturnType)            
-    def ManhattanDistance(Point1, Point2):
-        return np.linalg.norm(Point1, Point2, ord=1)
-    def EuclideanDistance(Point1, Point2, Norm=2):
-        return np.linalg.norm(Point1, Point2, ord=Norm)
-    Distance = EuclideanDistance
-
-
-try:
-    from .distribution import *
-except Exception:
-    pass
+from .distribution import (
+    SampleFromKaimingNormal,
+    SampleFromKaimingUniform,
+    SampleFromXaiverNormal,
+    SampleFromXaiverUniform,
+    SampleFromConstantDistribution,
+    SampleFromNormalDistribution,
+    SampleFrom01NormalDistribution,
+    SampleFromGaussianDistribution,
+    SampleFromUniformDistribution,
+)

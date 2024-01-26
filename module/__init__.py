@@ -30,6 +30,36 @@ def BuildExternalModule(param, **kw):
     else:
         return None
 
+class Module:
+    def __init__(self, *List, **Dict):
+        self.Param = Param = DLUtils.Param()
+        if hasattr(self, "AfterLoadOrInit"):
+            self.AfterLoadOrInit()
+        Param.Verbose = True
+        self._Verbose = Param.Verbose
+        self._HasBuild = False
+    def AfterLoadOrInit(self):
+        return self
+    def BeforeToFileOrClear(self):
+        self._HasClear = True
+        if hasattr(self, "_Verbose"):
+            delattr(self, "_Verbose")
+    def FromFile(self, FilePath):
+        self.Param = DLUtils.FileToParam(FilePath)
+    def ToFile(self, FilePath, RetainSelf=False):
+        FilePath = DLUtils.EnsureFileDir(FilePath)
+        self.Param.ToFile(FilePath)
+        if not RetainSelf:
+            delattr(self, "Param")
+        return self
+    def IsVerbose(self):
+        return self._Verbose
+    def Build(self, *List, **Dict):
+        self._HasBuild = True
+        return self
+    def HasBuild(self):
+        return self._HasBuild
+
 class LogComponent:
     # method for class
     def SetLog(self, Log, SetForSubModules=True):
